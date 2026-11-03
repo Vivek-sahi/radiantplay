@@ -4,7 +4,7 @@
  */
 
 .link {
-  font-family: var(--font-family-primary, "Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
   font-weight: var(--font-weight-regular, 400);
   line-height: var(--line-height-md, 20px);
@@ -55,12 +55,9 @@
   color: var(--rd-sys-color-content-alternate);
 }
 
-.white:hover {
-  color: var(--rd-sys-color-background-subtle);
-}
-
+.white:hover,
 .white:active {
-  color: var(--rd-sys-color-border-default);
+  color: var(--rd-sys-color-content-alternate);
 }
 
 .gray {

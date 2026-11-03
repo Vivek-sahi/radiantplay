@@ -23,7 +23,7 @@
 
 .description {
   font-size: var(--font-size-sm);
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
   max-width: 320px;
   margin: 0;
 }
@@ -32,4 +32,100 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Layout: horizontal (Figma Muted 14995:15000) */
+.horizontal {
+  display: flex;
+  flex-direction: row;
+  text-align: left;
+}
+
+.horizontalSection {
+  align-items: flex-start;
+  gap: var(--spacing-4);
+}
+
+.horizontalPage {
+  align-items: center;
+  gap: var(--spacing-12);
+}
+
+.sectionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--spacing-8);
+  height: var(--spacing-8);
+}
+
+.sectionIcon svg {
+  width: var(--spacing-8);
+  height: var(--spacing-8);
+}
+
+.status_empty {
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.status_warning {
+  color: var(--rd-sys-color-content-warning);
+}
+
+.status_success {
+  color: var(--rd-sys-color-content-success);
+}
+
+/* Figma page illustration frame: 140 x 118 */
+.pageMedia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 140px;
+  height: 118px;
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.pageMedia > *,
+.pageMedia svg {
+  width: 100%;
+  height: 100%;
+}
+
+.horizontalBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-width: 0;
+}
+
+.horizontalText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.horizontalTitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+  font-weight: var(--font-weight-emphasis);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.horizontalDescription {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+  font-weight: var(--font-weight-regular);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.horizontalActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-3);
 }

@@ -1,5 +1,0 @@
-﻿Name,Content Rules,Default State,Description,Dynamic Behaviour,Error State,Ref
-Text input box,N/A,Display in activated state,Allows users to type in values to filter,"Display in activated state with placeholder text. When users type in anything, replace it with user’s text
-
-Use comma to separate multi values.",N/A,2
-Label,N/A,N/A,The column name that users want to filter,N/A,N/A,1

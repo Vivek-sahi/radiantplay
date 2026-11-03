@@ -1,4 +1,6 @@
 import React, { forwardRef, useId } from 'react';
+import { Icon } from '../icons';
+import { useRadiantLook } from '../../context/RadiantLookContext';
 import styles from './TextArea.module.css';
 
 export interface TextAreaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'rows'> {
@@ -34,11 +36,13 @@ export interface TextAreaProps extends Omit<React.TextareaHTMLAttributes<HTMLTex
    */
   error?: boolean;
   /**
-   * Error message to display
+   * Error message to display. Under look: 'radiant-3' it replaces the label
+   * text on the label line, and defaults to Please add “{label}” when unset
    */
   errorMessage?: string;
   /**
-   * Helper text below the input (when not in error state)
+   * Helper text beside the label (when not in error state). Under
+   * look: 'radiant-3' it stays beside the label on error too
    */
   helperText?: string;
   /**
@@ -65,6 +69,13 @@ export interface TextAreaProps extends Omit<React.TextareaHTMLAttributes<HTMLTex
  * TextArea Component
  * 
  * A multi-line text input field with optional label, helper text, and error states.
+ *
+ * **Radiant 3.0 look** (`look: 'radiant-3'`, Figma Form 25110:47073): the label
+ * line reads "Label (helper text)" and nothing goes under the field except the
+ * character counter. On error the label turns red with an icon and reads
+ * `errorMessage`, or Please add “{label}” when no message is given; the helper
+ * text stays beside it. Without a visible label, helper and error text fall
+ * back to the footer under the field.
  * 
  * @example
  * ```tsx
@@ -123,10 +134,22 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(({
 
   const characterCount = typeof value === 'string' ? value.length : 0;
   const showCounter = maxLength !== undefined;
+  // Radiant 3.0: helper and error text move onto the label line
+  const labelLine = useRadiantLook() === 'radiant-3' && Boolean(showLabel && label);
 
   return (
     <div className={containerClasses}>
-      {showLabel && label && (
+      {labelLine ? (
+        <label htmlFor={id} className={styles.label}>
+          {error ? (
+            <span className={styles.labelError}>
+              <Icon name="exclamation-point-circle" size="xs" aria-hidden />
+              {errorMessage || `Please add “${label}”`}
+            </span>
+          ) : label}
+          {helperText && <span className={styles.helperInline}>({helperText})</span>}
+        </label>
+      ) : showLabel && label && (
         <label htmlFor={id} className={styles.label}>
           {label}
           {helperText && !error && (
@@ -145,25 +168,35 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(({
         rows={rows}
         maxLength={maxLength}
         aria-invalid={error}
-        aria-describedby={error && errorMessage ? `${id}-error` : undefined}
+        aria-describedby={!labelLine && error && errorMessage ? `${id}-error` : undefined}
         {...props}
       />
-      <div className={styles.footer}>
-        {error && errorMessage ? (
-          <span id={`${id}-error`} className={styles.errorMessage}>
-            {errorMessage}
-          </span>
-        ) : helperText && !showLabel ? (
-          <span className={styles.helperText}>{helperText}</span>
-        ) : (
-          <span />
-        )}
-        {showCounter && (
-          <span className={styles.counter}>
-            {characterCount}/{maxLength}
-          </span>
-        )}
-      </div>
+      {labelLine ? (
+        showCounter && (
+          <div className={styles.footer}>
+            <span className={styles.counter}>
+              {characterCount}/{maxLength}
+            </span>
+          </div>
+        )
+      ) : (
+        <div className={styles.footer}>
+          {error && errorMessage ? (
+            <span id={`${id}-error`} className={styles.errorMessage}>
+              {errorMessage}
+            </span>
+          ) : helperText && !showLabel ? (
+            <span className={styles.helperText}>{helperText}</span>
+          ) : (
+            <span />
+          )}
+          {showCounter && (
+            <span className={styles.counter}>
+              {characterCount}/{maxLength}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 });

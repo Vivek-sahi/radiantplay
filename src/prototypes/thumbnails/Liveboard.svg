@@ -1,27 +1,27 @@
 <svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="800" height="450" fill="#F6F8FA"/>
-  <rect x="0" y="0" width="800" height="56" fill="white"/>
-  <rect x="20" y="80" width="180" height="80" rx="8" fill="white"/>
-  <rect x="210" y="80" width="180" height="80" rx="8" fill="white"/>
-  <rect x="400" y="80" width="180" height="80" rx="8" fill="white"/>
-  <rect x="590" y="80" width="180" height="80" rx="8" fill="white"/>
-  <rect x="40" y="95" width="80" height="12" rx="4" fill="#A5ACB9"/>
-  <rect x="40" y="115" width="100" height="24" rx="4" fill="#1D232F"/>
+  <rect width="800" height="450" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <rect x="0" y="0" width="800" height="56" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="20" y="80" width="180" height="80" rx="8" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="210" y="80" width="180" height="80" rx="8" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="400" y="80" width="180" height="80" rx="8" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="590" y="80" width="180" height="80" rx="8" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="40" y="95" width="80" height="12" rx="4" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="40" y="115" width="100" height="24" rx="4" style="fill: var(--rd-sys-color-content-primary)"/>
   <rect x="40" y="145" width="60" height="10" rx="4" fill="#06BF7F"/>
-  <rect x="230" y="95" width="80" height="12" rx="4" fill="#A5ACB9"/>
-  <rect x="230" y="115" width="100" height="24" rx="4" fill="#1D232F"/>
+  <rect x="230" y="95" width="80" height="12" rx="4" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="230" y="115" width="100" height="24" rx="4" style="fill: var(--rd-sys-color-content-primary)"/>
   <rect x="230" y="145" width="60" height="10" rx="4" fill="#06BF7F"/>
-  <rect x="420" y="95" width="80" height="12" rx="4" fill="#A5ACB9"/>
-  <rect x="420" y="115" width="100" height="24" rx="4" fill="#1D232F"/>
+  <rect x="420" y="95" width="80" height="12" rx="4" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="420" y="115" width="100" height="24" rx="4" style="fill: var(--rd-sys-color-content-primary)"/>
   <rect x="420" y="145" width="60" height="10" rx="4" fill="#E22B3D"/>
-  <rect x="610" y="95" width="80" height="12" rx="4" fill="#A5ACB9"/>
-  <rect x="610" y="115" width="100" height="24" rx="4" fill="#1D232F"/>
+  <rect x="610" y="95" width="80" height="12" rx="4" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="610" y="115" width="100" height="24" rx="4" style="fill: var(--rd-sys-color-content-primary)"/>
   <rect x="610" y="145" width="60" height="10" rx="4" fill="#06BF7F"/>
-  <rect x="20" y="180" width="380" height="200" rx="8" fill="white"/>
-  <rect x="410" y="180" width="360" height="200" rx="8" fill="white"/>
-  <rect x="40" y="200" width="120" height="16" rx="4" fill="#1D232F"/>
-  <rect x="40" y="240" width="340" height="120" rx="4" fill="#F6F8FA"/>
-  <rect x="430" y="200" width="120" height="16" rx="4" fill="#1D232F"/>
-  <path d="M450 280 L500 260 L550 300 L600 250 L650 270 L700 230 L750 250" stroke="#2770EF" stroke-width="2" fill="none"/>
-  <text x="400" y="430" fill="#1D232F" font-family="system-ui" font-size="18" text-anchor="middle" font-weight="500">Liveboard Dashboard</text>
+  <rect x="20" y="180" width="380" height="200" rx="8" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="410" y="180" width="360" height="200" rx="8" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="40" y="200" width="120" height="16" rx="4" style="fill: var(--rd-sys-color-content-primary)"/>
+  <rect x="40" y="240" width="340" height="120" rx="4" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <rect x="430" y="200" width="120" height="16" rx="4" style="fill: var(--rd-sys-color-content-primary)"/>
+  <path d="M450 280 L500 260 L550 300 L600 250 L650 270 L700 230 L750 250" stroke-width="2" fill="none" style="stroke: var(--rd-sys-color-border-brand)"/>
+  <text x="400" y="430" font-family="system-ui" font-size="18" text-anchor="middle" font-weight="500" style="fill: var(--rd-sys-color-content-primary)">Liveboard Dashboard</text>
 </svg>

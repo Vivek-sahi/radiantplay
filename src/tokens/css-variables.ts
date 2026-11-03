@@ -8,10 +8,10 @@
 import { referenceColors } from './colors/reference';
 import { systemColors } from './colors/system';
 import { rdComponentColors } from './colors/component';
-import { fontSize, fontWeight, lineHeight, fontFamily } from './typography';
+import { fontSize, fontWeight, lineHeight, letterSpacing, fontFamily } from './typography';
 import { spacing } from './spacing';
 import { radius } from './radius';
-import { shadows, elevation } from './shadows';
+import { shadows, elevation, shadowPrimitives } from './shadows';
 import { borderWidth } from './borders';
 import { duration, easing } from './animation';
 import { zIndex } from './zIndex';
@@ -69,6 +69,11 @@ export const generateCSSVariables = () => {
   // Line Heights
   Object.entries(lineHeight).forEach(([key, value]) => {
     variables[`line-height-${toKebabCase(key)}`] = `${value}px`;
+  });
+
+  // Letter Spacing
+  Object.entries(letterSpacing).forEach(([key, value]) => {
+    variables[`letter-spacing-${toKebabCase(key)}`] = value;
   });
 
   // Spacing
@@ -130,6 +135,11 @@ export const generateThemeVariables = (theme: 'light' | 'dark') => {
     vars[`rd-sys-color-${key}`] = value;
   });
 
+  // Shadow tokens (the product's rd-sys-color-shadow-* names)
+  Object.entries(shadowPrimitives[theme]).forEach(([level, value]) => {
+    vars[`rd-sys-color-shadow-${level}`] = value;
+  });
+
   // Component tokens
   Object.entries(compColors).forEach(([key, value]) => {
     vars[`rd-comp-color-${key}`] = value;
@@ -171,15 +181,8 @@ ${variablesToCSS(baseVars, ':root')}
 /* Light theme (default) */
 ${variablesToCSS(lightVars, ':root, [data-theme="light"]')}
 
-/* Dark theme */
+/* Dark theme. ThemeProvider sets data-theme, including for the system mode */
 ${variablesToCSS(darkVars, '[data-theme="dark"]')}
-
-/* System preference dark mode */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-${Object.entries(darkVars).map(([key, value]) => `    --${key}: ${value};`).join('\n')}
-  }
-}
 `;
 };
 

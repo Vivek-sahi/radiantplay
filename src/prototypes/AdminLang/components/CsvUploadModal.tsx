@@ -5,7 +5,7 @@ import { Icon } from '../../../components/icons';
 import { LoadingIndicator } from '../../../components/LoadingIndicator';
 import { uploadModalStyles as s } from '../styles';
 import { csvRequiredHeaders, type CsvValidationError } from '../data/mockData';
-import { systemColors } from '../../../tokens/colors';
+import { sysVar } from '../../../tokens/colors';
 
 interface CsvUploadModalProps {
   isOpen: boolean;
@@ -237,12 +237,12 @@ export const CsvUploadModal: React.FC<CsvUploadModalProps> = ({
           onDragLeave={() => setIsDragOver(false)}
           onDrop={handleDrop}
         >
-          <Icon name="upload" size="l" color={systemColors.light['content-tertiary']} />
+          <Icon name="upload" size="l" color={sysVar('content-tertiary')} />
           <p style={{ ...s.dropzoneLabel, marginTop: '12px' }}>
             Drag and drop your CSV file here, or{' '}
             <span style={s.dropzoneBrowse}>browse</span>
           </p>
-          <p style={{ fontSize: '12px', color: systemColors.light['content-tertiary'], margin: '8px 0 0' }}>
+          <p style={{ fontSize: '12px', color: sysVar('content-tertiary'), margin: '8px 0 0' }}>
             Only .csv files are supported
           </p>
         </div>
@@ -251,7 +251,7 @@ export const CsvUploadModal: React.FC<CsvUploadModalProps> = ({
       {/* Selected file info */}
       {selectedFile && (
         <div style={s.fileInfo}>
-          <Icon name="documentation" size="s" color={systemColors.light['content-secondary']} />
+          <Icon name="documentation" size="s" color={sysVar('content-secondary')} />
           <span style={s.fileName}>{selectedFile.name}</span>
           <span style={s.fileSize}>{formatFileSize(selectedFile.size)}</span>
           {validationState !== 'validating' && (
@@ -261,7 +261,7 @@ export const CsvUploadModal: React.FC<CsvUploadModalProps> = ({
                 resetState();
               }}
             >
-              <Icon name="cross" size="s" color={systemColors.light['content-tertiary']} />
+              <Icon name="cross" size="s" color={sysVar('content-tertiary')} />
             </span>
           )}
         </div>
@@ -271,7 +271,7 @@ export const CsvUploadModal: React.FC<CsvUploadModalProps> = ({
       {validationState === 'validating' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px' }}>
           <LoadingIndicator size="small" />
-          <span style={{ fontSize: '14px', color: systemColors.light['content-secondary'] }}>
+          <span style={{ fontSize: '14px', color: sysVar('content-secondary') }}>
             Validating CSV file...
           </span>
         </div>
@@ -281,8 +281,8 @@ export const CsvUploadModal: React.FC<CsvUploadModalProps> = ({
       {validationState === 'success' && (
         <div style={{ ...s.validationStatus, ...s.validationSuccess }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Icon name="checkmark-circle" size="s" color="#2E7D32" />
-            <p style={{ ...s.validationTitle, color: '#2E7D32' }}>
+            <Icon name="checkmark-circle" size="s" color={sysVar('content-success')} />
+            <p style={{ ...s.validationTitle, color: sysVar('content-success') }}>
               File validated successfully
             </p>
           </div>
@@ -296,8 +296,8 @@ export const CsvUploadModal: React.FC<CsvUploadModalProps> = ({
       {validationState === 'error' && validationErrors.length > 0 && (
         <div style={{ ...s.validationStatus, ...s.validationError }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Icon name="exclamation-point-circle" size="s" color={systemColors.light['content-failure']} />
-            <p style={{ ...s.validationTitle, color: systemColors.light['content-failure'] }}>
+            <Icon name="exclamation-point-circle" size="s" color={sysVar('content-failure')} />
+            <p style={{ ...s.validationTitle, color: sysVar('content-failure') }}>
               Validation failed
             </p>
           </div>

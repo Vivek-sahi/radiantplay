@@ -5,6 +5,8 @@
  * Rearranged for better chart output (blue → amber → cyan → salmon → purple → red → grey → green)
  *
  * Usage: assign colors sequentially from chartColors[] for each data series.
+ * These are the light series colours. In a component, useChartTheme().colors
+ * gives the right set for the current theme.
  */
 
 export const chartPalette = {
@@ -31,7 +33,10 @@ export const chartColors: string[] = [
 ];
 
 /**
- * Chart UI colors — sourced from Radiant system tokens (light mode).
+ * Chart UI colors, light mode only. These never change with the theme.
+ * New charts should call useChartTheme() from './chartTheme' instead, which
+ * returns series and UI colours for the current theme. Kept for importers
+ * that are light-only (NewUIAdmin2).
  *
  * content-primary:   #1D232F  (axis values, data labels)
  * content-secondary: #777E8B  (axis labels, tick text, legends)
@@ -49,7 +54,7 @@ export const chartUi = {
  * Radiant chart font — use for all SVG text elements.
  * Matches fontFamily.primary from @tokens/typography.
  */
-export const chartFont = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+export const chartFont = 'var(--font-family-primary)';
 
 /**
  * Chart font sizes — from Radiant fontSize tokens (xs = 12, sm = 14).

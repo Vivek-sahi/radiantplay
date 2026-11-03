@@ -1,7 +1,16 @@
 import React from 'react';
-import { systemColors, referenceColors } from '../tokens/colors';
+import { sysVar, type SystemColorKey } from '../tokens/colors';
 import { getComponentCount, getIconCount, getTokenCountLabel } from '../data/componentRegistry';
 import { PLATFORM_VERSION } from '../data/platformVersion';
+import { RadianceBackground } from '../app-chrome/RadianceBackground/RadianceBackground';
+import { Button } from '../components/Button';
+import { spacing } from '../tokens/spacing';
+import { fontWeight } from '../tokens/typography';
+
+// Theme-aware tints from system tokens.
+// alphaTint matches the old 10% hex-alpha badges; softTint lands near the old */10 reference fills in light.
+const alphaTint = (key: SystemColorKey, pct: number) => `color-mix(in srgb, ${sysVar(key)} ${pct}%, transparent)`;
+const softTint = (key: SystemColorKey) => `color-mix(in srgb, ${sysVar(key)} 40%, ${sysVar('background-base')})`;
 
 interface ComponentCardProps {
   name: string;
@@ -21,9 +30,9 @@ const ComponentCard: React.FC<ComponentCardProps> = ({
   onClick,
 }) => {
   const statusColors = {
-    stable: { bg: '#06BF7F1A', text: '#06BF7F' },
-    beta: { bg: '#F5A6231A', text: '#F5A623' },
-    new: { bg: '#2770EF1A', text: '#2770EF' },
+    stable: { bg: alphaTint('content-accent-green', 10), text: sysVar('content-accent-green') },
+    beta: { bg: alphaTint('content-warning', 10), text: sysVar('content-warning') },
+    new: { bg: alphaTint('content-accent-blue', 10), text: sysVar('content-accent-blue') },
   };
 
   return (
@@ -139,6 +148,7 @@ export const RadiantHomePage: React.FC<RadiantHomePageProps> = ({ onNavigate }) 
     <div style={styles.container}>
       {/* Hero Section */}
       <section style={styles.hero}>
+        <RadianceBackground heroHeight={300} />
         <div style={styles.heroContent}>
           <div style={styles.heroBadge}>
             <span style={styles.heroBadgeIcon}>✨</span>
@@ -150,22 +160,13 @@ export const RadiantHomePage: React.FC<RadiantHomePageProps> = ({ onNavigate }) 
             Designed for consistency, accessibility, and developer experience.
           </p>
           <div style={styles.heroActions}>
-            <button 
-              style={styles.primaryButton}
-              onClick={() => onNavigate('button')}
-            >
-              Browse Components
-            </button>
-            <button 
-              style={styles.secondaryButton}
-              onClick={() => onNavigate('architecture')}
-            >
-              Token Architecture
-            </button>
+            <Button variant="primary" size="large" onClick={() => onNavigate('button')}>
+              Browse components
+            </Button>
+            <Button variant="secondary" size="large" onClick={() => onNavigate('architecture')}>
+              Token architecture
+            </Button>
           </div>
-        </div>
-        <div style={styles.heroVisual}>
-          <div style={styles.heroPattern} />
         </div>
       </section>
 
@@ -190,8 +191,8 @@ export const RadiantHomePage: React.FC<RadiantHomePageProps> = ({ onNavigate }) 
         </div>
         <div style={styles.tokenFlow}>
           <div style={styles.tokenLayer} onClick={() => onNavigate('colours')}>
-            <div style={{ ...styles.tokenLayerIcon, backgroundColor: referenceColors.blue['10'] }}>
-              <span style={{ color: systemColors.light['content-brand'], fontSize: '20px' }}>1</span>
+            <div style={{ ...styles.tokenLayerIcon, backgroundColor: softTint('background-accent-blue') }}>
+              <span style={{ color: sysVar('content-brand'), fontSize: '20px' }}>1</span>
             </div>
             <div style={styles.tokenLayerContent}>
               <h4 style={styles.tokenLayerTitle}>Reference Tokens</h4>
@@ -200,8 +201,8 @@ export const RadiantHomePage: React.FC<RadiantHomePageProps> = ({ onNavigate }) 
           </div>
           <div style={styles.tokenArrow}>→</div>
           <div style={styles.tokenLayer} onClick={() => onNavigate('architecture')}>
-            <div style={{ ...styles.tokenLayerIcon, backgroundColor: referenceColors.green['10'] }}>
-              <span style={{ color: systemColors.light['content-success'], fontSize: '20px' }}>2</span>
+            <div style={{ ...styles.tokenLayerIcon, backgroundColor: softTint('background-accent-green') }}>
+              <span style={{ color: sysVar('content-success'), fontSize: '20px' }}>2</span>
             </div>
             <div style={styles.tokenLayerContent}>
               <h4 style={styles.tokenLayerTitle}>System Tokens</h4>
@@ -210,8 +211,8 @@ export const RadiantHomePage: React.FC<RadiantHomePageProps> = ({ onNavigate }) 
           </div>
           <div style={styles.tokenArrow}>→</div>
           <div style={styles.tokenLayer} onClick={() => onNavigate('button')}>
-            <div style={{ ...styles.tokenLayerIcon, backgroundColor: referenceColors.purple['10'] }}>
-              <span style={{ color: referenceColors.purple['60'], fontSize: '20px' }}>3</span>
+            <div style={{ ...styles.tokenLayerIcon, backgroundColor: softTint('background-accent-purple-subtle') }}>
+              <span style={{ color: sysVar('content-accent-purple'), fontSize: '20px' }}>3</span>
             </div>
             <div style={styles.tokenLayerContent}>
               <h4 style={styles.tokenLayerTitle}>Component Tokens</h4>
@@ -319,103 +320,58 @@ const styles: Record<string, React.CSSProperties> = {
     margin: '0 auto',
   },
 
-  // Hero
+  // Hero: light and theme-aware, on the Radiance "home" wash behind it.
   hero: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '60px',
-    padding: '60px',
-    background: 'linear-gradient(135deg, #1A1F2E 0%, #0F1419 100%)',
-    borderRadius: '24px',
-    marginBottom: '32px',
+    padding: `${spacing.J}px`,
+    marginBottom: spacing.H,
     position: 'relative',
+    isolation: 'isolate',
     overflow: 'hidden',
+    borderRadius: 'var(--radius-3xl)',
+    border: `1px solid ${sysVar('border-subtle')}`,
   },
   heroContent: {
     flex: 1,
-    zIndex: 1,
   },
   heroBadge: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '8px',
-    padding: '8px 16px',
-    background: 'rgba(39, 112, 239, 0.15)',
-    borderRadius: '20px',
-    marginBottom: '24px',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    fontSize: '13px',
-    fontWeight: 500,
-    color: '#5B9AFF',
+    gap: spacing.B,
+    padding: `${spacing.B}px ${spacing.D}px`,
+    background: `color-mix(in srgb, ${sysVar('content-brand')} 12%, transparent)`,
+    borderRadius: 'var(--radius-full)',
+    marginBottom: spacing.F,
+    fontFamily: 'var(--font-family-primary)',
+    fontSize: 'var(--font-size-sm)',
+    fontWeight: fontWeight.emphasis,
+    color: sysVar('content-brand'),
   },
   heroBadgeIcon: {
-    fontSize: '14px',
+    fontSize: 'var(--font-size-sm)',
   },
   heroTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '64px',
-    fontWeight: 700,
-    color: '#ffffff',
-    marginBottom: '16px',
-    letterSpacing: '-2px',
-    background: 'linear-gradient(135deg, #ffffff 0%, #A5ACB9 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
+    fontWeight: fontWeight.emphasis,
+    color: sysVar('content-primary'),
+    margin: `0 0 ${spacing.D}px`,
+    letterSpacing: '-0.035em',
+    lineHeight: 1.02,
   },
   heroSubtitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '18px',
-    fontWeight: 400,
-    color: 'rgba(255, 255, 255, 0.6)',
-    lineHeight: '28px',
-    maxWidth: '480px',
-    marginBottom: '32px',
+    color: sysVar('content-primary'),
+    lineHeight: 1.5,
+    maxWidth: '520px',
+    margin: `0 0 ${spacing.H}px`,
   },
   heroActions: {
     display: 'flex',
-    gap: '16px',
-  },
-  primaryButton: {
-    padding: '14px 28px',
-    background: 'linear-gradient(135deg, #2770EF 0%, #1E5BBB 100%)',
-    border: 'none',
-    borderRadius: '12px',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    fontSize: '15px',
-    fontWeight: 500,
-    color: '#ffffff',
-    cursor: 'pointer',
-    transition: 'all 150ms ease',
-    boxShadow: '0 4px 16px rgba(39, 112, 239, 0.4)',
-  },
-  secondaryButton: {
-    padding: '14px 28px',
-    background: 'rgba(255, 255, 255, 0.1)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    borderRadius: '12px',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    fontSize: '15px',
-    fontWeight: 500,
-    color: 'rgba(255, 255, 255, 0.8)',
-    cursor: 'pointer',
-    transition: 'all 150ms ease',
-  },
-  heroVisual: {
-    width: '300px',
-    height: '300px',
-    position: 'relative',
-  },
-  heroPattern: {
-    width: '100%',
-    height: '100%',
-    background: `
-      radial-gradient(circle at 50% 50%, rgba(39, 112, 239, 0.3) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(39, 112, 239, 0.2) 0%, transparent 40%),
-      radial-gradient(circle at 20% 80%, rgba(6, 191, 127, 0.2) 0%, transparent 40%)
-    `,
-    borderRadius: '50%',
-    animation: 'pulse 4s ease-in-out infinite',
+    flexWrap: 'wrap',
+    gap: spacing.C,
   },
 
   // Stats
@@ -431,7 +387,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '8px',
     padding: '24px',
-    background: systemColors.light['background-base'],
+    background: sysVar('background-base'),
     borderRadius: '16px',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
   },
@@ -439,16 +395,16 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '28px',
   },
   statValue: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '32px',
     fontWeight: 700,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
   },
   statLabel: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
     fontWeight: 500,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
@@ -457,9 +413,9 @@ const styles: Record<string, React.CSSProperties> = {
   tokenSection: {
     marginBottom: '48px',
     padding: '32px',
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '20px',
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    border: `1px solid ${sysVar('background-subtle')}`,
   },
   tokenFlow: {
     display: 'flex',
@@ -474,7 +430,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '16px',
     padding: '20px',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: '12px',
     cursor: 'pointer',
     transition: 'all 200ms ease',
@@ -492,33 +448,33 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
   },
   tokenLayerTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     margin: 0,
     marginBottom: '4px',
   },
   tokenLayerDesc: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '11px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     margin: 0,
   },
   tokenArrow: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '24px',
-    color: referenceColors.gray['30'],
+    color: sysVar('border-subtle-hover'),
   },
   tokenCTA: {
     padding: '10px 20px',
     backgroundColor: 'transparent',
-    border: `1px solid ${referenceColors.gray['30']}`,
+    border: `1px solid ${sysVar('border-subtle-hover')}`,
     borderRadius: '8px',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
     fontWeight: 500,
-    color: referenceColors.gray['70'],
+    color: sysVar('content-primary'),
     cursor: 'pointer',
     transition: 'all 150ms ease',
   },
@@ -531,26 +487,26 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '24px',
   },
   sectionTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '28px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     marginBottom: '8px',
   },
   sectionDescription: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
   },
   categorySection: {
     marginBottom: '32px',
   },
   categoryTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
-    fontWeight: 600,
-    color: systemColors.light['content-secondary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-secondary'),
     marginBottom: '16px',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
@@ -565,8 +521,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '16px',
     padding: '20px',
-    background: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    background: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '16px',
     cursor: 'pointer',
     transition: 'all 200ms ease',
@@ -579,7 +535,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: systemColors.light['background-sunken'],
+    background: sysVar('background-sunken'),
     borderRadius: '12px',
   },
   cardContent: {
@@ -592,26 +548,26 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '6px',
   },
   cardTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     margin: 0,
   },
   cardStatus: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '10px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
     padding: '3px 8px',
     borderRadius: '6px',
   },
   cardDescription: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     margin: 0,
     marginBottom: '8px',
     lineHeight: '18px',
@@ -622,15 +578,15 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '12px',
   },
   cardVariants: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '12px',
     fontWeight: 500,
-    color: systemColors.light['border-default'],
+    color: sysVar('border-default'),
   },
   cardArrow: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '20px',
-    color: referenceColors.gray['30'],
+    color: sysVar('border-subtle-hover'),
     transition: 'all 200ms ease',
   },
 
@@ -645,8 +601,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'flex-start',
     gap: '20px',
     padding: '28px',
-    background: `linear-gradient(135deg, ${systemColors.light['background-sunken']} 0%, ${systemColors.light['background-base']} 100%)`,
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    background: `linear-gradient(135deg, ${sysVar('background-sunken')} 0%, ${sysVar('background-base')} 100%)`,
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '16px',
     cursor: 'pointer',
     transition: 'all 200ms ease',
@@ -658,17 +614,17 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
   },
   quickLinkTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '18px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     marginBottom: '8px',
   },
   quickLinkDescription: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '22px',
     margin: 0,
   },

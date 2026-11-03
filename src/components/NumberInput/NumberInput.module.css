@@ -1,0 +1,211 @@
+/* NumberInput: TextInput's field look plus spin buttons (Figma 370:16728) */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  width: 100%;
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.label {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.errorIcon {
+  display: inline-flex;
+  color: var(--rd-sys-color-content-failure);
+}
+
+.field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: 10px var(--spacing-3);
+  background-color: var(--rd-sys-color-background-base);
+  border: 1px solid var(--rd-sys-color-border-bold);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-primary);
+  font-variant-numeric: tabular-nums;
+  transition: border-color var(--duration-fast) var(--easing-standard),
+              box-shadow var(--duration-fast) var(--easing-standard);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.hasSpin .input {
+  padding-right: var(--spacing-8);
+}
+
+.input::placeholder {
+  color: var(--rd-sys-color-content-tertiary);
+}
+
+.input:focus {
+  border-color: var(--rd-sys-color-border-brand);
+  box-shadow: var(--shadow-focus-ring);
+}
+
+.input:hover:not(:focus):not(:disabled) {
+  border-color: var(--rd-sys-color-border-bold-hover);
+}
+
+/* Spin buttons: shown on hover and focus, like the Figma Hover, Focus and Error hover states */
+.spin {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  right: var(--spacing-2);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--easing-standard);
+}
+
+.field:hover .spin,
+.field:focus-within .spin {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .spin {
+    opacity: 1;
+  }
+}
+
+.spinButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-5);
+  height: 15px;
+  padding: 1px var(--spacing-1);
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--rd-sys-color-content-primary);
+  cursor: pointer;
+}
+
+.spinButton:hover:not(:disabled) {
+  background-color: var(--rd-sys-color-background-ghost-hover);
+}
+
+.spinButton:disabled {
+  color: var(--rd-sys-color-content-tertiary);
+  cursor: default;
+}
+
+/* Error */
+.error .label {
+  color: var(--rd-sys-color-content-failure);
+}
+
+.error .input,
+.error .input:hover:not(:focus):not(:disabled) {
+  border-color: var(--rd-sys-color-border-failure);
+}
+
+.error .input:focus {
+  border-color: var(--rd-sys-color-border-failure);
+  box-shadow: var(--shadow-focus-ring-error);
+}
+
+.errorMessage {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-xs);
+  color: var(--rd-sys-color-content-failure);
+}
+
+.helperText {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-xs);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+/* Disabled */
+.disabled .label {
+  color: var(--rd-sys-color-content-tertiary);
+}
+
+.disabled .input {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: var(--rd-sys-color-background-sunken);
+}
+
+/* Read-only: filled, no stroke */
+.readOnly .input,
+.readOnly .input:hover:not(:focus):not(:disabled),
+.readOnly .input:focus {
+  background-color: var(--rd-sys-color-background-on-base);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-sm);
+  transition: color var(--duration-fast) var(--easing-standard);
+}
+
+:global([data-rd-look="radiant-3"]) .container:focus-within:not(.readOnly):not(.error) .label {
+  color: var(--rd-sys-color-content-brand);
+}
+
+:global([data-rd-look="radiant-3"]) .input {
+  height: var(--spacing-8);
+  padding: 0 var(--spacing-3) 0 var(--spacing-4);
+  border-radius: var(--radius-md);
+}
+
+:global([data-rd-look="radiant-3"]) .hasSpin .input {
+  padding-right: var(--spacing-8);
+}
+
+:global([data-rd-look="radiant-3"]) .input:focus,
+:global([data-rd-look="radiant-3"]) .error .input:focus {
+  box-shadow: none;
+}
+
+:global([data-rd-look="radiant-3"]) .disabled {
+  opacity: 0.4;
+}
+
+:global([data-rd-look="radiant-3"]) .disabled .label {
+  color: var(--rd-sys-color-content-primary);
+}
+
+:global([data-rd-look="radiant-3"]) .disabled .input {
+  opacity: 1;
+  background-color: var(--rd-sys-color-background-base);
+}

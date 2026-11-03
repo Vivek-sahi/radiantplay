@@ -296,9 +296,9 @@ Inside the provider, use `useSpotterChat()` to read state and call `send` / `abo
 
 ---
 
-## Theme — light mode by default
+## Theme: light by default, dark supported
 
-Standalone Spotter ships in light mode. Dark mode is not blocked, but no current design exists for it. If dark mode is requested, derive system tokens from `systemColors.dark` and verify contrast on every Spotter-local token (especially the brand glow).
+Standalone Spotter works in light and dark; light is the default. Use theme-aware tokens (`var(--rd-sys-color-*)` in CSS, `sysVar()` inline), never fixed `systemColors` values, and verify contrast on every Spotter-local token (especially the brand glow) in both themes.
 
 ---
 

@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { systemColors, referenceColors, rdComponentColors } from '../../tokens/colors';
+import { sysVar, shadowVar, compVar } from '@tokens/colors';
 import { ConfirmDialog } from './ConfirmDialog';
 import { RdModal } from '@components/RdModal';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-const brand = systemColors.light['content-brand'];
+const font = 'var(--font-family-primary)';
+const brand = sysVar('content-brand');
 
 // ─── Toggle ───────────────────────────────────────────────────────────────────
 
@@ -15,7 +15,7 @@ const Toggle: React.FC<{ checked: boolean; onChange: () => void; disabled?: bool
     style={{
       position: 'relative', width: '36px', height: '20px', borderRadius: '10px',
       border: 'none',
-      backgroundColor: checked ? (disabled ? `${brand}80` : brand) : referenceColors.gray['30'],
+      backgroundColor: checked ? (disabled ? `color-mix(in srgb, ${compVar('toggle-track-on')} 50%, transparent)` : compVar('toggle-track-on')) : compVar('toggle-track-off'),
       cursor: disabled ? 'not-allowed' : 'pointer',
       padding: 0, flexShrink: 0, transition: 'background-color 0.2s ease',
       opacity: disabled ? 0.6 : 1,
@@ -24,8 +24,8 @@ const Toggle: React.FC<{ checked: boolean; onChange: () => void; disabled?: bool
     <span style={{
       position: 'absolute', top: '2px', left: checked ? '18px' : '2px',
       width: '16px', height: '16px', borderRadius: '50%',
-      backgroundColor: '#fff', transition: 'left 0.2s ease',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.18)',
+      backgroundColor: sysVar('background-base'), transition: 'left 0.2s ease',
+      boxShadow: shadowVar('surface'),
     }} />
   </button>
 );
@@ -67,36 +67,36 @@ const Dropdown: React.FC<{ value: string; options: string[]; width?: number; onC
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           width: '100%', height: '36px', padding: '0 12px',
-          border: `1px solid ${open ? brand : '#D1D5DB'}`, borderRadius: '6px',
-          backgroundColor: '#FFFFFF', cursor: 'pointer', fontFamily: font,
-          fontSize: '13px', color: '#111827', outline: 'none', textAlign: 'left',
-          boxShadow: open ? `0 0 0 2px ${brand}22` : 'none',
+          border: `1px solid ${open ? brand : sysVar('border-bold')}`, borderRadius: '6px',
+          backgroundColor: sysVar('background-base'), cursor: 'pointer', fontFamily: font,
+          fontSize: '13px', color: sysVar('content-primary'), outline: 'none', textAlign: 'left',
+          boxShadow: open ? `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)` : 'none',
           transition: 'border-color 0.15s, box-shadow 0.15s',
         }}
       >
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{selected}</span>
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
           style={{ flexShrink: 0, marginLeft: '8px', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s ease' }}>
-          <path d="M2.5 4.5l3.5 3.5 3.5-3.5" stroke="#9CA3AF" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M2.5 4.5l3.5 3.5 3.5-3.5" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
       {open && (
         <div style={{
           position: 'fixed', top: menuPos.top, left: menuPos.left, width: menuPos.width,
-          backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '8px',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.10)', zIndex: 9999, overflow: 'hidden',
+          backgroundColor: sysVar('background-raised'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '8px',
+          boxShadow: shadowVar('menu'), zIndex: 9999, overflow: 'hidden',
         }}>
           {options.map((opt) => (
             <button key={opt} onClick={() => { setSelected(opt); setOpen(false); onChange?.(opt); }}
               style={{
                 display: 'block', width: '100%', padding: '10px 16px',
                 border: 'none', textAlign: 'left', fontFamily: font, fontSize: '13px',
-                fontWeight: opt === selected ? 500 : 400,
-                color: opt === selected ? brand : '#111827',
-                backgroundColor: opt === selected ? `${brand}10` : 'transparent',
+                fontWeight: opt === selected ? 'var(--font-weight-medium)' : 'var(--font-weight-regular)',
+                color: opt === selected ? brand : sysVar('content-primary'),
+                backgroundColor: opt === selected ? `color-mix(in srgb, ${brand} 6%, transparent)` : 'transparent',
                 cursor: 'pointer', transition: 'background-color 0.1s',
               }}
-              onMouseEnter={(e) => { if (opt !== selected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F9FAFB'; }}
+              onMouseEnter={(e) => { if (opt !== selected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = sysVar('background-sunken'); }}
               onMouseLeave={(e) => { if (opt !== selected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
             >
               {opt}
@@ -114,9 +114,9 @@ const Toast: React.FC<{ message: string; cta?: string; onCta?: () => void; onClo
   <div style={{
     position: 'fixed', bottom: '28px', left: '50%', transform: 'translateX(-50%)',
     display: 'flex', alignItems: 'center', gap: '16px',
-    backgroundColor: '#1F2937', color: '#FFFFFF',
+    backgroundColor: sysVar('background-inverse'), color: sysVar('content-primary-inverse'),
     padding: '12px 20px', borderRadius: '10px',
-    boxShadow: '0 8px 24px rgba(0,0,0,0.20)',
+    boxShadow: shadowVar('menu'),
     fontFamily: font, fontSize: '13.5px', fontWeight: 500,
     zIndex: 10002, whiteSpace: 'nowrap' as const,
   }}>
@@ -124,12 +124,12 @@ const Toast: React.FC<{ message: string; cta?: string; onCta?: () => void; onClo
     {cta && (
       <button onClick={onCta} style={{
         border: 'none', background: 'none', cursor: 'pointer',
-        color: brand, fontFamily: font, fontSize: '13.5px', fontWeight: 600, padding: 0,
+        color: brand, fontFamily: font, fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', padding: 0,
       }}>{cta}</button>
     )}
     <button onClick={onClose} style={{
       border: 'none', background: 'none', cursor: 'pointer',
-      color: '#9CA3AF', fontFamily: font, fontSize: '18px', lineHeight: 1, padding: 0, marginLeft: '4px',
+      color: sysVar('content-tertiary'), fontFamily: font, fontSize: '18px', lineHeight: 1, padding: 0, marginLeft: '4px',
     }}>×</button>
   </div>
 );
@@ -144,14 +144,14 @@ const SettingRow: React.FC<{
   <div style={{
     display: 'flex', alignItems: description ? 'flex-start' : 'center',
     justifyContent: 'space-between', gap: '32px', padding: '18px 24px',
-    backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
+    backgroundColor: sysVar('background-base'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '8px',
   }}>
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: '14px', fontWeight: 500, color: '#111827', fontFamily: font, lineHeight: 1.4 }}>
+      <div style={{ fontSize: '14px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font, lineHeight: 1.4 }}>
         {label}
       </div>
       {description && (
-        <div style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, marginTop: '3px', lineHeight: 1.5 }}>
+        <div style={{ fontSize: '12.5px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '3px', lineHeight: 1.5 }}>
           {description}
         </div>
       )}
@@ -188,10 +188,11 @@ const LLM_ROWS = [
 
 const ModelIcon: React.FC<{ type: string }> = ({ type }) => {
   if (type === 'openai') return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style={{ color: '#111827', flexShrink: 0 }}>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style={{ color: sysVar('content-primary'), flexShrink: 0 }}>
       <path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494zM3.6 18.304a4.47 4.47 0 0 1-.535-3.014l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.032.067L9.76 19.958a4.5 4.5 0 0 1-6.16-1.654zM2.34 7.896a4.485 4.485 0 0 1 2.366-1.973V11.6a.766.766 0 0 0 .388.676l5.815 3.355-2.02 1.168a.076.076 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 7.872zm16.597 3.855l-5.843-3.369 2.02-1.168a.076.076 0 0 1 .071 0l4.83 2.786a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.402-.676zm2.01-3.023l-.141-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.409 9.23V6.897a.066.066 0 0 1 .028-.061l4.83-2.787a4.5 4.5 0 0 1 6.68 4.66zm-12.64 4.135l-2.02-1.164a.08.08 0 0 1-.038-.057V6.075a4.5 4.5 0 0 1 7.375-3.453l-.142.08-4.778 2.758a.795.795 0 0 0-.393.681zm1.097-2.365l2.602-1.5 2.607 1.5v2.999l-2.597 1.5-2.607-1.5z"/>
     </svg>
   );
+  // Third-party brand colours (Anthropic, Gemini): data, left as literals.
   if (type === 'anthropic') return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="#D97559" style={{ flexShrink: 0 }} xmlns="http://www.w3.org/2000/svg">
       <path d="M13.827 3.52h-3.654L6 20.48h3.654l4.173-16.96zm-7.327 0H3L6.413 12 3 20.48h3.5L10.24 12 6.5 3.52zm14.654 0H17.5L13.76 12l3.74 8.48H21L17.587 12 21.154 3.52z"/>
@@ -235,17 +236,17 @@ const LLMTable: React.FC = () => {
   };
 
   const thStyle: React.CSSProperties = {
-    fontSize: '13px', color: '#6B7280', fontWeight: 400, fontFamily: font,
-    padding: '12px 16px', textAlign: 'left', borderBottom: '1px solid #E5E7EB',
-    backgroundColor: '#FFFFFF',
+    fontSize: '13px', color: sysVar('content-secondary'), fontWeight: 400, fontFamily: font,
+    padding: '12px 16px', textAlign: 'left', borderBottom: '1px solid var(--rd-sys-color-border-subtle)',
+    backgroundColor: sysVar('background-base'),
   };
   const tdStyle: React.CSSProperties = {
-    fontSize: '14px', color: '#111827', fontFamily: font,
-    padding: '20px 16px', borderBottom: '1px solid #E5E7EB', verticalAlign: 'middle',
+    fontSize: '14px', color: sysVar('content-primary'), fontFamily: font,
+    padding: '20px 16px', borderBottom: '1px solid var(--rd-sys-color-border-subtle)', verticalAlign: 'middle',
   };
 
   return (
-    <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
+    <div style={{ border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '8px', overflow: 'hidden', backgroundColor: sysVar('background-base') }}>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
@@ -257,7 +258,7 @@ const LLMTable: React.FC = () => {
         </thead>
         <tbody>
           {LLM_ROWS.map((row, i) => (
-            <tr key={i} style={{ backgroundColor: '#FFFFFF' }}>
+            <tr key={i} style={{ backgroundColor: sysVar('background-base') }}>
               <td style={tdStyle}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <ModelIcon type={row.icon} />
@@ -285,14 +286,14 @@ const LLMTable: React.FC = () => {
       {popoverAnchor && (
         <div ref={popoverRef} style={{
           position: 'fixed', top: popoverAnchor.top, left: popoverAnchor.left,
-          backgroundColor: '#FFFFFF', borderRadius: '10px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.14)', zIndex: 9999,
+          backgroundColor: sysVar('background-raised'), borderRadius: '10px',
+          boxShadow: shadowVar('menu'), zIndex: 9999,
           minWidth: '200px', overflow: 'hidden',
         }}>
           {MORE_SERVICES.map((s) => (
             <div key={s} style={{
               padding: '14px 20px', fontFamily: font, fontSize: '14px',
-              color: '#111827', borderBottom: '1px solid #F3F4F6',
+              color: sysVar('content-primary'), borderBottom: '1px solid var(--rd-sys-color-border-subtle)',
             }}>
               {s}
             </div>
@@ -318,8 +319,8 @@ const CollapsibleSection: React.FC<{
   const multi = React.Children.count(children) > 1;
   const isOpen = multi ? open : true;
   return (
-  <div style={{ backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '12px', overflow: 'hidden' }}>
-    <div style={{ padding: '16px 24px 12px', borderBottom: isOpen ? '1px solid #E5E7EB' : 'none' }}>
+  <div style={{ backgroundColor: sysVar('background-secondary-action'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '12px', overflow: 'hidden' }}>
+    <div style={{ padding: '16px 24px 12px', borderBottom: isOpen ? '1px solid var(--rd-sys-color-border-subtle)' : 'none' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         {multi ? (
           <button onClick={onToggle} style={{
@@ -328,17 +329,17 @@ const CollapsibleSection: React.FC<{
           }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
               style={{ flexShrink: 0, transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.22s ease' }}>
-              <path d="M3 5.5l4 4 4-4" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M3 5.5l4 4 4-4" stroke="var(--rd-sys-color-content-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</span>
+            <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>{title}</span>
           </button>
         ) : (
-          <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font, flex: 1 }}>{title}</span>
+          <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font, flex: 1 }}>{title}</span>
         )}
         {showReset && <ResetLink onClick={onReset} />}
       </div>
       {subtitle && (
-        <div style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, marginTop: '4px', lineHeight: 1.6, paddingLeft: multi ? '22px' : '0px' }}>
+        <div style={{ fontSize: '12.5px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '4px', lineHeight: 1.6, paddingLeft: multi ? '22px' : '0px' }}>
           {subtitle}
         </div>
       )}
@@ -361,12 +362,12 @@ const FlatSection: React.FC<{
   action?: React.ReactNode;
   children: React.ReactNode;
 }> = ({ title, subtitle, action, children }) => (
-  <div style={{ backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '12px', overflow: 'hidden' }}>
-    <div style={{ padding: '16px 24px 10px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', borderBottom: '1px solid #E5E7EB' }}>
+  <div style={{ backgroundColor: sysVar('background-secondary-action'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '12px', overflow: 'hidden' }}>
+    <div style={{ padding: '16px 24px 10px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', borderBottom: '1px solid var(--rd-sys-color-border-subtle)' }}>
       <div>
-        <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</div>
+        <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>{title}</div>
         {subtitle && (
-          <div style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, marginTop: '3px', lineHeight: 1.5 }}>{subtitle}</div>
+          <div style={{ fontSize: '12.5px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '3px', lineHeight: 1.5 }}>{subtitle}</div>
         )}
       </div>
       {action && <div style={{ flexShrink: 0 }}>{action}</div>}
@@ -377,6 +378,7 @@ const FlatSection: React.FC<{
 
 // ─── Connector icons ──────────────────────────────────────────────────────────
 
+// Third-party brand colours: data, left as literals.
 const SnowflakeIcon = () => (
   <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
     <circle cx="14" cy="14" r="14" fill="#E8F6FD" />
@@ -393,6 +395,7 @@ const SnowflakeIcon = () => (
   </svg>
 );
 
+// Third-party brand colours: data, left as literals.
 const SlackIcon = () => (
   <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
     <circle cx="14" cy="14" r="14" fill="#F0EAF8" />
@@ -407,6 +410,7 @@ const SlackIcon = () => (
   </svg>
 );
 
+// Third-party brand colours: data, left as literals.
 const JiraIcon = () => (
   <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
     <circle cx="14" cy="14" r="14" fill="#E6EDFF" />
@@ -416,6 +420,7 @@ const JiraIcon = () => (
   </svg>
 );
 
+// Third-party brand colours: data, left as literals.
 const AsanaIcon = () => (
   <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
     <circle cx="14" cy="14" r="14" fill="#FFE8E8" />
@@ -427,22 +432,22 @@ const AsanaIcon = () => (
 
 const LiveboardIcon = () => (
   <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-    <circle cx="14" cy="14" r="14" fill="#F3F4F6" />
-    <rect x="8" y="8" width="5" height="5" rx="1" fill="#9CA3AF" />
-    <rect x="15" y="8" width="5" height="5" rx="1" fill="#9CA3AF" />
-    <rect x="8" y="15" width="5" height="5" rx="1" fill="#9CA3AF" />
-    <rect x="15" y="15" width="5" height="5" rx="1" fill="#9CA3AF" />
+    <circle cx="14" cy="14" r="14" fill="var(--rd-sys-color-border-subtle)" />
+    <rect x="8" y="8" width="5" height="5" rx="1" fill="var(--rd-sys-color-content-tertiary)" />
+    <rect x="15" y="8" width="5" height="5" rx="1" fill="var(--rd-sys-color-content-tertiary)" />
+    <rect x="8" y="15" width="5" height="5" rx="1" fill="var(--rd-sys-color-content-tertiary)" />
+    <rect x="15" y="15" width="5" height="5" rx="1" fill="var(--rd-sys-color-content-tertiary)" />
   </svg>
 );
 
 const WebsearchIcon = () => (
   <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-    <circle cx="14" cy="14" r="14" fill="#F3F4F6" />
-    <circle cx="14" cy="14" r="6" stroke="#9CA3AF" strokeWidth="1.5" fill="none" />
-    <ellipse cx="14" cy="14" rx="2.5" ry="6" stroke="#9CA3AF" strokeWidth="1.5" fill="none" />
-    <line x1="8" y1="14" x2="20" y2="14" stroke="#9CA3AF" strokeWidth="1.5" />
-    <line x1="9" y1="11" x2="19" y2="11" stroke="#9CA3AF" strokeWidth="1" />
-    <line x1="9" y1="17" x2="19" y2="17" stroke="#9CA3AF" strokeWidth="1" />
+    <circle cx="14" cy="14" r="14" fill="var(--rd-sys-color-border-subtle)" />
+    <circle cx="14" cy="14" r="6" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.5" fill="none" />
+    <ellipse cx="14" cy="14" rx="2.5" ry="6" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.5" fill="none" />
+    <line x1="8" y1="14" x2="20" y2="14" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.5" />
+    <line x1="9" y1="11" x2="19" y2="11" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1" />
+    <line x1="9" y1="17" x2="19" y2="17" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1" />
   </svg>
 );
 
@@ -477,9 +482,9 @@ const AddConnectorModal: React.FC<{ onClose: () => void; onSave: () => void }> =
 
   const inputStyle: React.CSSProperties = {
     width: '100%', height: '38px', padding: '0 12px',
-    border: '1px solid #D1D5DB', borderRadius: '6px',
-    fontFamily: font, fontSize: '13px', color: '#111827',
-    outline: 'none', boxSizing: 'border-box', backgroundColor: '#FFFFFF',
+    border: '1px solid var(--rd-sys-color-border-bold)', borderRadius: '6px',
+    fontFamily: font, fontSize: '13px', color: sysVar('content-primary'),
+    outline: 'none', boxSizing: 'border-box', backgroundColor: sysVar('background-base'),
   };
 
   return (
@@ -495,29 +500,29 @@ const AddConnectorModal: React.FC<{ onClose: () => void; onSave: () => void }> =
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {/* Connector display name */}
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#374151', fontFamily: font, marginBottom: '6px' }}>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font, marginBottom: '6px' }}>
             Connector display name
           </label>
           <input type="text" style={inputStyle}
-            onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)`; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = sysVar('border-bold'); e.currentTarget.style.boxShadow = 'none'; }}
           />
         </div>
 
         {/* MCP URL */}
         <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#374151', fontFamily: font, marginBottom: '6px' }}>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font, marginBottom: '6px' }}>
             MCP URL
           </label>
           <input type="text" style={inputStyle}
-            onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)`; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = sysVar('border-bold'); e.currentTarget.style.boxShadow = 'none'; }}
           />
         </div>
 
         {/* Authentication type */}
         <div ref={authRef}>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: authOpen ? brand : '#374151', fontFamily: font, marginBottom: '6px', transition: 'color 0.15s' }}>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: authOpen ? brand : sysVar('content-primary'), fontFamily: font, marginBottom: '6px', transition: 'color 0.15s' }}>
             Authentication type
           </label>
           <button
@@ -526,36 +531,36 @@ const AddConnectorModal: React.FC<{ onClose: () => void; onSave: () => void }> =
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               width: '100%', height: '38px', padding: '0 12px',
-              border: `1px solid ${authOpen ? brand : '#D1D5DB'}`, borderRadius: '6px',
-              backgroundColor: '#FFFFFF', cursor: 'pointer', fontFamily: font,
-              fontSize: '13px', color: '#111827', outline: 'none',
-              boxShadow: authOpen ? `0 0 0 2px ${brand}22` : 'none',
+              border: `1px solid ${authOpen ? brand : sysVar('border-bold')}`, borderRadius: '6px',
+              backgroundColor: sysVar('background-base'), cursor: 'pointer', fontFamily: font,
+              fontSize: '13px', color: sysVar('content-primary'), outline: 'none',
+              boxShadow: authOpen ? `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)` : 'none',
               transition: 'border-color 0.15s, box-shadow 0.15s', boxSizing: 'border-box',
             }}
           >
             <span>{authType}</span>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
               style={{ flexShrink: 0, transform: authOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>
-              <path d="M2.5 4.5l3.5 3.5 3.5-3.5" stroke="#9CA3AF" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M2.5 4.5l3.5 3.5 3.5-3.5" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
           {authOpen && (
             <div style={{
               position: 'fixed', top: authMenuPos.top, left: authMenuPos.left, width: authMenuPos.width,
-              backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '8px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 10100, overflow: 'hidden',
+              backgroundColor: sysVar('background-raised'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '8px',
+              boxShadow: shadowVar('menu'), zIndex: 10100, overflow: 'hidden',
             }}>
               {authOptions.map((opt) => (
                 <button key={opt} onClick={() => { setAuthType(opt); setAuthOpen(false); }}
                   style={{
                     display: 'block', width: '100%', padding: '11px 16px',
                     border: 'none', textAlign: 'left', fontFamily: font, fontSize: '13px',
-                    fontWeight: opt === authType ? 500 : 400,
-                    color: opt === authType ? brand : '#111827',
-                    backgroundColor: opt === authType ? `${brand}10` : 'transparent',
+                    fontWeight: opt === authType ? 'var(--font-weight-medium)' : 'var(--font-weight-regular)',
+                    color: opt === authType ? brand : sysVar('content-primary'),
+                    backgroundColor: opt === authType ? `color-mix(in srgb, ${brand} 6%, transparent)` : 'transparent',
                     cursor: 'pointer', transition: 'background-color 0.1s',
                   }}
-                  onMouseEnter={(e) => { if (opt !== authType) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F9FAFB'; }}
+                  onMouseEnter={(e) => { if (opt !== authType) (e.currentTarget as HTMLButtonElement).style.backgroundColor = sysVar('background-sunken'); }}
                   onMouseLeave={(e) => { if (opt !== authType) (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
                 >
                   {opt}
@@ -600,14 +605,14 @@ const ConnectorCard: React.FC<{ name: string; icon: React.ReactNode }> = ({ name
       style={{
         display: 'flex', alignItems: 'center', gap: '10px',
         padding: '14px 14px 14px 16px', borderRadius: '10px',
-        border: `1px solid ${hovered || menuOpen ? '#D1D5DB' : '#E9EAEC'}`,
-        backgroundColor: '#FFFFFF', position: 'relative', cursor: 'default',
-        boxShadow: hovered || menuOpen ? '0 2px 8px rgba(0,0,0,0.07)' : 'none',
+        border: `1px solid ${hovered || menuOpen ? sysVar('border-bold') : sysVar('border-subtle')}`,
+        backgroundColor: sysVar('background-base'), position: 'relative', cursor: 'default',
+        boxShadow: hovered || menuOpen ? shadowVar('surface') : 'none',
         transition: 'border-color 0.15s, box-shadow 0.15s',
       }}
     >
       {icon}
-      <span style={{ fontSize: '13.5px', fontWeight: 500, color: '#111827', fontFamily: font, flex: 1 }}>
+      <span style={{ fontSize: '13.5px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font, flex: 1 }}>
         {name}
       </span>
 
@@ -618,26 +623,26 @@ const ConnectorCard: React.FC<{ name: string; icon: React.ReactNode }> = ({ name
             onClick={() => setMenuOpen(!menuOpen)}
             style={{
               width: '28px', height: '28px', borderRadius: '6px', border: 'none',
-              backgroundColor: menuOpen ? '#F3F4F6' : 'transparent',
+              backgroundColor: menuOpen ? sysVar('background-secondary-action') : 'transparent',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'background-color 0.1s',
             }}
-            onMouseEnter={(e) => { if (!menuOpen) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F3F4F6'; }}
+            onMouseEnter={(e) => { if (!menuOpen) (e.currentTarget as HTMLButtonElement).style.backgroundColor = sysVar('background-secondary-action'); }}
             onMouseLeave={(e) => { if (!menuOpen) (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
           >
             {/* ··· three dots */}
             <svg width="16" height="4" viewBox="0 0 16 4" fill="none">
-              <circle cx="2" cy="2" r="1.5" fill="#6B7280" />
-              <circle cx="8" cy="2" r="1.5" fill="#6B7280" />
-              <circle cx="14" cy="2" r="1.5" fill="#6B7280" />
+              <circle cx="2" cy="2" r="1.5" fill="var(--rd-sys-color-content-secondary)" />
+              <circle cx="8" cy="2" r="1.5" fill="var(--rd-sys-color-content-secondary)" />
+              <circle cx="14" cy="2" r="1.5" fill="var(--rd-sys-color-content-secondary)" />
             </svg>
           </button>
 
           {menuOpen && (
             <div style={{
               position: 'absolute', top: 'calc(100% + 4px)', right: 0,
-              backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '8px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 200, overflow: 'hidden', minWidth: '120px',
+              backgroundColor: sysVar('background-raised'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '8px',
+              boxShadow: shadowVar('menu'), zIndex: 200, overflow: 'hidden', minWidth: '120px',
             }}>
               {['Edit', 'Remove'].map((action) => (
                 <button
@@ -646,10 +651,10 @@ const ConnectorCard: React.FC<{ name: string; icon: React.ReactNode }> = ({ name
                   style={{
                     display: 'block', width: '100%', padding: '10px 16px',
                     border: 'none', textAlign: 'left', fontFamily: font, fontSize: '13px',
-                    fontWeight: 400, color: action === 'Remove' ? '#EF4444' : '#111827',
+                    fontWeight: 400, color: action === 'Remove' ? sysVar('content-failure') : sysVar('content-primary'),
                     backgroundColor: 'transparent', cursor: 'pointer', transition: 'background-color 0.1s',
                   }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = action === 'Remove' ? '#FEF2F2' : '#F9FAFB'; }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = action === 'Remove' ? sysVar('background-failure') : sysVar('background-sunken'); }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
                 >
                   {action}
@@ -727,7 +732,7 @@ export const AISettingsPageContent: React.FC = () => {
   ];
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: sysVar('background-base') }}>
 
       {/* ── LLM Connections modal (M4) ── */}
       {llmModal && (
@@ -815,25 +820,25 @@ export const AISettingsPageContent: React.FC = () => {
       {/* ── Sticky header ── */}
       <div style={{
         flexShrink: 0, display: 'flex', alignItems: 'center',
-        height: '92px', padding: '0 40px', borderBottom: '1px solid #E5E7EB',
-        backgroundColor: '#FFFFFF', boxSizing: 'border-box',
+        height: '92px', padding: '0 40px', borderBottom: '1px solid var(--rd-sys-color-border-subtle)',
+        backgroundColor: sysVar('background-base'), boxSizing: 'border-box',
       }}>
         <h1 style={{
           margin: 0, fontSize: '22px', fontWeight: 700,
-          color: '#0F172A', fontFamily: font, letterSpacing: '-0.3px',
+          color: sysVar('content-primary'), fontFamily: font, letterSpacing: '-0.3px',
           whiteSpace: 'nowrap', flexShrink: 0,
         }}>
           AI settings
         </h1>
-        <div style={{ width: '1px', height: '24px', backgroundColor: '#D1D5DB', margin: '0 24px', flexShrink: 0 }} />
+        <div style={{ width: '1px', height: '24px', backgroundColor: sysVar('border-bold'), margin: '0 24px', flexShrink: 0 }} />
         <div style={{ display: 'flex', alignItems: 'stretch', flex: 1, alignSelf: 'stretch' }}>
           {pageTabs.map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
               display: 'flex', alignItems: 'center',
               padding: '0 14px', border: 'none', background: 'none',
               cursor: 'pointer', fontFamily: font, fontSize: '13.5px',
-              fontWeight: activeTab === tab.id ? 600 : 400,
-              color: activeTab === tab.id ? brand : '#6B7280',
+              fontWeight: activeTab === tab.id ? 'var(--font-weight-emphasis)' : 'var(--font-weight-regular)',
+              color: activeTab === tab.id ? brand : sysVar('content-secondary'),
               borderBottom: activeTab === tab.id ? `2px solid ${brand}` : '2px solid transparent',
               marginBottom: '-1px', transition: 'color 0.15s', whiteSpace: 'nowrap',
             }}>
@@ -852,19 +857,19 @@ export const AISettingsPageContent: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
               {/* LLM Configuration */}
-              <div style={{ backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '18px 24px' }}>
+              <div style={{ backgroundColor: sysVar('background-secondary-action'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '12px', padding: '18px 24px' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px' }}>
                   <div>
-                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>LLM Configuration</div>
-                    <div style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, marginTop: '6px', lineHeight: 1.6 }}>
+                    <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>LLM Configuration</div>
+                    <div style={{ fontSize: '12.5px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '6px', lineHeight: 1.6 }}>
                       Manage LLM connections for your ThoughtSpot environment. If you want connect your own model, contact{' '}
                       <a href="#" style={{ color: brand, textDecoration: 'none' }}>ThoughtSpot support.</a>
                     </div>
                   </div>
                   <button onClick={() => setLlmModal(true)} style={{
                     height: '32px', padding: '0 18px', borderRadius: '999px', flexShrink: 0,
-                    border: 'none', backgroundColor: rdComponentColors.light['button-secondary-default'],
-                    cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 500, color: '#374151',
+                    border: 'none', backgroundColor: compVar('button-secondary-default'),
+                    cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 500, color: sysVar('content-primary'),
                   }}>
                     View
                   </button>
@@ -904,9 +909,9 @@ export const AISettingsPageContent: React.FC = () => {
               >
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '18px 24px', backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
+                  padding: '18px 24px', backgroundColor: sysVar('background-base'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '8px',
                 }}>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+                  <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>
                     AI on data models
                   </span>
                   <button style={{
@@ -929,9 +934,9 @@ export const AISettingsPageContent: React.FC = () => {
               >
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '18px 24px', backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
+                  padding: '18px 24px', backgroundColor: sysVar('background-base'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '8px',
                 }}>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+                  <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>
                     Manage user groups for AI search
                   </span>
                   <button style={{
@@ -1004,9 +1009,9 @@ export const AISettingsPageContent: React.FC = () => {
                     action={
                       <button onClick={() => setAddConnectorModal(true)} style={{
                         height: '32px', padding: '0 14px', borderRadius: '999px',
-                        border: 'none', backgroundColor: rdComponentColors.light['button-secondary-default'],
+                        border: 'none', backgroundColor: compVar('button-secondary-default'),
                         cursor: 'pointer', fontFamily: font, fontSize: '13px',
-                        fontWeight: 500, color: '#374151',
+                        fontWeight: 500, color: sysVar('content-primary'),
                       }}>
                         Add custom connector
                       </button>
@@ -1043,9 +1048,9 @@ export const AISettingsPageContent: React.FC = () => {
 
                   {/* Dashed separator with green dot */}
                   <div style={{ display: 'flex', alignItems: 'center', margin: '4px -8px' }}>
-                    <div style={{ flex: 1, height: '1px', borderTop: '1.5px dashed #D1D5DB' }} />
-                    <div style={{ width: '10px', height: '10px', backgroundColor: '#22C55E', borderRadius: '50%', margin: '0 10px', flexShrink: 0 }} />
-                    <div style={{ flex: 1, height: '1px', borderTop: '1.5px dashed #D1D5DB' }} />
+                    <div style={{ flex: 1, height: '1px', borderTop: '1.5px dashed var(--rd-sys-color-border-bold)' }} />
+                    <div style={{ width: '10px', height: '10px', backgroundColor: sysVar('content-success'), borderRadius: '50%', margin: '0 10px', flexShrink: 0 }} />
+                    <div style={{ flex: 1, height: '1px', borderTop: '1.5px dashed var(--rd-sys-color-border-bold)' }} />
                   </div>
 
                   <SettingRow
@@ -1100,38 +1105,38 @@ export const AISettingsPageContent: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
               <div style={{
                 display: 'flex', alignItems: 'center', gap: '32px',
-                border: `1.5px dashed ${brand}66`, borderRadius: '12px',
+                border: `1.5px dashed color-mix(in srgb, ${brand} 40%, transparent)`, borderRadius: '12px',
                 padding: '36px 40px', maxWidth: '680px', width: '100%',
               }}>
                 {/* Illustration */}
                 <div style={{ flexShrink: 0, width: '96px', height: '96px', position: 'relative' }}>
                   <svg width="96" height="96" viewBox="0 0 96 96" fill="none">
                     {/* Horizontal lines (document-like) */}
-                    <rect x="34" y="18" width="32" height="4" rx="2" fill="#D1D5DB" />
-                    <rect x="34" y="26" width="24" height="4" rx="2" fill="#D1D5DB" />
-                    <rect x="34" y="34" width="28" height="4" rx="2" fill="#D1D5DB" />
+                    <rect x="34" y="18" width="32" height="4" rx="2" fill="var(--rd-sys-color-content-tertiary)" />
+                    <rect x="34" y="26" width="24" height="4" rx="2" fill="var(--rd-sys-color-content-tertiary)" />
+                    <rect x="34" y="34" width="28" height="4" rx="2" fill="var(--rd-sys-color-content-tertiary)" />
                     {/* Dot grid */}
                     {[0,1,2,3].map(row => [0,1,2,3].map(col => (
-                      <circle key={`${row}-${col}`} cx={18 + col * 6} cy={50 + row * 6} r="1.5" fill="#D1D5DB" />
+                      <circle key={`${row}-${col}`} cx={18 + col * 6} cy={50 + row * 6} r="1.5" fill="var(--rd-sys-color-content-tertiary)" />
                     )))}
                     {/* Magnifying glass circle */}
-                    <circle cx="42" cy="54" r="20" stroke="#C4C9D4" strokeWidth="6" fill="none" />
-                    <circle cx="42" cy="54" r="13" fill="#FFFFFF" stroke="#D1D5DB" strokeWidth="2" />
+                    <circle cx="42" cy="54" r="20" stroke="var(--rd-sys-color-border-bold)" strokeWidth="6" fill="none" />
+                    <circle cx="42" cy="54" r="13" fill="var(--rd-sys-color-content-inverse)" stroke="var(--rd-sys-color-border-bold)" strokeWidth="2" />
                     {/* Handle */}
-                    <line x1="57" y1="67" x2="70" y2="80" stroke="#C4C9D4" strokeWidth="7" strokeLinecap="round" />
+                    <line x1="57" y1="67" x2="70" y2="80" stroke="var(--rd-sys-color-border-bold)" strokeWidth="7" strokeLinecap="round" />
                     {/* Inner lines on magnifier */}
-                    <rect x="36" y="50" width="12" height="2.5" rx="1.25" fill="#D1D5DB" />
-                    <rect x="36" y="55" width="9" height="2.5" rx="1.25" fill="#D1D5DB" />
+                    <rect x="36" y="50" width="12" height="2.5" rx="1.25" fill="var(--rd-sys-color-content-tertiary)" />
+                    <rect x="36" y="55" width="9" height="2.5" rx="1.25" fill="var(--rd-sys-color-content-tertiary)" />
                   </svg>
                 </div>
 
                 {/* Text */}
                 <div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#374151', fontFamily: font, lineHeight: 1.4, marginBottom: '10px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, lineHeight: 1.4, marginBottom: '10px' }}>
                     Settings coming soon for{' '}
                     <span style={{ color: brand }}>Spotter Code</span>
                   </div>
-                  <div style={{ fontSize: '14px', color: '#9CA3AF', fontFamily: font, lineHeight: 1.7 }}>
+                  <div style={{ fontSize: '14px', color: sysVar('content-tertiary'), fontFamily: font, lineHeight: 1.7 }}>
                     Settings for Spotter Code will be available soon. Check back for updates to customize your experience.
                   </div>
                 </div>

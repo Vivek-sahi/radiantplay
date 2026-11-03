@@ -1,9 +1,0 @@
-﻿Name,Content Rules,Default State,Description,Dynamic Behaviour,Error State,Ref
-Container,N/A,N/A,The banner alert container,The container length is based on the text length.,N/A,6
-Button,,,Main action,Button is optional,,4
-Indicator icon,N/A,N/A,The icon indicate the previous action is successes,N/A,N/A,1
-Link,N/A,N/A,An action or a source link,Link is optional,N/A,3
-Close button,N/A,N/A,This button allows the user to close the banner alert,Clicking on the cross button can close the the banner alert,N/A,5
-Description,"• Keep the message concise
-• Stick with the past tense: e.g Success! You added your pinboards.
-• Tone can be a little informal or emotive e.g Well done! You’re ready to share your chart.",N/A,Describe what’s happening and what the user needs to know,N/A,N/A,2

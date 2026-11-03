@@ -5,9 +5,9 @@ description: Radiant compliance health check — components, tokens, content gui
 Run a Radiant compliance health check on the current prototype. Shows what's reused from the design system, what's been customised, what's hardcoded, and where easy improvements exist. This is a status check — not a blocker.
 
 Accepts optional arguments: `$ARGUMENTS`
-- A prototype name (e.g., `/radiant-check MiniSpotters`)
-- A focus area (e.g., `/radiant-check content guidelines`, `/radiant-check visual styling`)
-- Both (e.g., `/radiant-check MiniSpotters content guidelines`)
+- A prototype name (e.g., `/rp-radiant-check MiniSpotters`)
+- A focus area (e.g., `/rp-radiant-check content guidelines`, `/rp-radiant-check visual styling`)
+- Both (e.g., `/rp-radiant-check MiniSpotters content guidelines`)
 
 ## Instructions
 
@@ -65,8 +65,10 @@ Classify each as:
 - **Reused as-is** — imported and used with no overrides
 - **Extended** — imported but wrapped in a custom component or has additional inline styles/overrides layered on top
 
-**Detailed output:** List every component with use count and classification.
-**Summary output:** "X Radiant components used (Y as-is, Z extended)"
+**Icons.** Also look for icons drawn by hand: inline `<svg>` in the prototype's `.tsx` files (`grep -n "<svg" src/prototypes/<Name> -r`), emoji used as icons, and imports from icon libraries. For each, suggest the `<Icon name="…">` that fits, using the **Pick by meaning** table in `.cursor/rules/component-summary.md`. Logos, charts and illustrations are fine as SVG; only UI icons count.
+
+**Detailed output:** List every component with use count and classification, then the hand-drawn icons with file:line and the suggested `<Icon>`.
+**Summary output:** "X Radiant components used (Y as-is, Z extended), N icons drawn by hand"
 
 #### Dimension 2 — Custom components
 List everything in `src/prototypes/<Name>/components/`. For each custom component:
@@ -86,6 +88,16 @@ Scan for hardcoded values across all files. These are **not errors** — just do
 - Inline `style={{}}` blocks
 
 For each, note the file and what was hardcoded. Where a token exists that would directly replace it, mention it as an easy win — but only if it's a straightforward swap.
+
+**Dark readiness.** Also run the dark mode scan on the prototype folder and include its counts:
+
+```bash
+node scripts/radiant-check/scan.mjs src/prototypes/<Name> --details
+```
+
+It reports colour literals (outside `var()` fallbacks), light-only reads (`systemColors.light[...]`, `rdComponentColors.light[...]`, `referenceColors.*`), unknown token names, `prefers-color-scheme` media queries and `data-theme` writes. A prototype is dark ready when all five are zero, and nothing under its `vendor/` folder is flagged (code copied from outside the repo is counted separately and left alone). The same scan reports Geist readiness: hardcoded font stacks (use `var(--font-family-primary)` or `fontFamily.primary`) and the old Plain weights 600 and 375 written as numbers (use the `--font-weight-*` tokens). Designers' own accepted exceptions go in `scripts/radiant-check/rules-mine.json`. For a designer's prototypes in one table, with theme and thumbnail status, run `node scripts/radiant-check/scan.mjs --mine`. Accepted exceptions live in `scripts/radiant-check/rules.json`, each with a reason. This is a report, not a gate.
+
+Easy wins for colour: in CSS, `var(--rd-sys-color-*)`; in inline styles, `sysVar('content-primary')`, `compVar(...)` or `shadowVar('menu')` from `@tokens/colors`. Never suggest `systemColors.light[...]`: it stays light in dark mode.
 
 **Detailed output:** List every hardcoded value with file:line, token equivalent if available.
 **Summary output:** "X hardcoded values found (Y have easy token swaps)"
@@ -139,6 +151,8 @@ Focus: <focus area, or "Full check">
 HEALTH OVERVIEW
   Radiant coverage:    ~X%   (Y of Z components from the design system)
   Token coverage:      ~X%   (colors, spacing, typography)
+  Dark ready:          yes/no (N literals, N light-only reads, N unknown tokens)
+  Geist ready:         yes/no (N hardcoded font stacks, N old 600/375 weights)
   Content compliance:  ~X%   (labels, titles, button text)
   Custom components:   N     (breakdown below)
 
@@ -174,7 +188,7 @@ CUSTOM COMPONENTS                 ← only if focus includes this
 HARDCODED VALUES                  ← only if focus includes this
 ──────────────────────────────
   Colors (X found):
-    • FilterRow.tsx:42     #2770EF  — easy swap: systemColors.light['content-brand']
+    • FilterRow.tsx:42     #2770EF  — easy swap: sysVar('content-brand')
     • ChartTooltip.tsx:18  rgba(0,0,0,0.4)  — custom, no direct token equivalent
 
   Spacing (X found):
@@ -225,8 +239,12 @@ EASY WINS  (optional improvements)
 ──────────────────────────────
 SUMMARY
   <1-2 sentence overall assessment, neutral tone>
-  Run /radiant-check again after any updates to re-check.
-  To focus on a specific area: /radiant-check <area>
+  Run /rp-radiant-check again after any updates to re-check.
+  To focus on a specific area: /rp-radiant-check <area>
 ```
+
+### 6. Refresh the thumbnail
+
+After the report, run `npm run thumbnails:check -- --mine`. If it lists this prototype (no thumbnail yet, or the code changed since the last one), capture it by following `.claude/skills/rp-prototype-thumbnails/SKILL.md` for this prototype only. That skill asks the one-time setup question once per machine; if the designer declined before, skip this step without a word. Only for prototypes in `registry-mine.ts` (on the maintainer's checkout, sample prototypes too). Add one line under SUMMARY: `Thumbnail: captured (light and dark)`, `up to date`, or `skipped (live preview stays)`. Don't commit the images.
 
 Keep the tone neutral and informational throughout. Hardcoded values and content issues are not failures — they're just documented. Only surface easy wins where the fix is direct and obvious.

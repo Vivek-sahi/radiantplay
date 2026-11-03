@@ -1,31 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
+<!-- Loads /guides-theme.css and /guides-theme.js from the app's root, so open it through the running app
+     (localhost:5173/cursor-to-claude-setup.html or the deployed site). Opened as a file or in a repo preview
+     it has no colours. The copy in docs/collaboration/ is kept byte-identical to the one in public/. -->
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Claude setup and skills — RadiantPlay</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/guides-theme.css" />
+  <script src="/guides-theme.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* Colours come from the shared guide theme (/guides-theme.css), so the page follows the app's light and
+       dark mode. Status colours mix with the text colour so they stay readable on both. */
     :root {
-      --blue: #2770EF;
-      --blue-light: #EBF2FF;
-      --blue-mid: #C3D9FF;
-      --green: #16A34A;
-      --green-light: #DCFCE7;
-      --amber: #D97706;
-      --amber-light: #FEF3C7;
-      --red: #DC2626;
-      --red-light: #FEE2E2;
-      --text-primary: #111827;
-      --text-secondary: #6B7280;
-      --text-muted: #9CA3AF;
-      --bg: #F9FAFB;
-      --surface: #FFFFFF;
-      --border: #E5E7EB;
-      --border-strong: #D1D5DB;
+      --blue: var(--g-brand);
+      --blue-light: color-mix(in srgb, var(--g-brand) 10%, var(--g-base));
+      --blue-mid: color-mix(in srgb, var(--g-brand) 28%, var(--g-base));
+      --green: color-mix(in srgb, var(--g-success) 70%, var(--g-primary));
+      --green-light: color-mix(in srgb, var(--g-success) 14%, var(--g-base));
+      --amber: color-mix(in srgb, var(--g-warning) 50%, var(--g-primary));
+      --amber-light: color-mix(in srgb, var(--g-warning) 16%, var(--g-base));
+      --red: color-mix(in srgb, var(--g-failure) 82%, var(--g-primary));
+      --red-light: color-mix(in srgb, var(--g-failure) 12%, var(--g-base));
+      --text-primary: var(--g-primary);
+      --text-secondary: var(--g-secondary);
+      --text-muted: color-mix(in srgb, var(--g-secondary) 80%, var(--g-base));
+      --bg: var(--g-sunken);
+      --surface: var(--g-base);
+      --border: var(--g-subtle);
+      --border-strong: var(--g-border);
       --code-bg: #0D1117;
       --code-text: #E6EDF3;
       --sidebar-width: 240px;
@@ -36,7 +41,7 @@
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Inter', -apple-system, sans-serif;
+      font-family: var(--g-font);
       background: var(--bg);
       color: var(--text-primary);
       display: flex;
@@ -85,7 +90,7 @@
       color: #ffffff;
       box-shadow: 0 2px 6px rgba(39, 112, 239, 0.3);
       flex-shrink: 0;
-      font-family: 'Inter', -apple-system, sans-serif;
+      font-family: var(--g-font);
       letter-spacing: -0.5px;
     }
 
@@ -392,7 +397,7 @@
       color: rgba(255,255,255,0.4);
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--g-mono);
     }
 
     .terminal-dots {
@@ -411,7 +416,7 @@
 
     .code-block pre {
       padding: 18px 20px;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--g-mono);
       font-size: 13.5px;
       color: var(--code-text);
       line-height: 1.7;
@@ -436,10 +441,10 @@
       margin: 16px 0;
     }
 
-    .callout.info { background: var(--blue-light); border: 1px solid var(--blue-mid); color: #1D4ED8; }
-    .callout.warning { background: var(--amber-light); border: 1px solid #FDE68A; color: #92400E; }
-    .callout.success { background: var(--green-light); border: 1px solid #86EFAC; color: #14532D; }
-    .callout.danger { background: var(--red-light); border: 1px solid #FECACA; color: #991B1B; }
+    .callout.info { background: var(--blue-light); border: 1px solid var(--blue-mid); color: var(--blue); }
+    .callout.warning { background: var(--amber-light); border: 1px solid color-mix(in srgb, var(--g-warning) 40%, var(--g-base)); color: var(--amber); }
+    .callout.success { background: var(--green-light); border: 1px solid color-mix(in srgb, var(--g-success) 40%, var(--g-base)); color: var(--green); }
+    .callout.danger { background: var(--red-light); border: 1px solid color-mix(in srgb, var(--g-failure) 30%, var(--g-base)); color: var(--red); }
 
     .callout-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
 
@@ -471,10 +476,10 @@
     }
 
     .trouble-table td:first-child {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--g-mono);
       font-size: 12.5px;
-      background: #FFF8F0;
-      color: #C2410C;
+      background: var(--amber-light);
+      color: var(--amber);
       font-weight: 500;
       width: 38%;
     }
@@ -482,7 +487,7 @@
     .trouble-table td:last-child { color: var(--text-primary); }
 
     .trouble-table tr:hover td { background: var(--bg); }
-    .trouble-table tr:hover td:first-child { background: #FFF1E6; }
+    .trouble-table tr:hover td:first-child { background: color-mix(in srgb, var(--g-warning) 24%, var(--g-base)); }
 
     /* ── Skills section ── */
     .skills-grid {
@@ -517,7 +522,7 @@
     }
 
     .skill-card .command {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--g-mono);
       font-size: 13px;
       font-weight: 600;
       color: var(--blue);
@@ -565,9 +570,9 @@
       white-space: nowrap;
     }
 
-    .skill-tag.new { background: #DCFCE7; color: #15803D; }
+    .skill-tag.new { background: var(--green-light); color: var(--green); }
     .skill-tag.core { background: var(--blue-light); color: var(--blue); }
-    .skill-tag.sync { background: #FEF3C7; color: #92400E; }
+    .skill-tag.sync { background: var(--amber-light); color: var(--amber); }
 
     /* ── Quick ref card ── */
     .ref-grid {
@@ -594,7 +599,7 @@
     }
 
     .ref-row code {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--g-mono);
       font-size: 12.5px;
       color: var(--text-primary);
       background: var(--bg);
@@ -619,7 +624,7 @@
     }
 
     .compare-table th:first-child {
-      background: #F3F4F6;
+      background: var(--bg);
       color: var(--text-secondary);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm) 0 0 0;
@@ -643,7 +648,7 @@
     .compare-table td:last-child {
       background: var(--blue-light);
       border-color: var(--blue-mid);
-      color: #1D4ED8;
+      color: var(--blue);
       font-weight: 500;
     }
 
@@ -656,13 +661,13 @@
 
     /* ── Inline code ── */
     code {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--g-mono);
       font-size: 13px;
       background: var(--bg);
       border: 1px solid var(--border);
       padding: 1px 6px;
       border-radius: 4px;
-      color: #C7254E;
+      color: var(--red);
     }
 
     p { font-size: 14.5px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 12px; }
@@ -717,6 +722,9 @@
       border-radius: 20px;
       margin-bottom: 20px;
     }
+
+    /* Content above the shared Radiance wash (guides-theme.js) */
+    .main { position: relative; z-index: 1; }
   </style>
 </head>
 <body>
@@ -735,42 +743,47 @@
     <a class="nav-item active" href="#overview">
       <span>Introduction</span>
     </a>
+    <a class="nav-item" href="#before">
+      <span>What you need</span>
+    </a>
 
     <div class="sidebar-section-label">Setup steps</div>
     <a class="nav-item" href="#step-1">
       <span class="step-badge">1</span>
-      <span>Install Claude Code</span>
+      <span>Open the Code tab</span>
     </a>
     <a class="nav-item" href="#step-2">
       <span class="step-badge">2</span>
-      <span>Create account + API key</span>
+      <span>Clone your fork</span>
     </a>
     <a class="nav-item" href="#step-3">
       <span class="step-badge">3</span>
-      <span>Configure API key</span>
+      <span>Open the project</span>
     </a>
     <a class="nav-item" href="#step-4">
       <span class="step-badge">4</span>
-      <span>Verify it's working</span>
+      <span>Start it up</span>
     </a>
     <a class="nav-item" href="#step-5">
       <span class="step-badge">5</span>
-      <span>Open RadiantPlay</span>
-    </a>
-    <a class="nav-item" href="#library-sync">
-      <span class="step-badge">6</span>
-      <span>Update your library</span>
+      <span>Build a prototype</span>
     </a>
 
     <div class="sidebar-section-label">Reference</div>
     <a class="nav-item" href="#skills">
-      <span>Skills &amp; commands</span>
+      <span>Slash commands</span>
     </a>
-    <a class="nav-item" href="#vs-cursor">
-      <span>Cursor vs Claude Code</span>
+    <a class="nav-item" href="#library-sync">
+      <span>Update your library</span>
+    </a>
+    <a class="nav-item" href="#troubleshooting">
+      <span>Troubleshooting</span>
+    </a>
+    <a class="nav-item" href="#terminal">
+      <span>Prefer the terminal?</span>
     </a>
 
-    <div class="sidebar-footer">One-time setup · ~5 min</div>
+    <div class="sidebar-footer">One-time setup · ~10 min</div>
   </nav>
 
   <!-- ── Main content ── -->
@@ -782,20 +795,20 @@
       <div class="hero-left">
         <div class="hero-eyebrow">RadiantPlay · Onboarding guide</div>
         <h1>Claude setup and skills</h1>
-        <div class="hero-subtitle">A one-time setup to get Claude Code running, plus the skills available to help you build prototypes.</div>
+        <div class="hero-subtitle">A one-time setup to get Radiant Play running in the Claude desktop app, plus the commands that help you build prototypes.</div>
       </div>
       <div class="hero-meta">
         <div class="hero-meta-item">
           <span class="label">Time</span>
-          <span class="value">~5 minutes</span>
+          <span class="value">~10 minutes</span>
         </div>
         <div class="hero-meta-item">
           <span class="label">Steps</span>
-          <span class="value">6 steps</span>
+          <span class="value">5 steps</span>
         </div>
         <div class="hero-meta-item">
           <span class="label">Requires</span>
-          <span class="value">Terminal + internet</span>
+          <span class="value">Claude app + Galaxy</span>
         </div>
       </div>
     </div>
@@ -803,62 +816,49 @@
     <!-- Library update nudge -->
     <div style="background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: 10px; padding: 13px 18px; margin-bottom: 32px; display: flex; align-items: center; gap: 12px;">
       <span style="font-size: 15px; flex-shrink: 0;">↻</span>
-      <span style="font-size: 13.5px; color: #1D4ED8;">Keep your Radiant Play library up to date. New components and skills may be available.</span>
+      <span style="font-size: 13.5px; color: var(--blue);">Already have the project on your machine? Open its folder in the Code tab and run <code>/rp-sync-upstream</code> to get the latest components and commands.</span>
       <a href="#library-sync" style="flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--blue); text-decoration: none; white-space: nowrap; margin-left: auto;">Update library →</a>
     </div>
 
     <div class="divider"></div>
+
+    <!-- ── Before you start ── -->
+    <section class="section" id="before">
+      <div class="section-tag">Before you start</div>
+      <div class="section-header">
+        <div class="section-header-text">
+          <h2>What you need</h2>
+          <div class="subtitle">No API key, and nothing to install in the terminal</div>
+        </div>
+      </div>
+
+      <ul class="steps-list">
+        <li>
+          <span class="bullet">1</span>
+          <span><strong>A Galaxy account and your own fork.</strong> Your ThoughtSpot login works. Make sure you can see the Radiant Play repo and that you've forked it. The forking guide covers how.</span>
+        </li>
+        <li>
+          <span class="bullet">2</span>
+          <span><strong>The Claude desktop app.</strong> Download it from <strong>claude.ai/download</strong> (Mac and Windows) and sign in with your ThoughtSpot account.</span>
+        </li>
+        <li>
+          <span class="bullet">3</span>
+          <span><strong>Node.js 22 or newer</strong> (20.19+ also works). If it's missing or too old, Claude tells you when you first start the project; install the LTS version from <strong>nodejs.org</strong>.</span>
+        </li>
+      </ul>
+    </section>
 
     <!-- ── Step 1 ── -->
     <section class="section" id="step-1">
       <div class="section-header">
         <div class="step-number">1</div>
         <div class="section-header-text">
-          <h2>Install Claude Code</h2>
-          <div class="subtitle">Official one-line installer from Anthropic — handles everything automatically</div>
+          <h2>Open the Code tab</h2>
+          <div class="subtitle">Pick a folder where your copy of the project will live</div>
         </div>
       </div>
 
-      <p>Open your terminal and run:</p>
-
-      <div class="code-block">
-        <div class="code-block-header">
-          <div class="terminal-dots"><span></span><span></span><span></span></div>
-          <div class="code-block-label">Terminal</div>
-        </div>
-        <pre><span class="prompt">$ </span><span class="cmd">curl</span> <span class="flag">-fsSL</span> <span class="string">https://claude.ai/install.sh</span> | <span class="cmd">bash</span></pre>
-      </div>
-
-      <p>Once the installer finishes, reload your shell so the <code>claude</code> command is recognised:</p>
-
-      <div class="code-block">
-        <div class="code-block-header">
-          <div class="terminal-dots"><span></span><span></span><span></span></div>
-          <div class="code-block-label">Terminal</div>
-        </div>
-        <pre><span class="prompt">$ </span><span class="cmd">source</span> ~/.zshrc</pre>
-      </div>
-
-      <p>Verify the installation worked:</p>
-
-      <div class="code-block">
-        <div class="code-block-header">
-          <div class="terminal-dots"><span></span><span></span><span></span></div>
-          <div class="code-block-label">Terminal</div>
-        </div>
-        <pre><span class="prompt">$ </span><span class="cmd">claude --version</span>
-<span class="comment"># Should print a version number, e.g. 1.x.x</span></pre>
-      </div>
-
-      <div class="callout success">
-        <span class="callout-icon">✅</span>
-        <span>If a version number prints, Claude Code is installed. Move on to Step 2.</span>
-      </div>
-
-      <div class="callout warning">
-        <span class="callout-icon">⚠️</span>
-        <span><strong>command not found: claude?</strong> The installer may not have updated your PATH. Run <code>source ~/.zshrc</code> again, or open a new terminal window and retry.</span>
-      </div>
+      <p>Open the Claude app and click <strong>Code</strong> at the top. Start a new session and choose a folder to work in. <code>~/Documents</code> is fine; the project goes inside it.</p>
     </section>
 
     <!-- ── Step 2 ── -->
@@ -866,37 +866,26 @@
       <div class="section-header">
         <div class="step-number">2</div>
         <div class="section-header-text">
-          <h2>Create your Claude account and API key</h2>
-          <div class="subtitle">You'll receive an email invite — this takes about 2 minutes</div>
+          <h2>Clone your fork</h2>
+          <div class="subtitle">One time only. Claude downloads the project for you</div>
         </div>
       </div>
 
-      <ul class="steps-list">
-        <li>
-          <span class="bullet">1</span>
-          <span>Check your email for an invite from Anthropic (subject: <em>"You've been invited to Claude"</em>). Click the link to create your account.</span>
-        </li>
-        <li>
-          <span class="bullet">2</span>
-          <span>Once logged in, go to <strong>console.anthropic.com</strong> and sign in.</span>
-        </li>
-        <li>
-          <span class="bullet">3</span>
-          <span>In the left sidebar, click <strong>API Keys</strong>.</span>
-        </li>
-        <li>
-          <span class="bullet">4</span>
-          <span>Click <strong>+ Create Key</strong>, give it a name (e.g. <code>radiantplay-claude-code</code>), and click <strong>Create</strong>.</span>
-        </li>
-        <li>
-          <span class="bullet">5</span>
-          <span><strong>Copy the key immediately</strong> — it is only shown once. Paste it into Notes or 1Password before closing the dialog.</span>
-        </li>
-      </ul>
+      <p>Paste your fork's URL into the chat and ask Claude to clone it:</p>
 
-      <div class="callout danger">
+      <div class="code-block">
+        <div class="code-block-header">
+          <div class="terminal-dots"><span></span><span></span><span></span></div>
+          <div class="code-block-label">Claude chat</div>
+        </div>
+        <pre><span class="cmd">Clone</span> <span class="string">https://galaxy.corp.thoughtspot.com/YOUR-USERNAME/radiantplay.git</span> <span class="cmd">here</span></pre>
+      </div>
+
+      <p>Claude downloads the project into a <code>radiantplay</code> folder.</p>
+
+      <div class="callout warning">
         <span class="callout-icon">⚠️</span>
-        <span>Your key starts with <code>sk-ant-...</code>. Keep it private — never share it or commit it to git.</span>
+        <span><strong>Galaxy asks you to sign in?</strong> Run the clone in the app's terminal panel instead, so you can type your login: <code>git clone https://galaxy.corp.thoughtspot.com/YOUR-USERNAME/radiantplay.git</code></span>
       </div>
     </section>
 
@@ -905,28 +894,16 @@
       <div class="section-header">
         <div class="step-number">3</div>
         <div class="section-header-text">
-          <h2>Configure your API key and launch</h2>
-          <div class="subtitle">One command sets the key, saves it permanently, configures Claude, and opens it</div>
+          <h2>Open the project</h2>
+          <div class="subtitle">Always open the radiantplay folder from now on</div>
         </div>
       </div>
 
-      <p>Replace <code>your-api-key</code> with the key you copied in Step 2, then run the whole thing:</p>
+      <p>Start a new session and choose the <strong>radiantplay</strong> folder. Claude reads the project's <code>CLAUDE.md</code> when the session starts, so it already knows the Radiant components, tokens and conventions.</p>
 
-      <div class="code-block">
-        <div class="code-block-header">
-          <div class="terminal-dots"><span></span><span></span><span></span></div>
-          <div class="code-block-label">Terminal — paste as one command</div>
-        </div>
-        <pre><span class="cmd">export</span> <span class="string">ANTHROPIC_API_KEY</span>=<span class="string">"your-api-key"</span> &amp;&amp; \
-<span class="cmd">echo</span> <span class="string">"export ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY"</span> >> ~/.zshrc &amp;&amp; \
-<span class="cmd">mkdir</span> <span class="flag">-p</span> ~/.claude &amp;&amp; \
-<span class="cmd">echo</span> <span class="string">'{"apiKeyHelper": "echo $ANTHROPIC_API_KEY"}'</span> > ~/.claude/settings.json &amp;&amp; \
-<span class="cmd">claude</span></pre>
-      </div>
-
-      <div class="callout success">
-        <span class="callout-icon">✅</span>
-        <span>After running this, Claude Code opens straight away — no separate launch step needed. Steps 3 and 4 are combined.</span>
+      <div class="callout info">
+        <span class="callout-icon">ℹ️</span>
+        <span>Open the <strong>radiantplay</strong> folder itself, not the folder above it. Otherwise the <code>/rp-</code> commands won't show up.</span>
       </div>
     </section>
 
@@ -935,57 +912,39 @@
       <div class="section-header">
         <div class="step-number">4</div>
         <div class="section-header-text">
-          <h2>Verify Claude Code is working</h2>
-          <div class="subtitle">Claude should already be open from Step 3 — just say hello to confirm</div>
+          <h2>Start it up</h2>
+          <div class="subtitle">Do this each time you come back to the project</div>
         </div>
       </div>
 
-      <p>Claude Code opened at the end of Step 3. Type this in the session:</p>
+      <p>Type this in the chat:</p>
 
       <div class="code-block">
         <div class="code-block-header">
           <div class="terminal-dots"><span></span><span></span><span></span></div>
-          <div class="code-block-label">Claude Code session</div>
+          <div class="code-block-label">Claude chat</div>
         </div>
-        <pre><span class="comment">> hello</span>
-<span class="comment"># Claude responds — you're connected!</span>
-<span class="comment"># Type /exit to close when done testing.</span></pre>
+        <pre><span class="cmd">Start the dev server</span>
+<span class="comment"># The first time, Claude installs the project's packages too (about a minute)</span></pre>
       </div>
 
-      <div class="callout success">
-        <span class="callout-icon">✅</span>
-        <span>If Claude responds, your key is working and you're all set. Jump to Step 5.</span>
-      </div>
-
-      <h3>Troubleshooting</h3>
+      <p>The app opens a preview pane that updates as Claude makes changes. Two URLs to know:</p>
 
       <table class="trouble-table">
         <thead>
           <tr>
-            <th>Symptom</th>
-            <th>Fix</th>
+            <th>URL</th>
+            <th>What's there</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>command not found: claude</td>
-            <td>Shell hasn't picked up the new PATH yet. Run <code>source ~/.zshrc</code> or open a new terminal window and try again.</td>
+            <td><code>localhost:5173</code></td>
+            <td>The Radiant DS browser: components and tokens</td>
           </tr>
           <tr>
-            <td>AuthenticationError / 401</td>
-            <td>API key is wrong or not exported. Verify with <code>echo $ANTHROPIC_API_KEY</code>.</td>
-          </tr>
-          <tr>
-            <td>npm install fails</td>
-            <td>Check Node version — must be v18+. Run <code>node --version</code>.</td>
-          </tr>
-          <tr>
-            <td>rate_limit_error</td>
-            <td>API usage limit reached — contact Mohammed to check quota.</td>
-          </tr>
-          <tr>
-            <td>Session opens, no response</td>
-            <td>Check your internet connection. Claude Code requires outbound HTTPS.</td>
+            <td><code>localhost:5173/playground</code></td>
+            <td>Your prototypes</td>
           </tr>
         </tbody>
       </table>
@@ -996,51 +955,110 @@
       <div class="section-header">
         <div class="step-number">5</div>
         <div class="section-header-text">
-          <h2>Open RadiantPlay in Claude Code</h2>
-          <div class="subtitle">Navigate to the project folder and start building</div>
+          <h2>Build your first prototype</h2>
+          <div class="subtitle">Scaffold it, then describe what you want</div>
         </div>
       </div>
 
-      <div class="method-row">
-        <div class="method-option">
-          <div class="method-label">Option A — Terminal</div>
-          <div class="code-block">
-            <div class="code-block-header">
-              <div class="terminal-dots"><span></span><span></span><span></span></div>
-              <div class="code-block-label">Terminal</div>
-            </div>
-            <pre><span class="prompt">$ </span><span class="cmd">cd</span> ~/code/radiantplay
-<span class="prompt">$ </span><span class="cmd">claude</span>
-<span class="comment"># Claude Code is now running inside the project</span></pre>
-          </div>
+      <div class="code-block">
+        <div class="code-block-header">
+          <div class="terminal-dots"><span></span><span></span><span></span></div>
+          <div class="code-block-label">Claude chat</div>
         </div>
-
-        <div class="method-divider">or</div>
-
-        <div class="method-option">
-          <div class="method-label">Option B — Finder right-click</div>
-          <ul class="steps-list" style="margin-top:8px;">
-            <li>
-              <span class="bullet">1</span>
-              <span>Open <strong>Finder</strong> and navigate to your <strong>radiantplay</strong> folder</span>
-            </li>
-            <li>
-              <span class="bullet">2</span>
-              <span>Right-click the folder → <strong>New Terminal at Folder</strong><br/><span style="font-size:12.5px;color:var(--text-muted);">If you don't see this, enable it in System Settings → Privacy &amp; Security → Extensions → Finder Extensions</span></span>
-            </li>
-            <li>
-              <span class="bullet">3</span>
-              <span>In the terminal that opens, type <code>claude</code> and press Enter</span>
-            </li>
-          </ul>
-        </div>
+        <pre><span class="cmd">/rp-new-prototype</span> <span class="string">SettingsPage</span>
+<span class="comment"># Starts with a capital letter, no spaces</span></pre>
       </div>
 
-      <p style="margin-top:20px;">Claude Code knows the repo structure, components, tokens, and all the rules. You work with it the same way you did with Cursor's chat panel — describe what you want to build and it will build it using Radiant components.</p>
+      <p>Then describe what you want in the same chat, or drag in a screenshot and say "Recreate this using Radiant components". Claude builds it and checks it in the preview.</p>
 
       <div class="callout success">
         <span class="callout-icon">🎉</span>
-        <span><strong>You're set up.</strong> Everything from here works the same as before. Use the slash commands below to start building.</span>
+        <span><strong>You're set up.</strong> Use the slash commands below to check, sync and share your work.</span>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ── Skills ── -->
+    <section class="section" id="skills">
+      <div class="section-tag">Slash commands</div>
+      <div class="section-header">
+        <div class="section-header-text">
+          <h2>Slash commands</h2>
+          <div class="subtitle">Type <code>/rp-</code> in the Code tab chat to see them all</div>
+        </div>
+      </div>
+
+      <div class="skills-grid">
+        <div class="skill-card">
+          <div class="skill-card-header">
+            <div class="command">/rp-new-prototype</div>
+            <span class="skill-tag core">Build</span>
+          </div>
+          <div class="skill-title">Start a new prototype</div>
+          <div class="skill-desc">Scaffolds a prototype folder with the right structure and adds it to the gallery.</div>
+          <div class="skill-detail"><strong>Usage:</strong> <code>/rp-new-prototype SettingsPage</code>, optionally followed by a short description of what it should do.</div>
+        </div>
+
+        <div class="skill-card">
+          <div class="skill-card-header">
+            <div class="command">/rp-radiant-check</div>
+            <span class="skill-tag core">Build</span>
+          </div>
+          <div class="skill-title">Design system health check</div>
+          <div class="skill-desc">Checks a prototype's components, tokens, content and layout, and shows the easy wins.</div>
+          <div class="skill-detail"><strong>Supports focus:</strong> add an area, for example <code>/rp-radiant-check SettingsPage content</code>.</div>
+        </div>
+
+        <div class="skill-card">
+          <div class="skill-card-header">
+            <div class="command">/rp-explore</div>
+            <span class="skill-tag core">Build</span>
+          </div>
+          <div class="skill-title">Step outside Radiant</div>
+          <div class="skill-desc">Suspends the design system rules for a freeform direction. The rest of the prototype stays Radiant.</div>
+        </div>
+
+        <div class="skill-card">
+          <div class="skill-card-header">
+            <div class="command">/rp-migrate-prototype</div>
+            <span class="skill-tag new">New</span>
+          </div>
+          <div class="skill-title">Geist font and dark mode</div>
+          <div class="skill-desc">Moves your prototypes onto the Geist font and dark mode in one pass. Never commits.</div>
+        </div>
+
+        <div class="skill-card">
+          <div class="skill-card-header">
+            <div class="command">/rp-sync-upstream</div>
+            <span class="skill-tag sync">Sync</span>
+          </div>
+          <div class="skill-title">Pull in library changes</div>
+          <div class="skill-desc">Shows what's new in the library, then asks before it merges anything into your fork.</div>
+        </div>
+
+        <div class="skill-card">
+          <div class="skill-card-header">
+            <div class="command">/rp-coolify-deploy</div>
+            <span class="skill-tag sync">Share</span>
+          </div>
+          <div class="skill-title">Get a live URL</div>
+          <div class="skill-desc">Walks you through putting your fork on Coolify, with a URL that redeploys on every push.</div>
+        </div>
+
+        <div class="skill-card" style="grid-column: span 2;">
+          <div class="skill-card-header">
+            <div class="command">/rp-project-canvas</div>
+            <span class="skill-tag core">Overview</span>
+          </div>
+          <div class="skill-title">See everything in one place</div>
+          <div class="skill-desc">A local overview of your prototypes, branches and sites. Uses no AI tokens.</div>
+        </div>
+      </div>
+
+      <div class="callout info" style="margin-top:20px;">
+        <span class="callout-icon">💬</span>
+        <span><strong>No command for it? Just ask.</strong> "Capture a thumbnail for my prototype" or "Switch my prototype's AI to Sonnet" work too.</span>
       </div>
     </section>
 
@@ -1052,201 +1070,83 @@
       <div class="section-header">
         <div class="section-header-text">
           <h2>Keeping your library current</h2>
-          <div class="subtitle">New components, tokens, and rules are pushed upstream regularly — here's how to stay in sync</div>
+          <div class="subtitle">New components, tokens and rules land upstream regularly</div>
         </div>
       </div>
-
-      <p>The upstream RadiantPlay library is maintained centrally. Before starting new work — especially if your fork is from an older snapshot — run these steps to make sure you have the latest skills and components.</p>
-
-      <h3 style="font-size:13px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-muted);margin:0 0 16px;">One-time setup</h3>
-
-      <h3>Get the latest skills</h3>
-      <p>The <code>.claude/commands/</code> folder holds all the skills Claude uses. If your fork is outdated, these may be missing or out of date. Run these four commands once to replace only the commands folder — your prototypes and all other files stay untouched.</p>
 
       <div class="code-block">
         <div class="code-block-header">
           <div class="terminal-dots"><span></span><span></span><span></span></div>
-          <div class="code-block-label">Terminal — in your radiantplay folder</div>
+          <div class="code-block-label">Claude chat</div>
         </div>
-        <pre><span class="comment"># 1. Add the upstream remote (skip if it already exists)</span>
-<span class="prompt">$ </span><span class="cmd">git remote add upstream</span> <span class="string">https://galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay.git</span>
-
-<span class="comment"># 2. Fetch from upstream</span>
-<span class="prompt">$ </span><span class="cmd">git fetch upstream</span>
-
-<span class="comment"># 3. Pull only the commands folder</span>
-<span class="prompt">$ </span><span class="cmd">git checkout upstream/main</span> <span class="flag">--</span> <span class="string">.claude/commands/</span>
-
-<span class="comment"># 4. Restart Claude so it picks up the updated skills</span>
-<span class="prompt">$ </span><span class="cmd">claude</span></pre>
+        <pre><span class="cmd">/rp-sync-upstream</span>
+<span class="comment"># Shows what's coming, then asks before it merges</span></pre>
       </div>
 
-      <div class="callout info">
-        <span class="callout-icon">ℹ️</span>
-        <span>If you see <code>error: remote upstream already exists</code> on step 1, that's fine — skip it and continue from step 2.</span>
-      </div>
-
-      <div style="height:1px;background:var(--border);margin:32px 0 28px;"></div>
-      <h3 style="font-size:13px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-muted);margin:0 0 16px;">Regular sync</h3>
-
-      <h3>Check what's changed in the library</h3>
-      <p>Run a read-only diff of the upstream library — new components, token changes, rule updates. Nothing merges.</p>
-      <div class="code-block">
-        <div class="code-block-header">
-          <div class="terminal-dots"><span></span><span></span><span></span></div>
-          <div class="code-block-label">Claude Code session</div>
-        </div>
-        <pre><span class="comment">/check-upstream</span>
-<span class="comment"># Shows new components, token updates, and how many commits behind you are</span></pre>
-      </div>
-
-      <h3>Pull in the changes</h3>
-      <p>Fetches, merges, auto-resolves the <code>registry.ts</code> conflict (your prototypes are preserved), verifies the build, and pushes to your fork. Your in-progress work is saved and restored automatically.</p>
-      <div class="code-block">
-        <div class="code-block-header">
-          <div class="terminal-dots"><span></span><span></span><span></span></div>
-          <div class="code-block-label">Claude Code session</div>
-        </div>
-        <pre><span class="comment">/sync-upstream</span>
-<span class="comment"># Saves WIP, merges, resolves conflicts, builds, pushes — all automatic</span></pre>
-      </div>
+      <p>It previews new components, token changes, rule updates and any files that overlap with your work. When you say yes, it saves your in-progress work, merges, keeps your prototypes in <code>registry-mine.ts</code>, checks the build and puts your work back.</p>
 
       <div class="callout info">
         <span class="callout-icon">💡</span>
-        <span><strong>When to sync:</strong> Run <code>/check-upstream</code> at the start of any new prototype sprint. If new components match what you're building, sync first — it saves you building something that already exists.</span>
+        <span><strong>When to sync:</strong> at the start of any new prototype sprint. If a new component matches what you're building, sync first so you don't build it twice.</span>
+      </div>
+
+      <div class="callout warning">
+        <span class="callout-icon">⚠️</span>
+        <span><strong>Older fork without <code>/rp-</code> commands?</strong> Type <code>/sync-upstream</code> instead. The old name still works, and the sync brings in the new commands.</span>
       </div>
     </section>
 
     <div class="divider"></div>
 
-    <!-- ── Skills ── -->
-    <section class="section" id="skills">
-      <div class="section-tag">Slash commands</div>
-      <div class="section-header">
-        <div class="section-header-text">
-          <h2>Skills &amp; commands</h2>
-          <div class="subtitle">Type these directly in the Claude Code terminal session</div>
-        </div>
-      </div>
+    <!-- ── Troubleshooting ── -->
+    <section class="section" id="troubleshooting">
+      <div class="section-tag">Troubleshooting</div>
+      <h2 style="font-size:20px;font-weight:700;margin-bottom:16px;">If something goes wrong</h2>
 
-      <div class="skills-grid">
-        <div class="skill-card">
-          <div class="skill-card-header">
-            <div class="command">/new-prototype</div>
-            <span class="skill-tag core">Core</span>
-          </div>
-          <div class="skill-title">Start a new prototype</div>
-          <div class="skill-desc">Asks discovery questions (goal, user, layout type), creates the branch, scaffolds files with the right layout template, generates a gallery thumbnail, and registers it automatically.</div>
-          <div class="skill-detail"><strong>Layout-aware:</strong> Picks a dashboard, wizard, or single-page starter based on your answers. Creates <code>styles.ts</code>, <code>mockData.ts</code>, and <code>components/</code> folder ready to go.</div>
-        </div>
-
-        <div class="skill-card">
-          <div class="skill-card-header">
-            <div class="command">/radiant-check</div>
-            <span class="skill-tag new">New</span>
-          </div>
-          <div class="skill-title">Design system compliance check</div>
-          <div class="skill-desc">Analyses your prototype across five dimensions: component coverage, custom components, token usage, layout patterns, and content guidelines. Shows a health score and easy wins.</div>
-          <div class="skill-detail"><strong>Supports focus:</strong> Run <code>/radiant-check content guidelines</code> or <code>/radiant-check visual styling</code> to get a deep check on a specific area. Defaults to a full check.</div>
-        </div>
-
-        <div class="skill-card">
-          <div class="skill-card-header">
-            <div class="command">/check-upstream</div>
-            <span class="skill-tag sync">Sync</span>
-          </div>
-          <div class="skill-title">Preview library updates</div>
-          <div class="skill-desc">Read-only check of what's new upstream — new components, token changes, rule updates, removed prototypes. Nothing is merged. Shows whether it's safe to sync or if there are conflicts to review.</div>
-          <div class="skill-detail"><strong>When to use:</strong> At the start of a new prototype sprint, or whenever you want to see if new components are available that could help your work.</div>
-        </div>
-
-        <div class="skill-card">
-          <div class="skill-card-header">
-            <div class="command">/sync-upstream</div>
-            <span class="skill-tag sync">Sync</span>
-          </div>
-          <div class="skill-title">Pull in library changes</div>
-          <div class="skill-desc">Fetches the latest components and tokens from the upstream library, auto-resolves the registry.ts conflict (your prototypes are preserved), verifies the build, and pushes to your fork.</div>
-          <div class="skill-detail"><strong>Safe for WIP:</strong> Automatically saves and restores your in-progress work. No git knowledge needed — the whole process is handled for you.</div>
-        </div>
-
-        <div class="skill-card" style="grid-column: span 2;">
-          <div class="skill-card-header">
-            <div class="command">/help</div>
-            <span class="skill-tag core">Core</span>
-          </div>
-          <div class="skill-title">Show all commands</div>
-          <div class="skill-desc">Lists every available slash command with a short description. Good starting point if you're not sure what to run.</div>
-        </div>
-      </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- ── Quick ref ── -->
-    <section class="section">
-      <div class="section-tag">Quick reference</div>
-      <h2 style="font-size:20px;font-weight:700;margin-bottom:4px;">All the commands in one place</h2>
-      <p style="margin-bottom:0;">Copy these from here during setup.</p>
-
-      <div class="ref-grid">
-        <div class="ref-row" style="grid-column: span 2;">
-          <div class="ref-label">Install Claude Code</div>
-          <code>curl -fsSL https://claude.ai/install.sh | bash</code>
-        </div>
-        <div class="ref-row" style="grid-column: span 2;">
-          <div class="ref-label">Configure key + launch (Steps 3 &amp; 4 combined)</div>
-          <code style="font-size:11.5px;display:block;margin-top:4px;white-space:pre-wrap;line-height:1.8">export ANTHROPIC_API_KEY="your-api-key" &amp;&amp; echo "export ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" >> ~/.zshrc &amp;&amp; mkdir -p ~/.claude &amp;&amp; echo '{"apiKeyHelper": "echo $ANTHROPIC_API_KEY"}' > ~/.claude/settings.json &amp;&amp; claude</code>
-        </div>
-        <div class="ref-row">
-          <div class="ref-label">Check API key is set</div>
-          <code>echo $ANTHROPIC_API_KEY</code>
-        </div>
-        <div class="ref-row">
-          <div class="ref-label">Open project</div>
-          <code>cd ~/code/radiantplay &amp;&amp; claude</code>
-        </div>
-      </div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- ── Cursor vs Claude ── -->
-    <section class="section" id="vs-cursor">
-      <div class="section-tag">Comparison</div>
-      <h2 style="font-size:20px;font-weight:700;margin-bottom:4px;">What changes vs Cursor</h2>
-      <p>Your workflow is the same. The environment is different.</p>
-
-      <table class="compare-table">
+      <table class="trouble-table">
         <thead>
           <tr>
-            <th>Cursor</th>
-            <th>Claude Code</th>
+            <th>Symptom</th>
+            <th>Fix</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>GUI-based, opens in editor window</td>
-            <td>Terminal-based, runs inside your project folder</td>
+            <td>Claude says Node.js or npm is missing</td>
+            <td>Install the LTS version from nodejs.org, then ask Claude to start the dev server again.</td>
           </tr>
           <tr>
-            <td>Inline code completions as you type</td>
-            <td>Conversational — describe what you want to build</td>
+            <td>The clone stops at a sign-in prompt</td>
+            <td>Run the clone in the app's terminal panel so you can type your Galaxy login.</td>
           </tr>
           <tr>
-            <td><code>.cursor/rules/</code> auto-loaded in every prompt</td>
-            <td>Same rules apply — Claude reads them when relevant</td>
+            <td><code>/rp-</code> commands don't show up</td>
+            <td>Check the session is open on the <code>radiantplay</code> folder, not its parent. On an older fork, run <code>/sync-upstream</code>.</td>
           </tr>
           <tr>
-            <td><code>/</code> commands typed in the chat panel</td>
-            <td>Same <code>/</code> commands typed in the terminal session</td>
-          </tr>
-          <tr>
-            <td>Context window fills up mid-prototype</td>
-            <td>Auto-compresses memory — works across long sessions</td>
+            <td>The preview pane is blank</td>
+            <td>Ask Claude to check the dev server logs and fix what it finds.</td>
           </tr>
         </tbody>
       </table>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ── Terminal ── -->
+    <section class="section" id="terminal">
+      <div class="section-tag">Optional</div>
+      <h2 style="font-size:20px;font-weight:700;margin-bottom:4px;">Prefer the terminal?</h2>
+      <p>The same setup works with the <code>claude</code> command. Follow the install steps at <strong>claude.com/claude-code</strong>, sign in, then run it inside your radiantplay folder. Slash commands work the same way.</p>
+
+      <div class="code-block">
+        <div class="code-block-header">
+          <div class="terminal-dots"><span></span><span></span><span></span></div>
+          <div class="code-block-label">Terminal</div>
+        </div>
+        <pre><span class="prompt">$ </span><span class="cmd">cd</span> ~/Documents/radiantplay
+<span class="prompt">$ </span><span class="cmd">claude</span></pre>
+      </div>
     </section>
 
     <div style="font-size:13px;color:var(--text-muted);text-align:center;padding-top:32px;">

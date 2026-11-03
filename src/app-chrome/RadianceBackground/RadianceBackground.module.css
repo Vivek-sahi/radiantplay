@@ -1,0 +1,26 @@
+/* Sits behind the top of its parent. The parent needs position: relative and
+   isolation: isolate so z-index -1 stays above the parent's own background. */
+.root {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--radiance-hero-height) + 260px);
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* The hero area the Radiance home recipe washes; the recipe bleeds below it. */
+.stage {
+  height: var(--radiance-hero-height);
+}
+
+/* signup and templates fill their parent (position: relative, overflow: hidden).
+   Content over them takes position: relative and z-index: 1. */
+.fill {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}

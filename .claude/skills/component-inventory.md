@@ -200,19 +200,16 @@ Use this to quickly find the right component:
 
 | Component | When to Use | Key Props |
 |-----------|-------------|-----------|
-| **Icon** | Iconography | `name`, `size`: xs/s/m/l/xl, `color` |
+| **Icon** | Iconography | `name`, `size`: xs/s/m/l (no xl), `color` |
 | **IconGallery** | Icon browsing (dev tool) | N/A |
 
-**Available Icon Names (46 icons):**
+For connector and brand logos use `<ConnectorLogo id="salesforce" />` from `@components/ConnectorLogo` (list in `connectors.ts`, files in `src/assets/logos/connectors/`).
+
+To choose an icon by what it means, use the **Pick by meaning** table and the **No icon for** list in `component-summary.md`. Never draw an icon as inline `<svg>`.
+
+**Available Icon Names (171 icons, from `src/components/icons/registry.ts`):**
 ```
-arrow-up, arrow-down, arrow-left, arrow-right,
-chevron-up, chevron-down, chevron-left, chevron-right,
-plus, minus, cross, checkmark, checkmark-circle, cross-circle,
-exclamation-point-circle, info-circle, question-mark,
-copy, download, upload, save, refresh, pencil, trash-can,
-share, pin, filter, play, pause, eye, eye-undo, clock, cog,
-folder, funnel, lock, magnifying-glass, profile, sort, star,
-tag, expand, fullscreen, hamburger, more, information
+add-user, agenda, ai, ai-star, analyst, answer, answer-stroke, app-switcher, apps, apps-stroke, arrow-down, arrow-down-circle, arrow-left, arrow-left-circle, arrow-right, arrow-right-circle, arrow-up, arrow-up-circle, attribute, bold, book, book-closed, brush, bulb, calendar-cleaned, camera, caret-down, caret-left, caret-right, caret-up, case, chart, checkmark, checkmark-circle, chevron-down, chevron-left, chevron-right, chevron-up, clock, cog, collapse, collection, community, conditional-format, controls, copy, copy-link, cord, create-pinboard, create-worksheet, cross, cross-circle, cross-circle2, curious, data-column, database, delete, delete-stroke, doc, documentation, double-check, download, drag, drill-down, edit-text, embrace, enter, escape, excel, exclamation-point-circle, expand, explore, eye, eye-undo, filter, folder, follow, follow-undo, follow-up, following, formula, fullscreen, fullscreen-undo, funnel, funnel-line, globe, grid-view, group-undo, hamburger, info-circle, information, italic, join-inner, join-left, join-outer, join-right, key, like-undo, list-view, liveboard, liveboard-stroke, lock, lock-undo, magnifying-glass, measure, memory, microphone, minus, model, model-stroke, monitor, more, navigate, new-chat, note, number-format, paper-plane, parameter, pause, pdf, pencil, pin, pinboard, play, plus, ppt, present, profile, question-mark, r-analysis, redo, replay-search, reset, rocket, save, save-worksheet, schema, share, show-underlying-data, sign-out, sort, spotter, star, star-undo, strike-through, styling, sync, tab, table, table-stroke, tag, text, text-undo, thumb-down, thumb-down-undo, thumb-up, thumb-up-undo, trash-folder, trash-folder-stroke, underline, undo, upload, upload-data, verified, video, wrench, zoom-area, search, settings, refresh, trash-can
 ```
 
 ### Layout Primitives

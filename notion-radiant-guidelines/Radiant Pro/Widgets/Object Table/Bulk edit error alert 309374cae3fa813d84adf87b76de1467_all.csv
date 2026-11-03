@@ -1,8 +1,0 @@
-﻿Name,Content Rules,Default State,Description,Dynamic Behaviour,Error State,Ref
-Updated lable,,,This section includes all the columns that has been updated.,,,5
-Button,,,This button allows users to close the modal dialog box,,,7
-Modal title,Edit + column’s name,N/A,"This title let users know some columns were not updated ",N/A,N/A,1
-Column name,,,These columns were not updated,,,4
-Not updated label,N/A,N/A,This section includes all the columns that were not updated.,N/A,N/A,2
-Reason,N/A,N/A,This paragraph explains the reasons why these columns cannot be updated.,N/A,N/A,3
-Column name,,,These columns has been updated,,,6

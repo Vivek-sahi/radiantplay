@@ -36,7 +36,7 @@ Standard layouts for building prototypes. Use these patterns as starting points.
 ```tsx
 // Preferred — use AppShell
 import { AppShell } from '../../components/AppShell';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 import { fontFamily } from '../../tokens/typography';
 
@@ -44,7 +44,7 @@ const FullPageLayout: React.FC = () => (
   <AppShell
     headerProps={{ searchPlaceholder: 'Search', userName: 'User Name' }}
     sidebarProps={{ tabs, activeTab, onTabChange, categories, selectedNav, onNavSelect }}
-    contentBackground={systemColors.light['background-sunken']}
+    contentBackground={sysVar('background-sunken')}
   >
     {/* Main content rendered here */}
     <div style={{ padding: `${spacing.F}px ${spacing.H}px`, fontFamily: fontFamily.primary }}>
@@ -57,7 +57,7 @@ const FullPageLayout: React.FC = () => (
 If you cannot use `AppShell` (e.g. embedding inside an existing shell), use the manual layout below:
 
 ```tsx
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 import { fontFamily } from '../../tokens/typography';
 
@@ -66,7 +66,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     fontFamily: fontFamily.primary,
   },
   header: {
@@ -81,15 +81,15 @@ const styles = {
   sidebar: {
     width: '260px',
     flexShrink: 0,
-    backgroundColor: systemColors.light['background-base'],
-    borderRight: `1px solid ${systemColors.light['border-divider']}`,
+    backgroundColor: sysVar('background-base'),
+    borderRight: `1px solid ${sysVar('border-divider')}`,
     overflowY: 'auto',
   },
   main: {
     flex: 1,
     overflowY: 'auto',
     padding: `${spacing.F}px ${spacing.H}px`,
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
   },
   content: {
     maxWidth: '1280px',
@@ -160,7 +160,7 @@ const DashboardLayout: React.FC = () => {
 const styles = {
   container: {
     padding: `${spacing.F}px`,
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     minHeight: '100vh',
   },
   metricsGrid: {
@@ -176,15 +176,15 @@ const styles = {
     marginBottom: `${spacing.F}px`,
   },
   chartCard: {
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '8px',
     padding: `${spacing.F}px`,
-    border: `1px solid ${systemColors.light['border-subtle']}`,
+    border: `1px solid ${sysVar('border-subtle')}`,
   },
   tableSection: {
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '8px',
-    border: `1px solid ${systemColors.light['border-subtle']}`,
+    border: `1px solid ${sysVar('border-subtle')}`,
     overflow: 'hidden',
   },
 };
@@ -255,36 +255,36 @@ const styles = {
   container: {
     display: 'flex',
     minHeight: '100vh',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
   },
   sidebar: {
     width: '200px',
-    backgroundColor: systemColors.light['background-base'],
-    borderRight: `1px solid ${systemColors.light['border-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    borderRight: `1px solid ${sysVar('border-subtle')}`,
     padding: `${spacing.D}px 0`,
   },
   sectionItem: {
     padding: `${spacing.B}px ${spacing.D}px`,
     cursor: 'pointer',
     fontSize: '14px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     borderLeft: '3px solid transparent',
   },
   sectionItemActive: {
-    color: systemColors.light['content-brand'],
-    backgroundColor: `${systemColors.light['content-brand']}08`,
-    borderLeftColor: systemColors.light['content-brand'],
-    fontWeight: 500,
+    color: sysVar('content-brand'),
+    backgroundColor: `color-mix(in srgb, ${sysVar('content-brand')} 3%, transparent)`,
+    borderLeftColor: sysVar('content-brand'),
+    fontWeight: 'var(--font-weight-emphasis)',
   },
   formContainer: {
     flex: 1,
     padding: `${spacing.F}px`,
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
   },
   sectionTitle: {
     fontSize: '20px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     marginBottom: `${spacing.F}px`,
   },
   formFields: {
@@ -299,7 +299,7 @@ const styles = {
     gap: `${spacing.D}px`,
     marginTop: `${spacing.H}px`,  // 32px
     paddingTop: `${spacing.D}px`,
-    borderTop: `1px solid ${systemColors.light['border-subtle']}`,
+    borderTop: `1px solid ${sysVar('border-subtle')}`,
   },
 };
 ```
@@ -387,7 +387,7 @@ const styles = {
   modal: {
     width: '600px',
     maxHeight: '90vh',
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '6px',
     boxShadow: '0px 24px 32px rgba(25, 35, 49, 0.16)',
     display: 'flex',
@@ -396,17 +396,17 @@ const styles = {
   },
   header: {
     padding: `${spacing.E}px ${spacing.F}px`,  // 20px 24px
-    borderBottom: `1px solid ${systemColors.light['border-subtle']}`,
+    borderBottom: `1px solid ${sysVar('border-subtle')}`,
   },
   contextLabel: {
     fontSize: '14px',
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
     marginBottom: `${spacing.A}px`,
   },
   stepTitle: {
     fontSize: '20px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     margin: 0,
   },
   content: {
@@ -424,22 +424,22 @@ const styles = {
     flex: 1,
     height: '4px',
     borderRadius: '2px',
-    backgroundColor: systemColors.light['border-subtle'],
+    backgroundColor: sysVar('border-subtle'),
   },
   progressActive: {
-    backgroundColor: systemColors.light['content-brand'],
+    backgroundColor: sysVar('content-brand'),
   },
   footer: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: `${spacing.E}px ${spacing.F}px`,  // 20px 24px
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
   },
   cancelButton: {
     background: 'none',
     border: 'none',
-    color: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
     fontSize: '14px',
     cursor: 'pointer',
     padding: `6px ${spacing.A}px`,
@@ -486,7 +486,7 @@ const DataTablePageLayout: React.FC = () => {
           <Icon name="chevron-right" size="xs" />
           <span>Section</span>
           <Icon name="chevron-right" size="xs" />
-          <span style={{ color: systemColors.light['content-primary'] }}>Page</span>
+          <span style={{ color: sysVar('content-primary') }}>Page</span>
         </div>
 
         <h1 style={styles.title}>Page Title</h1>
@@ -535,7 +535,7 @@ const DataTablePageLayout: React.FC = () => {
 const styles = {
   container: {
     padding: `${spacing.F}px ${spacing.H}px`,
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
   },
   pageHeader: {
     marginBottom: `${spacing.D}px`,
@@ -545,13 +545,13 @@ const styles = {
     alignItems: 'center',
     gap: `${spacing.B}px`,
     fontSize: '13px',
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
     marginBottom: `${spacing.B}px`,
   },
   title: {
     fontSize: '24px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     margin: 0,
     marginBottom: `${spacing.D}px`,
   },
@@ -569,7 +569,7 @@ const styles = {
     gap: `${spacing.C}px`,
   },
   tableContainer: {
-    border: `1px solid ${systemColors.light['border-subtle']}`,
+    border: `1px solid ${sysVar('border-subtle')}`,
     borderRadius: '8px',
     overflow: 'hidden',
   },

@@ -21,8 +21,14 @@ export interface ProjectMeta {
   author?: string;
   /** Last modified date */
   lastModified?: string;
-  /** Thumbnail image path */
-  thumbnail?: string;
+  /**
+   * Gallery thumbnail. Preferred: `{ light, dark }` screenshots captured with
+   * `npm run thumbnails -- <Name>` (src/prototypes/<Name>/thumbnail.light.jpg and .dark.jpg).
+   * Also accepted: inline SVG markup imported with `?raw` (theme tokens, see
+   * scripts/thumbnails/tokenize-svg.mjs) or a single image URL. Without one, the gallery
+   * shows a placeholder and, under `npm run dev`, offers to capture it.
+   */
+  thumbnail?: string | { light: string; dark?: string };
   /** Project component */
   component: React.ComponentType;
   /** Number of shared Radiant design system components used */
@@ -31,19 +37,50 @@ export interface ProjectMeta {
   customComponents?: number;
   /** Which gallery section: 'sample' for built-in examples, 'mine' for user-created (default), 'archived' for deprecated prototypes kept for reference */
   section?: 'sample' | 'mine' | 'archived';
+  /**
+   * Gallery group: the project this prototype belongs to, such as 'Apps in ThoughtSpot'. Prototypes
+   * in the same group sit together under one collapsible heading; those without one go under Other.
+   * Case doesn't matter. Designers can set it from the gallery under `npm run dev`.
+   */
+  group?: string;
+  /**
+   * 'global' follows the app's light and dark theme. 'light-only' keeps the prototype light while the
+   * app is dark. With no value, sample prototypes follow the theme and designer prototypes
+   * (registry-mine.ts) stay light until they're marked 'global', which /rp-new-prototype and
+   * /rp-migrate-prototype do once a prototype is dark ready. See isLightOnly in registry-theme.ts.
+   */
+  theme?: 'light-only' | 'global';
+  /**
+   * 'radiant-3' opts the prototype into the Radiant 3.0 Figma sizes (32px fields and menu items,
+   * 6px radii, Tabs 48/32 and more). With no value the prototype keeps today's sizes. New prototypes
+   * get it from /rp-new-prototype; /rp-migrate-prototype offers it. See RadiantLookContext.tsx.
+   */
+  look?: 'radiant-3';
 }
 
 // ── Thumbnails ────────────────────────────────────────────────────────────────
 
-import AdminGroupsThumbnail from './thumbnails/AdminGroups.svg';
-import SpotterMemoryThumbnail from './thumbnails/SpotterMemory.svg';
-import AdminLangThumbnail from './thumbnails/AdminLang.svg';
-import MiniSpottersThumbnail from './thumbnails/MiniSpotters.svg';
-import LiveboardTemplateThumbnail from './thumbnails/LiveboardTemplate.svg';
-import DataModelEditorThumbnail from './thumbnails/DataModelEditor.svg';
-import SpotterThumbnail from './thumbnails/Spotter.svg';
-import NewUIAdmin2Thumbnail from './thumbnails/NewUIAdmin2.svg';
-import StylingPanelThumbnail from './thumbnails/StylingPanel.svg';
+// Screenshots captured with `npm run thumbnails` (light and dark, 640x360)
+import SpotterMemoryThumbLight from './SpotterMemory/thumbnail.light.jpg';
+import SpotterMemoryThumbDark from './SpotterMemory/thumbnail.dark.jpg';
+import AdminGroupsThumbLight from './AdminGroups/thumbnail.light.jpg';
+import AdminGroupsThumbDark from './AdminGroups/thumbnail.dark.jpg';
+import LiveboardTemplateThumbLight from './_liveboard-template/thumbnail.light.jpg';
+import LiveboardTemplateThumbDark from './_liveboard-template/thumbnail.dark.jpg';
+import DataModelEditorThumbLight from './DataModelEditor/thumbnail.light.jpg';
+import DataModelEditorThumbDark from './DataModelEditor/thumbnail.dark.jpg';
+import SpotterThumbLight from './Spotter/thumbnail.light.jpg';
+import SpotterThumbDark from './Spotter/thumbnail.dark.jpg';
+import NewUIAdmin2ThumbLight from './NewUIAdmin2/thumbnail.light.jpg';
+import NewUIAdmin2ThumbDark from './NewUIAdmin2/thumbnail.dark.jpg';
+import StylingPanelThumbLight from './StylingPanel/thumbnail.light.jpg';
+import StylingPanelThumbDark from './StylingPanel/thumbnail.dark.jpg';
+import SpotterComponentsThumbLight from './SpotterComponents/thumbnail.light.jpg';
+import SpotterComponentsThumbDark from './SpotterComponents/thumbnail.dark.jpg';
+// Hand-made SVGs (inline, theme tokens) for prototypes not captured yet
+
+import AdminLangThumbnail from './thumbnails/AdminLang.svg?raw';
+import MiniSpottersThumbnail from './thumbnails/MiniSpotters.svg?raw';
 
 // ── Components (lazy-loaded) ──────────────────────────────────────────────────
 
@@ -56,6 +93,7 @@ const DataModelEditorSample = React.lazy(() => import('./DataModelEditor'));
 const Spotter = React.lazy(() => import('./Spotter'));
 const NewUIAdmin2 = React.lazy(() => import('./NewUIAdmin2'));
 const StylingPanel = React.lazy(() => import('./StylingPanel'));
+const SpotterComponents = React.lazy(() => import('./SpotterComponents'));
 
 // ── Registry ──────────────────────────────────────────────────────────────────
 
@@ -66,7 +104,7 @@ export const coreRegistry: ProjectMeta[] = [
     description: 'Memory Sources object table experience with search, filtering, and pagination.',
     author: 'Design Team',
     lastModified: '2026-02-19',
-    thumbnail: SpotterMemoryThumbnail,
+    thumbnail: { light: SpotterMemoryThumbLight, dark: SpotterMemoryThumbDark },
     component: SpotterMemory,
     dsComponents: 6,
     customComponents: 5,
@@ -78,11 +116,12 @@ export const coreRegistry: ProjectMeta[] = [
     description: 'Group creation wizard with bulk org assignment and role management.',
     author: 'Design Team',
     lastModified: '2026-02-19',
-    thumbnail: AdminGroupsThumbnail,
+    thumbnail: { light: AdminGroupsThumbLight, dark: AdminGroupsThumbDark },
     component: AdminGroups,
     dsComponents: 9,
     customComponents: 10,
     section: 'sample',
+    group: 'Admin',
   },
   {
     id: 'AdminLang',
@@ -95,6 +134,7 @@ export const coreRegistry: ProjectMeta[] = [
     dsComponents: 10,
     customComponents: 4,
     section: 'archived',
+    group: 'Admin',
   },
   {
     id: 'MiniSpotters',
@@ -107,6 +147,7 @@ export const coreRegistry: ProjectMeta[] = [
     dsComponents: 8,
     customComponents: 5,
     section: 'archived',
+    group: 'Spotter',
   },
   {
     id: '_liveboard-template',
@@ -114,11 +155,12 @@ export const coreRegistry: ProjectMeta[] = [
     description: 'Starter template for Liveboard prototypes — includes AnswerTile, KPI tile, bar chart, and SpotterViz panel.',
     author: 'Design Team',
     lastModified: '2026-03-17',
-    thumbnail: LiveboardTemplateThumbnail,
+    thumbnail: { light: LiveboardTemplateThumbLight, dark: LiveboardTemplateThumbDark },
     component: LiveboardTemplate,
     dsComponents: 8,
     customComponents: 4,
     section: 'sample',
+    group: 'Liveboard',
   },
   {
     id: 'DataModelEditor',
@@ -126,11 +168,12 @@ export const coreRegistry: ProjectMeta[] = [
     description: 'Build and refine a SpotterModel schema with AI-assisted table, join, column, and formula suggestions.',
     author: 'Design Team',
     lastModified: '2026-04-30',
-    thumbnail: DataModelEditorThumbnail,
+    thumbnail: { light: DataModelEditorThumbLight, dark: DataModelEditorThumbDark },
     component: DataModelEditorSample,
     dsComponents: 10,
     customComponents: 13,
     section: 'sample',
+    group: 'Data model',
   },
   {
     id: 'Spotter',
@@ -139,11 +182,12 @@ export const coreRegistry: ProjectMeta[] = [
       'Agentic chat shell with reasoning steps, viz blocks, and follow-ups — the in-thread Spotter answer experience powered by the Spotter DS.',
     author: 'Design Team',
     lastModified: '2026-05-08',
-    thumbnail: SpotterThumbnail,
+    thumbnail: { light: SpotterThumbLight, dark: SpotterThumbDark },
     component: Spotter,
     dsComponents: 14,
     customComponents: 1,
     section: 'sample',
+    group: 'Spotter',
   },
   {
     id: 'NewUIAdmin2',
@@ -151,22 +195,35 @@ export const coreRegistry: ProjectMeta[] = [
     description: 'Application Settings screen from Admin 2.0 — cluster settings, administration toggles, and downloads & schedules.',
     author: 'Design Team',
     lastModified: '2026-05-25',
-    thumbnail: NewUIAdmin2Thumbnail,
+    thumbnail: { light: NewUIAdmin2ThumbLight, dark: NewUIAdmin2ThumbDark },
     component: NewUIAdmin2,
     dsComponents: 6,
     customComponents: 4,
     section: 'sample',
+    group: 'Admin',
   },
   {
     id: 'StylingPanel',
     name: 'Liveboard - Styling panel',
     description: 'Liveboard tile styling controls — density, color themes, corner style, spacing mode, and per-tile overrides with highlight and dark palette.',
-    author: 'Devanshi Behara',
+    author: 'Devanshi Behera',
     lastModified: '2026-04-23',
-    thumbnail: StylingPanelThumbnail,
+    thumbnail: { light: StylingPanelThumbLight, dark: StylingPanelThumbDark },
     component: StylingPanel,
     dsComponents: 6,
     customComponents: 4,
     section: 'sample',
+    group: 'Liveboard',
+  },
+  {
+    id: 'SpotterComponents',
+    name: 'Spotter components',
+    thumbnail: { light: SpotterComponentsThumbLight, dark: SpotterComponentsThumbDark },
+    description: 'Spotter chat-response building blocks — user message, reasoning timeline, prompt bar, and the response grid layout with resize and overlay toggles.',
+    author: 'Devanshi Behera',
+    lastModified: '2026-09-01',
+    component: SpotterComponents,
+    section: 'sample',
+    group: 'Spotter',
   },
 ];

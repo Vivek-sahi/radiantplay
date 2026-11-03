@@ -1,0 +1,214 @@
+{
+  "fileKey": "1QlRveXx4wppvDXyPVWUTK",
+  "text": {
+    "Body/Large": {
+      "key": "188a8bab2751f472510b588662be06b7cfda5e60",
+      "nodeId": "16106:19094",
+      "description": "",
+      "family": "Geist",
+      "size": 16,
+      "lineHeight": 24,
+      "letterSpacing": {
+        "value": 0.6,
+        "unit": "PERCENT"
+      },
+      "styleWeight": 400,
+      "weight": 400,
+      "weightSource": "spec layers (2)"
+    },
+    "Body/Normal": {
+      "key": "23aead54ccbe6ca5f25ed6293cc5de4eefa5feac",
+      "nodeId": "16106:19095",
+      "description": "",
+      "family": "Geist",
+      "size": 14,
+      "lineHeight": 20,
+      "letterSpacing": {
+        "value": 0.4,
+        "unit": "PERCENT"
+      },
+      "styleWeight": 400,
+      "weight": 400,
+      "weightSource": "spec layers (147)"
+    },
+    "Display/Large Headline": {
+      "key": "c890c72eed792b6ce554e82a709e4fa1663322b1",
+      "nodeId": "25391:29665",
+      "description": "",
+      "family": "Geist",
+      "size": 32,
+      "lineHeight": 40,
+      "letterSpacing": {
+        "value": 0,
+        "unit": "PERCENT"
+      },
+      "styleWeight": 550,
+      "weight": 550,
+      "weightSource": "spec layers (2)"
+    },
+    "Footnote & Caption & Overline/Regular": {
+      "key": "a9976b62b4993d8ab341848e2cada20836dbdfbd",
+      "nodeId": "16106:19096",
+      "description": "",
+      "family": "Geist",
+      "size": 12,
+      "lineHeight": 18,
+      "letterSpacing": {
+        "value": 0.6,
+        "unit": "PERCENT"
+      },
+      "styleWeight": 400,
+      "weight": 400,
+      "weightSource": "spec layers (2)"
+    },
+    "Label/Content Label": {
+      "key": "4666090181b1559647f27ecf450a67199133cb08",
+      "nodeId": "16106:19092",
+      "description": "",
+      "family": "Geist",
+      "size": 16,
+      "lineHeight": 24,
+      "letterSpacing": {
+        "value": 0.4,
+        "unit": "PERCENT"
+      },
+      "styleWeight": 550,
+      "weight": 550,
+      "weightSource": "spec layers (2)"
+    },
+    "Label/Content Label Subhead": {
+      "key": "e087f755188b46729d0953400ece92061893bc16",
+      "nodeId": "16106:19093",
+      "description": "",
+      "family": "Geist",
+      "size": 14,
+      "lineHeight": 20,
+      "letterSpacing": {
+        "value": 0.6,
+        "unit": "PERCENT"
+      },
+      "styleWeight": 550,
+      "weight": 550,
+      "weightSource": "spec layers (2)"
+    },
+    "Label/Section Label": {
+      "key": "b7f82b52a499669723adfd7d724be8eb09849a9e",
+      "nodeId": "16106:19091",
+      "description": "",
+      "family": "Geist",
+      "size": 18,
+      "lineHeight": 24,
+      "letterSpacing": {
+        "value": 0.4,
+        "unit": "PERCENT"
+      },
+      "styleWeight": 550,
+      "weight": 550,
+      "weightSource": "spec layers (10)"
+    },
+    "Title/Modal Title": {
+      "key": "8a915ea05ae32aa7e250232b2c89c8670ba610f8",
+      "nodeId": "16106:19090",
+      "description": "",
+      "family": "Geist",
+      "size": 20,
+      "lineHeight": 28,
+      "letterSpacing": {
+        "value": 0,
+        "unit": "PERCENT"
+      },
+      "styleWeight": 550,
+      "weight": 550,
+      "weightSource": "spec layers (4)"
+    },
+    "Title/Page Title": {
+      "key": "762f0423be79fcaa9a69025fc25d46eb02c9f4ae",
+      "nodeId": "16106:19089",
+      "description": "",
+      "family": "Geist",
+      "size": 24,
+      "lineHeight": 32,
+      "letterSpacing": {
+        "value": 0,
+        "unit": "PERCENT"
+      },
+      "styleWeight": 550,
+      "weight": 550,
+      "weightSource": "spec layers (2)"
+    }
+  },
+  "effects": {
+    "Elevation/Menu": {
+      "key": "b36d32011835e0585e213f47ebfaacec0622916c",
+      "nodeId": "16106:19098",
+      "description": "",
+      "effects": [
+        {
+          "type": "DROP_SHADOW",
+          "x": 0,
+          "y": 12,
+          "blur": 24,
+          "spread": 0,
+          "color": "#1923311f"
+        },
+        {
+          "type": "DROP_SHADOW",
+          "x": 0,
+          "y": 0,
+          "blur": 4,
+          "spread": 0,
+          "color": "#19233114"
+        }
+      ]
+    },
+    "Elevation/Modal": {
+      "key": "524fb0fe87067a0ef1272060ef802c07fd88dc18",
+      "nodeId": "16106:19099",
+      "description": "",
+      "effects": [
+        {
+          "type": "DROP_SHADOW",
+          "x": 0,
+          "y": 24,
+          "blur": 32,
+          "spread": 0,
+          "color": "#19233129"
+        },
+        {
+          "type": "DROP_SHADOW",
+          "x": 0,
+          "y": 0,
+          "blur": 4,
+          "spread": 0,
+          "color": "#1923311a"
+        }
+      ]
+    },
+    "Elevation/Surface": {
+      "key": "7c9a666a712f4518e9a6532832c032cf8254703b",
+      "nodeId": "16106:19097",
+      "description": "",
+      "effects": [
+        {
+          "type": "DROP_SHADOW",
+          "x": 0,
+          "y": 2,
+          "blur": 4,
+          "spread": 0,
+          "color": "#1923310a"
+        },
+        {
+          "type": "DROP_SHADOW",
+          "x": 0,
+          "y": 0,
+          "blur": 4,
+          "spread": 0,
+          "color": "#1923311a"
+        }
+      ]
+    }
+  },
+  "specFrameFamilies": [
+    "Geist"
+  ]
+}

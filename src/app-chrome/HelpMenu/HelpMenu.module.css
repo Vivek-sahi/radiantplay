@@ -1,0 +1,45 @@
+/* One "Help" link at the bottom of a left pane, styled like the pane's nav items */
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px var(--spacing-3);
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.trigger:hover,
+.trigger[aria-expanded='true'] {
+  background: var(--rd-sys-color-background-ghost-hover);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-brand);
+  outline-offset: 2px;
+}
+
+.label {
+  flex: 1;
+}
+
+/* The trigger fills the pane, and the menu opens as wide as the pane */
+.wrap > * {
+  width: 100%;
+}
+
+.wrap [role='menu'] {
+  left: 0;
+  right: 0;
+  min-width: 0;
+  margin-bottom: var(--spacing-1);
+}

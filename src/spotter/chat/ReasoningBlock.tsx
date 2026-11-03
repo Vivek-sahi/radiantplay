@@ -1,13 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { Icon } from '@components/icons';
-import type { IconName } from '@components/icons';
+import React, { useEffect, useMemo, useState } from 'react';
 import type {
   MessageStage,
-  ReasoningStep,
-  ReasoningToolCall,
+  ReasoningItem,
   ReasoningTrace,
 } from '../runtime/schema';
-import styles from './ReasoningBlock.module.css';
+import { Reasoning } from './Reasoning';
 
 export interface ReasoningBlockProps {
   reasoning?: ReasoningTrace;
@@ -15,31 +12,20 @@ export interface ReasoningBlockProps {
 }
 
 /**
- * Reasoning panel — has four visual states tied to the message lifecycle:
+ * Renders a runtime ReasoningTrace with the shared Reasoning timeline.
  *
- *   1. Streaming + semi-collapsed (default while streaming)
- *      Shows ONLY the current step (label + description) as a peek.
- *      Clicking expands the full trace up to the current step.
+ * This is the adapter between the reducer's step model (label / description /
+ * status / toolcall) and the timeline's flat item model (text rows and tool
+ * rows). Consumers that already hold a ChatMessage keep using this; new code
+ * that owns its own item list should render `Reasoning` directly.
  *
- *   2. Streaming + expanded (user clicked)
- *      Full trace of every step streamed so far. Pending steps stay
- *      hidden until they activate.
- *
- *   3. Done + collapsed (default after streaming, with 600ms delay)
- *      Single "Thought for X seconds" trigger that re-expands the trace.
- *
- *   4. Done + expanded (user clicked, or briefly before auto-collapse)
- *      Full trace + duration footer.
- *
- * A user click on the trigger overrides the auto behaviour for the
- * remainder of this message's lifetime.
- *
- * When expanded, each step renders:
- *   - colored dot (gray pending, brand-blue pulsing current, gray done)
- *   - bold title
- *   - optional description body
- *   - optional embedded ToolcallCard with input / output
- *   - left-side connector line linking the dots
+ * Lifecycle, unchanged from the original block:
+ *   - while the agent works the timeline stays semi-collapsed, showing only
+ *     the latest step;
+ *   - when reasoning settles it expands briefly, then collapses to
+ *     "Show work" 600ms later;
+ *   - a user click locks the panel in its chosen state for the rest of the
+ *     message's lifetime.
  */
 export const ReasoningBlock: React.FC<ReasoningBlockProps> = ({
   reasoning,
@@ -50,194 +36,83 @@ export const ReasoningBlock: React.FC<ReasoningBlockProps> = ({
   const [userToggled, setUserToggled] = useState(false);
 
   useEffect(() => {
-    // Auto-expand briefly when reasoning settles, then collapse 600ms later.
-    // A prior user click locks the panel in its chosen state.
     if (userToggled) return;
     if (stage === 'done' && reasoning?.isDone) {
       setExpanded(true);
       const t = setTimeout(() => setExpanded(false), 600);
       return () => clearTimeout(t);
     }
-    // While streaming we stay in the semi-collapsed peek state.
     if (isActive) {
       setExpanded(false);
     }
   }, [stage, reasoning?.isDone, isActive, userToggled]);
+
+  const model = useMemo(() => reasoningTraceToItems(reasoning), [reasoning]);
 
   const handleToggle = (): void => {
     setUserToggled(true);
     setExpanded((prev) => !prev);
   };
 
-  // Don't render until reasoning is actually set — avoids the trigger
-  // appearing during the typing-only phase. TypingIndicator covers
-  // that phase in AgentMessage.
+  // Nothing to show until the first reasoning chunk arrives; TypingIndicator
+  // covers that phase in AgentMessage.
   if (!reasoning) return null;
 
-  const stepCount = reasoning.steps.length;
-  // The "current" step during streaming is the last item in the array
-  // (it gets pushed to 'current' by the reducer and stays last until the
-  // next reasoning_step chunk arrives). When the array is empty we have
-  // nothing to peek at yet.
-  const currentStep: ReasoningStep | undefined =
-    stepCount > 0 ? reasoning.steps[stepCount - 1] : undefined;
-  const isDoneSettled = stage === 'done' && reasoning.isDone;
-  const showSemiCollapsedPeek = isActive && !expanded && currentStep !== undefined;
-  const showSteps = expanded && stepCount > 0;
-
   return (
-    <div className={styles.reasoning}>
-      {/*
-        Unified brand-blue header. Text varies by state — current step
-        label while streaming, "Thought for X seconds" once settled.
-        Chevron flips based on expanded.
-      */}
-      <button
-        type="button"
-        className={styles.header}
-        onClick={handleToggle}
-        aria-expanded={expanded}
-        aria-label={expanded ? 'Collapse reasoning trace' : 'Expand reasoning trace'}
-      >
-        <span className={styles.headerTitle}>
-          {isDoneSettled && reasoning.durationSeconds !== undefined
-            ? `Thought for ${reasoning.durationSeconds} seconds`
-            : currentStep?.label ?? 'Show work'}
-        </span>
-        <span className={styles.headerChevron} data-expanded={expanded} aria-hidden="true">
-          <Icon name="chevron-down" size="s" />
-        </span>
-      </button>
-      {/*
-        Peek body — current step description with a left guideline.
-        Stays mounted while we have a current step description so the
-        transition to the done state can ease out (opacity + max-height)
-        instead of unmounting instantly. data-visible drives the CSS.
-      */}
-      {currentStep?.description && (
-        <p
-          className={styles.peekDescription}
-          data-visible={showSemiCollapsedPeek}
-          aria-hidden={!showSemiCollapsedPeek}
-        >
-          {currentStep.description}
-        </p>
-      )}
-      {/*
-        Steps container stays MOUNTED. Visibility flips via `data-expanded`
-        so the height/opacity transition can animate collapse/expand smoothly.
-      */}
-      <div className={styles.steps} data-expanded={showSteps}>
-        {reasoning.steps.map((step, index) => (
-          <StepRow
-            key={step.id}
-            step={step}
-            isLast={
-              index === stepCount - 1 && reasoning.durationSeconds === undefined
-            }
-            animationDelay={index * 80}
-          />
-        ))}
-        {reasoning.isDone && reasoning.durationSeconds !== undefined && (
-          <div className={styles.workedFor}>
-            <div className={styles.dotColumn}>
-              <span
-                className={styles.dot}
-                data-status="done"
-                aria-hidden="true"
-              />
-            </div>
-            <p className={styles.workedForBody}>
-              Thought for {reasoning.durationSeconds} seconds
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
+    <Reasoning
+      items={model.items}
+      visibleCount={model.visibleCount}
+      loadedToolIds={model.loadedToolIds}
+      status={reasoning.isDone ? 'done' : 'running'}
+      expanded={expanded}
+      onToggleExpanded={handleToggle}
+      doneLabel={
+        reasoning.durationSeconds !== undefined
+          ? `Thought for ${reasoning.durationSeconds} seconds`
+          : undefined
+      }
+    />
   );
 };
 
 ReasoningBlock.displayName = 'ReasoningBlock';
 
-// ---------- StepRow ----------
-
-interface StepRowProps {
-  step: ReasoningStep;
-  isLast: boolean;
-  animationDelay: number;
+export interface ReasoningItemsModel {
+  items: ReasoningItem[];
+  /** Items belonging to steps that have started (not 'pending'). */
+  visibleCount: number;
+  /** Tool ids whose step has finished. */
+  loadedToolIds: Set<string>;
 }
 
-const StepRow: React.FC<StepRowProps> = ({ step, isLast, animationDelay }) => {
-  return (
-    <div className={styles.step} style={{ animationDelay: `${animationDelay}ms` }}>
-      <div className={styles.dotColumn}>
-        {!isLast && <span className={styles.connector} aria-hidden="true" />}
-        <span className={styles.dot} data-status={step.status} aria-hidden="true" />
-      </div>
-      <div className={styles.body}>
-        <h4 className={styles.title}>{step.label}</h4>
-        {step.description && <p className={styles.description}>{step.description}</p>}
-        {step.toolcall && <ToolcallCard toolcall={step.toolcall} />}
-      </div>
-    </div>
-  );
-};
+/**
+ * Flatten a step trace into timeline items. Each step yields a text row
+ * (its description, headed by its label) and, when it carries a toolcall, a
+ * tool row after it. Pending steps are appended but not counted as visible,
+ * so the timeline streams them in as the reducer advances.
+ */
+export function reasoningTraceToItems(trace?: ReasoningTrace): ReasoningItemsModel {
+  const items: ReasoningItem[] = [];
+  const loadedToolIds = new Set<string>();
+  let visibleCount = 0;
+  if (!trace) return { items, visibleCount, loadedToolIds };
 
-const looksLikeJson = (s: string): boolean => {
-  const trimmed = s.trimStart();
-  return trimmed.startsWith('{') || trimmed.startsWith('[');
-};
-
-// ---------- ToolcallCard ----------
-
-const ToolcallCard: React.FC<{ toolcall: ReasoningToolCall }> = ({ toolcall }) => {
-  const [open, setOpen] = useState(false);
-  const hasBody = toolcall.input !== undefined || toolcall.output !== undefined;
-
-  return (
-    <div className={styles.toolcall}>
-      <button
-        type="button"
-        className={styles.toolcallHeader}
-        onClick={() => setOpen((p) => !p)}
-        aria-expanded={open}
-      >
-        <span className={styles.toolcallIcon} aria-hidden="true">
-          <Icon name={(toolcall.icon as IconName) ?? 'search'} size="s" />
-        </span>
-        <span className={styles.toolcallTitle}>{toolcall.title}</span>
-        {hasBody && (
-          <span className={styles.toolcallShowDetails}>
-            <span>Show details</span>
-            <span className={styles.toolcallChevron} data-expanded={open}>
-              <Icon name="chevron-down" size="s" />
-            </span>
-          </span>
-        )}
-      </button>
-      {hasBody && (
-        <div className={styles.toolcallBody} data-open={open}>
-          {toolcall.input !== undefined && (
-            <div className={styles.toolcallSection}>
-              <span className={styles.toolcallLabel}>Input:</span>
-              <pre className={styles.toolcallValue}>{toolcall.input}</pre>
-            </div>
-          )}
-          {toolcall.output !== undefined && (
-            <div className={styles.toolcallSection}>
-              <span className={styles.toolcallLabel}>Output:</span>
-              <pre className={styles.toolcallValue}>
-                {looksLikeJson(toolcall.output) && (
-                  <span className={styles.toolcallValueLang}>JSON</span>
-                )}
-                {toolcall.output}
-              </pre>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
+  for (const step of trace.steps) {
+    const before = items.length;
+    items.push({
+      kind: 'text',
+      id: step.id,
+      text: step.description ?? step.label,
+      summaryHeader: step.label,
+    });
+    if (step.toolcall) {
+      items.push({ kind: 'tool', ...step.toolcall });
+      if (step.status === 'done') loadedToolIds.add(step.toolcall.id);
+    }
+    if (step.status !== 'pending') visibleCount = items.length;
+    else if (before === 0) visibleCount = 0;
+  }
+  return { items, visibleCount, loadedToolIds };
+}
 
 export default ReasoningBlock;

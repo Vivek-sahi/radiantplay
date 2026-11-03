@@ -28,16 +28,18 @@
 }
 
 .horizontal .connector {
+  /* Centred on the 32px circle, with a 4px gap either side */
   position: absolute;
-  top: 14px;
-  left: calc(50% + 18px);
-  right: calc(-50% + 18px);
-  height: var(--border-width-medium, 2px);
-  background-color: var(--rd-sys-color-background-subtle);
+  top: var(--spacing-4);
+  left: calc(50% + var(--spacing-4) + var(--spacing-1));
+  right: calc(-50% + var(--spacing-4) + var(--spacing-1));
+  height: 1px;
+  transform: translateY(-50%);
+  background-color: var(--rd-sys-color-border-bold);
 }
 
 .horizontal .connectorActive {
-  background-color: var(--rd-sys-color-background-brand);
+  background-color: var(--rd-sys-color-content-success);
 }
 
 .horizontal .stepWrapper:last-child .connector {
@@ -66,16 +68,18 @@
 }
 
 .vertical .connector {
+  /* Centred under the 32px circle, with a 4px gap below it */
   position: absolute;
-  top: var(--spacing-8, 32px);
-  left: 13px;
-  bottom: var(--spacing-2, 8px);
-  width: var(--border-width-medium, 2px);
-  background-color: var(--rd-sys-color-background-subtle);
+  top: calc(var(--spacing-8) + var(--spacing-1));
+  left: var(--spacing-4);
+  bottom: var(--spacing-1);
+  width: 1px;
+  transform: translateX(-50%);
+  background-color: var(--rd-sys-color-border-bold);
 }
 
 .vertical .connectorActive {
-  background-color: var(--rd-sys-color-background-brand);
+  background-color: var(--rd-sys-color-content-success);
 }
 
 .vertical .stepWrapper:last-child .connector {
@@ -99,64 +103,70 @@
 
 /* Step number indicator */
 .stepNumber {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  border-radius: var(--radius-full, 50%);
+  box-sizing: border-box;
+  width: var(--spacing-8);
+  height: var(--spacing-8);
+  min-width: var(--spacing-8);
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--font-size-xs, 12px);
-  font-weight: var(--font-weight-semibold, 600);
-  border: var(--border-width-medium, 2px) solid var(--rd-sys-color-border-default);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-md);
+  border: 1px solid var(--rd-sys-color-border-bold);
   background-color: var(--rd-sys-color-background-base);
-  color: var(--rd-sys-color-content-secondary);
-  transition: all var(--duration-normal, 200ms) var(--easing-standard, ease);
+  color: var(--rd-sys-color-content-primary);
+  transition: all var(--duration-normal) var(--easing-standard);
 }
 
+/* Current: brand outline, brand number */
 .stepActive .stepNumber {
   border-color: var(--rd-sys-color-border-brand);
-  background-color: var(--rd-sys-color-background-brand);
-  color: var(--rd-sys-color-content-alternate);
+  color: var(--rd-sys-color-content-brand);
 }
 
+/* Completed: green fill with a check */
 .stepCompleted .stepNumber {
-  border-color: var(--rd-sys-color-border-brand);
-  background-color: var(--rd-sys-color-background-brand);
+  border-color: var(--rd-sys-color-content-success);
+  background-color: var(--rd-sys-color-content-success);
   color: var(--rd-sys-color-content-alternate);
 }
 
-/* Check icon for completed */
+/* Check icon for completed: 16px */
 .checkIcon {
-  width: var(--font-size-sm, 14px);
-  height: var(--font-size-sm, 14px);
+  width: var(--spacing-4);
+  height: var(--spacing-4);
 }
 
 /* Step content */
 .stepContent {
   display: flex;
   flex-direction: column;
-  padding-top: var(--spacing-1, 4px);
+  /* Centres the first title line on the 32px circle */
+  padding-top: calc((var(--spacing-8) - var(--line-height-md)) / 2);
 }
 
 .horizontal .stepContent {
   text-align: center;
-  padding-top: var(--spacing-2, 8px);
+  padding-top: var(--spacing-2);
 }
 
 .stepTitle {
-  font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-medium, 500);
-  color: var(--rd-sys-color-content-secondary);
-  transition: color var(--duration-normal, 200ms) var(--easing-standard, ease);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-primary);
+  transition: color var(--duration-normal) var(--easing-standard);
 }
 
 .stepActive .stepTitle {
-  color: var(--rd-sys-color-content-primary);
+  color: var(--rd-sys-color-content-brand);
 }
 
 .stepCompleted .stepTitle {
-  color: var(--rd-sys-color-content-primary);
+  color: var(--rd-sys-color-content-secondary);
 }
 
 .stepDescription {
@@ -179,3 +189,13 @@
   outline-offset: var(--spacing-1, 2px);
   border-radius: var(--radius-sm, 4px);
 }
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   Step titles use Body/Normal (400), as in Figma
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .stepTitle {
+  font-weight: var(--font-weight-regular);
+}
+

@@ -1,9 +1,0 @@
-﻿Name,Content Rules,Default State,Description,Dynamic Behaviour,Error State,Ref
-Media content,N/A,N/A,Media content could be image or video,Media content is optional,N/A,7
-Close button,N/A,N/A,This button allows the user to close the explainer card,Click this button to close the explainer card,N/A,6
-Spotlight area,N/A,N/A,The area on the page that requires user's attention,N/A,N/A,3
-Card container,,,N/A,Card container is at 340px wide,,5
-Stepper,,,Indicate how many steps,Stepper is optional,,4
-Title,N/A,N/A,N/A,Title is optional,N/A,1
-Primary action,N/A,N/A,Main CTA,CAT or next / back buttons (optional),N/A,8
-Description text block,N/A,N/A,Describe the object,restrict messages to 3 lines in length,N/A,2

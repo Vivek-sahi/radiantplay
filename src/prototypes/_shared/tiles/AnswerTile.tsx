@@ -1,5 +1,6 @@
 import React, { forwardRef, useState, useEffect, useRef, Suspense } from 'react';
 import styles from './AnswerTile.module.css';
+import { sysVar } from '@tokens/colors';
 
 // Lazy-load the entire chart bundle — ECharts (~700 kB) only downloads
 // when an AnswerTile actually mounts, not on app startup.
@@ -28,6 +29,12 @@ export type TileMode = 'view' | 'edit';
 export interface AnswerTileProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Chart type to render. Fixed per instance. */
   chartType: ChartType;
+
+  /**
+   * Optional per-tile color override for the chart. Charts that support it
+   * use these colors instead of the default sequential palette.
+   */
+  colors?: string[];
 
   /**
    * Tile title. Optional — omit to hide the title entirely.
@@ -221,6 +228,7 @@ export const AnswerTile = forwardRef<HTMLDivElement, AnswerTileProps>(
   (
     {
       chartType,
+      colors,
       title,
       description,
       mode = 'view',
@@ -268,8 +276,8 @@ export const AnswerTile = forwardRef<HTMLDivElement, AnswerTileProps>(
     const titleInputRef = useRef<HTMLInputElement>(null);
     const descInputRef  = useRef<HTMLInputElement>(null);
 
-    const titleBorder = titleFocused ? '1px solid #2770EF' : titleHovered ? '1px solid #C0C6CF' : '1px solid transparent';
-    const descBorder  = descFocused  ? '1px solid #2770EF' : descHovered  ? '1px solid #C0C6CF' : '1px solid transparent';
+    const titleBorder = titleFocused ? `1px solid ${sysVar('border-brand')}` : titleHovered ? `1px solid ${sysVar('border-default')}` : '1px solid transparent';
+    const descBorder  = descFocused  ? `1px solid ${sysVar('border-brand')}` : descHovered  ? `1px solid ${sysVar('border-default')}` : '1px solid transparent';
 
     // Chart type dropdown
     const [chartDropdownOpen, setChartDropdownOpen] = useState(false);
@@ -502,7 +510,7 @@ export const AnswerTile = forwardRef<HTMLDivElement, AnswerTileProps>(
           {/* chart area is the drag handle — large, safe to drag from */}
           <div className={isEdit ? `${styles.chartArea} tile-drag-handle` : styles.chartArea}>
             <Suspense fallback={<div style={{ width: '100%', height: '100%' }} />}>
-              <ChartRenderer type={chartType} />
+              <ChartRenderer type={chartType} colors={colors} />
             </Suspense>
           </div>
 

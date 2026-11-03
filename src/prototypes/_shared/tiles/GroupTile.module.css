@@ -22,7 +22,7 @@
 }
 
 .tile:not(.tileEdit):hover {
-  border-color: #C0C6CF;
+  border-color: var(--rd-sys-color-border-default, #c0c6cf);
 }
 
 .tileEdit { cursor: default; }
@@ -52,9 +52,9 @@
 }
 
 .title {
-  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-family-primary);
   font-size: 16px;
-  font-weight: 600;
+  font-weight: var(--font-weight-emphasis);
   line-height: 24px;
   letter-spacing: -0.4px;
   color: var(--rd-sys-color-content-primary, #1d232f);
@@ -67,11 +67,11 @@
 }
 
 .description {
-  font-family: 'Plain', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-family-primary);
   font-size: 14px;
-  font-weight: 375;
+  font-weight: var(--font-weight-regular);
   line-height: 20px;
-  color: #4a515e;
+  color: var(--rd-sys-color-content-secondary, #777e8b);
   height: 20px;
   display: flex;
   align-items: center;
@@ -123,7 +123,7 @@
 .handle {
   position: absolute;
   width: 6px; height: 6px;
-  background: #ffffff;
+  background: var(--rd-sys-color-background-base, #ffffff);
   border: 0.75px solid var(--rd-sys-color-content-brand, #2770ef);
   border-radius: 0;
   box-sizing: border-box;
@@ -137,7 +137,7 @@
 .handlePill {
   position: absolute;
   width: 6px; height: 32px;
-  background: #ffffff;
+  background: var(--rd-sys-color-background-base, #ffffff);
   border: 0.75px solid var(--rd-sys-color-content-brand, #2770ef);
   border-radius: 16px;
   box-sizing: border-box;
@@ -149,7 +149,7 @@
 .handlePillH {
   position: absolute;
   width: 32px; height: 6px;
-  background: #ffffff;
+  background: var(--rd-sys-color-background-base, #ffffff);
   border: 0.75px solid var(--rd-sys-color-content-brand, #2770ef);
   border-radius: 16px;
   box-sizing: border-box;
@@ -167,10 +167,10 @@
   align-items: center;
   gap: 8px;
   padding: 4px 8px;
-  background: #1d232f;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--rd-sys-color-background-base-inverse, #323946);
+  border: 1px solid color-mix(in srgb, var(--rd-sys-color-content-primary-inverse, #ffffff) 12%, transparent);
   border-radius: 4px;
-  box-shadow: 0 0 4px rgba(25,35,49,0.1), 0 24px 32px rgba(25,35,49,0.16);
+  box-shadow: var(--rd-sys-color-shadow-modal);
   pointer-events: auto;
   z-index: 100;
   white-space: nowrap;
@@ -185,14 +185,14 @@
   border: none;
   border-radius: 2px;
   cursor: pointer;
-  color: #ffffff;
+  color: var(--rd-sys-color-content-primary-inverse, #ffffff);
   padding: 0;
   flex-shrink: 0;
 }
-.toolbarBtn:hover { background: rgba(255,255,255,0.12); }
+.toolbarBtn:hover { background: color-mix(in srgb, var(--rd-sys-color-content-primary-inverse, #ffffff) 12%, transparent); }
 
 .toolbarDivider {
   width: 1px; height: 20px;
-  background: rgba(255,255,255,0.15);
+  background: color-mix(in srgb, var(--rd-sys-color-content-primary-inverse, #ffffff) 15%, transparent);
   flex-shrink: 0;
 }

@@ -45,7 +45,7 @@
 
 .label {
   font-size: var(--font-size-sm);
-  color: var(--rd-sys-color-content-subtle);
+  color: var(--rd-sys-color-content-secondary);
 }
 
 .value {

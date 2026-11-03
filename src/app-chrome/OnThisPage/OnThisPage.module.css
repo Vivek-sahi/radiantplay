@@ -1,0 +1,124 @@
+/* Fixed in the space to the right of the design system content; placed by OnThisPage.tsx */
+.rail {
+  position: fixed;
+  top: var(--spacing-20); /* below the layout's top row */
+  z-index: 5;
+  width: 180px;
+  max-height: calc(100vh - var(--spacing-24));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding-left: var(--spacing-3);
+  border-left: 1px solid var(--rd-sys-color-border-subtle);
+  opacity: 0;
+  transform: translateY(var(--spacing-2));
+  transition: opacity var(--duration-normal, 200ms) var(--easing-standard, ease), transform var(--duration-normal, 200ms) var(--easing-standard, ease);
+  pointer-events: none;
+}
+
+.shown {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.title {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-emphasis);
+  color: var(--rd-sys-color-content-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.rail a {
+  padding: var(--spacing-1) 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.35;
+  color: var(--rd-sys-color-content-secondary);
+  text-decoration: none;
+}
+
+.rail a:hover {
+  color: var(--rd-sys-color-content-primary);
+}
+
+.rail a.active {
+  color: var(--rd-sys-color-content-brand);
+  font-weight: var(--font-weight-emphasis);
+}
+
+.rail a:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-brand);
+  outline-offset: 2px;
+}
+
+/* Headings the rail links to land below the top of the window */
+.target {
+  scroll-margin-top: var(--spacing-8);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail { transition: none; }
+}
+
+/* The content frame for the design system layout: content starts after the sidebar and every page keeps the
+   same room on the right, where pages with sections list them, so content sits in one place everywhere */
+.frame {
+  min-width: 0;
+  padding-right: 220px;
+}
+
+/* One heading style across the design system pages. Pages set many of these inline, so the layout overrides
+   them; demos ([data-demo]) keep their own type. */
+.frame h1:not([data-demo] h1) {
+  font-size: var(--font-size-3xl) !important;
+  line-height: var(--line-height-3xl) !important;
+  font-weight: var(--font-weight-emphasis) !important;
+  letter-spacing: normal !important;
+  color: var(--rd-sys-color-content-primary) !important;
+}
+
+.sectionHeading {
+  font-size: var(--font-size-xl) !important;
+  line-height: var(--line-height-xl) !important;
+  font-weight: var(--font-weight-emphasis) !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  color: var(--rd-sys-color-content-primary) !important;
+  /* The Radiance guide's section header spacing, everywhere */
+  margin-bottom: var(--spacing-2) !important;
+}
+
+/* Section links at the top of a long page: pills on the base surface with a hairline border, like the cards */
+.links {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1);
+  margin: var(--spacing-6) 0 var(--spacing-8);
+  border: 1px solid var(--rd-sys-color-background-subtle);
+  border-radius: var(--radius-full);
+  background: var(--rd-sys-color-background-base);
+}
+
+.links a {
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+  color: var(--rd-sys-color-content-brand);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-emphasis);
+}
+
+.links a:hover {
+  background: var(--rd-sys-color-background-secondary-action);
+}
+
+.links a:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-brand);
+  outline-offset: 2px;
+}

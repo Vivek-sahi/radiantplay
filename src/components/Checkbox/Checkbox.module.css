@@ -37,7 +37,7 @@
   min-width: 16px;
   min-height: 16px;
   background-color: var(--rd-sys-color-background-base);
-  border: 1px solid var(--rd-sys-color-border-default);
+  border: 1px solid var(--rd-sys-color-border-bold);
   border-radius: var(--radius-xs);
   flex-shrink: 0;
   transition: border-color var(--duration-fast) var(--easing-standard), 
@@ -45,8 +45,13 @@
   box-sizing: border-box;
 }
 
-.checkbox:hover:not(.disabled) .box {
+/* Border colour by state. Figma has no hover state. */
+.box.boxSelected {
   border-color: var(--rd-sys-color-border-brand);
+}
+
+.box.boxError {
+  border-color: var(--rd-sys-color-border-failure);
 }
 
 .input:focus-visible + .box {
@@ -62,7 +67,7 @@
 .label {
   font-family: var(--font-family-primary);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md);
   color: var(--rd-sys-color-content-primary);
   white-space: nowrap;

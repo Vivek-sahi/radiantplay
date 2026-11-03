@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useRadiantLook } from '../../context/RadiantLookContext';
 import styles from './Pagination.module.css';
 
 export interface PaginationNumbersProps {
@@ -284,12 +285,15 @@ const PaginationRange: React.FC<PaginationRangeProps> = ({
 
   const canGoPrev = currentPage > 1;
   const canGoNext = currentPage < totalPages;
+  // Radiant 3.0 look: "Showing 1-20 of 500 results"
+  const isRadiant3 = useRadiantLook() === 'radiant-3';
 
   return (
     <div className={`${styles.range} ${className}`}>
       <span className={styles.rangeText}>
         Showing <span className={styles.rangeStrong}>{startItem}-{endItem}</span> of{' '}
         <span className={styles.rangeStrong}>{totalItems}</span>
+        {isRadiant3 && ' results'}
       </span>
       
       <button

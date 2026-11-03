@@ -78,6 +78,8 @@ Before writing any code, ask the designer all questions in a single message. Pre
 
 Wait for the designer's answers before continuing.
 
+**Radiance (AI background), only for an AI or Spotter surface:** if the answers describe the Home page or Spotter home, SpotterX or a Spotter chat, a Liveboard with Spotter, sign up / sign in, or another AI surface (an AI welcome, onboarding, an agent's empty state), ask one more question: "Use the Radiance background? The `<pattern>` product pattern fits this screen. 1. Yes (default) 2. No". For a product-pattern surface default to yes; for other AI surfaces offer `top-wash-subtle-dynamic-fast` and default to no. Pick the pattern and, on yes, add `RadianceBackground` to the scaffold as `.claude/skills/rp-radiance/SKILL.md` says. Never ask for non-AI screens.
+
 **If the answer to question 4 is "Data model editor":** before proceeding to step 4, ask these follow-up questions in a single message. Do NOT ask for layout type — DME layout is fixed.
 
 > A few more questions to configure the Data model editor:
@@ -120,7 +122,7 @@ Resolve the API key automatically — check in this order:
 
    Then write it to `.env.local`: `echo "ANTHROPIC_API_KEY=<key>" > .env.local`
 
-Default to `claude-haiku-4-5-20251001` (fastest, cheapest). The designer can switch models anytime using `/switch-model`.
+Default to `claude-haiku-4-5-20251001` (fastest, cheapest). The designer can switch models anytime by asking ("switch the prototype to Sonnet"); the `rp-prototype-model` skill covers it.
 
 **If SpotterModel = No (option 2):** scaffold with `window.__DME_CONFIG__ = { spotterModel: false }`. No API key needed.
 
@@ -180,13 +182,13 @@ Empty file — reserves the components folder.
 **`src/prototypes/<Name>/styles.ts`**
 ```ts
 import { CSSProperties } from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 
 export const styles: Record<string, CSSProperties> = {
   container: {
     minHeight: '100vh',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
   },
   content: {
     padding: `${spacing.H}px`,
@@ -203,7 +205,7 @@ export const styles: Record<string, CSSProperties> = {
 **`src/prototypes/<Name>/index.tsx`**
 ```tsx
 import React, { useState } from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 
 /**
@@ -221,17 +223,17 @@ export const <Name>: React.FC = () => {
   const [activeSection, setActiveSection] = useState('overview');
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: systemColors.light['background-sunken'] }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: sysVar('background-sunken') }}>
       {/* Header */}
-      <header style={{ height: HEADER_HEIGHT, display: 'flex', alignItems: 'center', padding: `0 ${spacing.F}px`, backgroundColor: systemColors.light['background-base'], borderBottom: `1px solid ${systemColors.light['border-divider']}` }}>
-        <h1 style={{ fontSize: '16px', fontWeight: 600, color: systemColors.light['content-primary'] }}>
+      <header style={{ height: HEADER_HEIGHT, display: 'flex', alignItems: 'center', padding: `0 ${spacing.F}px`, backgroundColor: sysVar('background-base'), borderBottom: `1px solid ${sysVar('border-divider')}` }}>
+        <h1 style={{ fontSize: '16px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary') }}>
           <Name display name>
         </h1>
       </header>
 
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {/* Sidebar */}
-        <nav style={{ width: SIDEBAR_WIDTH, backgroundColor: systemColors.light['background-base'], borderRight: `1px solid ${systemColors.light['border-divider']}`, padding: `${spacing.D}px` }}>
+        <nav style={{ width: SIDEBAR_WIDTH, backgroundColor: sysVar('background-base'), borderRight: `1px solid ${sysVar('border-divider')}`, padding: `${spacing.D}px` }}>
           {/* Add navigation items here */}
         </nav>
 
@@ -252,7 +254,7 @@ export default <Name>;
 **`src/prototypes/<Name>/index.tsx`**
 ```tsx
 import React, { useState } from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 
 /**
@@ -272,33 +274,33 @@ export const <Name>: React.FC = () => {
   const handleBack = () => setCurrentStep((s) => Math.max(s - 1, 0));
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: systemColors.light['background-sunken'], display: 'flex', flexDirection: 'column', alignItems: 'center', padding: `${spacing.J}px ${spacing.F}px` }}>
+    <div style={{ minHeight: '100vh', backgroundColor: sysVar('background-sunken'), display: 'flex', flexDirection: 'column', alignItems: 'center', padding: `${spacing.J}px ${spacing.F}px` }}>
       {/* Step indicator */}
       <div style={{ display: 'flex', gap: `${spacing.D}px`, marginBottom: `${spacing.H}px` }}>
         {STEPS.map((label, i) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: `${spacing.B}px`, color: i <= currentStep ? systemColors.light['content-brand'] : systemColors.light['content-secondary'] }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600, backgroundColor: i <= currentStep ? systemColors.light['background-information'] : systemColors.light['background-subtle'] }}>
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: `${spacing.B}px`, color: i <= currentStep ? sysVar('content-brand') : sysVar('content-secondary') }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', backgroundColor: i <= currentStep ? sysVar('background-information') : sysVar('background-subtle') }}>
               {i + 1}
             </div>
-            <span style={{ fontSize: '14px', fontWeight: 500 }}>{label}</span>
+            <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-medium)' }}>{label}</span>
           </div>
         ))}
       </div>
 
       {/* Step content */}
-      <div style={{ width: '100%', maxWidth: 600, backgroundColor: systemColors.light['background-base'], borderRadius: 12, padding: `${spacing.H}px`, border: `1px solid ${systemColors.light['border-divider']}` }}>
+      <div style={{ width: '100%', maxWidth: 600, backgroundColor: sysVar('background-base'), borderRadius: 12, padding: `${spacing.H}px`, border: `1px solid ${sysVar('border-divider')}` }}>
         {/* Start building your step content here */}
-        <p style={{ color: systemColors.light['content-secondary'] }}>Step {currentStep + 1} content</p>
+        <p style={{ color: sysVar('content-secondary') }}>Step {currentStep + 1} content</p>
       </div>
 
       {/* Navigation */}
       <div style={{ display: 'flex', gap: `${spacing.C}px`, marginTop: `${spacing.F}px` }}>
         {currentStep > 0 && (
-          <button onClick={handleBack} style={{ padding: `${spacing.B}px ${spacing.D}px`, borderRadius: 8, border: `1px solid ${systemColors.light['border-default']}`, backgroundColor: systemColors.light['background-base'], cursor: 'pointer' }}>
+          <button onClick={handleBack} style={{ padding: `${spacing.B}px ${spacing.D}px`, borderRadius: 8, border: `1px solid ${sysVar('border-default')}`, backgroundColor: sysVar('background-base'), cursor: 'pointer' }}>
             Back
           </button>
         )}
-        <button onClick={handleNext} style={{ padding: `${spacing.B}px ${spacing.D}px`, borderRadius: 8, border: 'none', backgroundColor: systemColors.light['content-brand'], color: '#fff', cursor: 'pointer' }}>
+        <button onClick={handleNext} style={{ padding: `${spacing.B}px ${spacing.D}px`, borderRadius: 8, border: 'none', backgroundColor: sysVar('content-brand'), color: sysVar('content-inverse'), cursor: 'pointer' }}>
           {currentStep === STEPS.length - 1 ? 'Finish' : 'Next'}
         </button>
       </div>
@@ -314,7 +316,7 @@ export default <Name>;
 **`src/prototypes/<Name>/index.tsx`**
 ```tsx
 import React from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 
 /**
@@ -326,7 +328,7 @@ import { spacing } from '../../tokens/spacing';
  */
 export const <Name>: React.FC = () => {
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: systemColors.light['background-sunken'] }}>
+    <div style={{ minHeight: '100vh', backgroundColor: sysVar('background-sunken') }}>
       <div style={{ padding: `${spacing.H}px`, maxWidth: 1200, margin: '0 auto' }}>
         {/* Start building your prototype here */}
       </div>
@@ -339,26 +341,9 @@ export default <Name>;
 
 ---
 
-### 6. Create the thumbnail
+### 6. No thumbnail yet
 
-Create a basic SVG thumbnail at `src/prototypes/thumbnails/<Name>.svg`:
-
-```svg
-<svg width="800" height="450" viewBox="0  0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background -->
-  <rect width="800" height="450" fill="#F6F8FA"/>
-
-  <!-- UI representation -->
-  <rect x="100" y="80" width="600" height="300" rx="12" fill="white"/>
-
-  <!-- Title -->
-  <text x="400" y="420" fill="#1D232F" font-family="system-ui" font-size="18" text-anchor="middle" font-weight="500">
-    <Display Name>
-  </text>
-</svg>
-```
-
-Use the display name from the registry entry as the title text.
+Don't draw a placeholder thumbnail. A new prototype has nothing to show yet, so the gallery shows a placeholder until a real screenshot is captured. That happens on its own, or from the gallery's Capture thumbnails note under `npm run dev`: `/rp-radiant-check` captures it once the prototype has its UI, and `/rp-sync-upstream` picks up any that are missing.
 
 ---
 
@@ -366,19 +351,13 @@ Use the display name from the registry entry as the title text.
 
 Open `src/prototypes/registry-mine.ts` — this is the designer's own file, never touched by upstream.
 
-**A — Add the thumbnail import** at the top of the file (after the existing import):
-
-```ts
-import <Name>Thumbnail from './thumbnails/<Name>.svg';
-```
-
-**B — Add the lazy import** before the `myRegistry` array:
+**A — Add the lazy import** before the `myRegistry` array:
 
 ```ts
 const <Name> = React.lazy(() => import('./<Name>'));
 ```
 
-**C — Add the registry entry** inside the `myRegistry` array:
+**B — Add the registry entry** inside the `myRegistry` array:
 
 ```ts
   {
@@ -387,18 +366,27 @@ const <Name> = React.lazy(() => import('./<Name>'));
     description: '<One sentence from the designer's goal answer>',
     author: '<designer's name from step 3>',
     lastModified: '<today's date as YYYY-MM-DD>',
-    thumbnail: <Name>Thumbnail,
     component: <Name>,
     section: 'mine',
+    theme: 'global', // follows light and dark; the scaffold is dark ready (step 8 checks it)
+    look: 'radiant-3', // Radiant 3.0 Figma sizes (32px fields and menu items, 6px radii)
   },
 ```
+
+`theme: 'global'` puts the prototype in dark mode with the rest of the app. Without it a designer prototype stays light (the safe default for older prototypes).
 
 > **Important:** Always write to `registry-mine.ts`, never to `registry-core.ts` or `registry.ts`.
 > `registry-mine.ts` is the designer's file — upstream never changes it, so it never conflicts on sync.
 
 ---
 
-### 8. Report
+### 8. Check dark mode
+
+Run `npm run scan:dark -- src/prototypes/<Name>`. The scaffold should report dark ready: yes. If it doesn't, fix the findings (use `sysVar()` / `var(--rd-sys-color-*)`, never `systemColors.light[...]` or hex) before reporting. If something can't be fixed now, change the entry's `theme: 'global'` to nothing (delete the line) so the prototype stays light until it's ready, and say so.
+
+---
+
+### 9. Report
 
 Print a summary in this format:
 
@@ -411,13 +399,12 @@ Files created:
   src/prototypes/<Name>/styles.ts          ← shared styles with tokens
   src/prototypes/<Name>/data/mockData.ts   ← mock data starter
   src/prototypes/<Name>/components/        ← put your local components here
-  src/prototypes/thumbnails/<Name>.svg     ← gallery thumbnail
 
 Registered in registry-mine.ts — it will appear in the gallery under "My prototypes".
 
 What's next:
   • Describe your UI or paste a Figma screenshot — Claude will build it using Radiant components
-  • To switch the AI model used in this prototype: /switch-model
-  • To check design system compliance: /radiant-check
-  • To pull in upstream updates: /sync-upstream (shows a preview first, then asks before merging)
+  • To switch the AI model used in this prototype, just ask
+  • When it looks right, check it and capture its gallery thumbnail: /rp-radiant-check
+  • To pull in upstream updates: /rp-sync-upstream (shows a preview first, then asks before merging)
 ```

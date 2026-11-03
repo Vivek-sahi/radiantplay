@@ -3,10 +3,10 @@ import { BaseIconProps } from '../Icon.types';
 import { iconSize } from '../../../tokens/icons';
 
 const VARIANTS: Record<'xs' | 's' | 'm' | 'l', { viewBox: string; inner: string }> = {
-  xs: { viewBox: '0 0 12 12', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M9.37996 7.33331L6.04663 3.33331L2.66663 7.33331H9.37996Z" fill="currentColor"/>` },
-  s: { viewBox: '0 0 14 14', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M10.9433 8.55558L7.05442 3.88892L3.11108 8.55558H10.9433Z" fill="currentColor"/>` },
-  m: { viewBox: '0 0 16 16', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M12.5066 9.77779L8.06215 4.44446L3.55548 9.77779H12.5066Z" fill="currentColor"/>` },
-  l: { viewBox: '0 0 18 18', inner: `<path fill-rule="evenodd" clip-rule="evenodd" d="M14.0699 11L9.06994 5L3.99994 11H14.0699Z" fill="currentColor"/>` },
+  xs: { viewBox: '0 0 12 12', inner: `<path d="M9.38008 7.33337L6.04675 3.33337L2.66675 7.33337H9.38008Z" fill-rule="evenodd" clip-rule="evenodd" fill="currentColor"/>` },
+  s: { viewBox: '0 0 14 14', inner: `<path d="M10.9433 8.55558L7.05442 3.88892L3.11108 8.55558H10.9433Z" fill-rule="evenodd" clip-rule="evenodd" fill="currentColor"/>` },
+  m: { viewBox: '0 0 16 16', inner: `<path d="M12.5065 9.77779L8.06209 4.44446L3.55542 9.77779H12.5065Z" fill-rule="evenodd" clip-rule="evenodd" fill="currentColor"/>` },
+  l: { viewBox: '0 0 18 18', inner: `<path d="M14.07 11L9.07 5L4 11H14.07Z" fill-rule="evenodd" clip-rule="evenodd" fill="currentColor"/>` },
 };
 
 export const CaretUpIcon: React.FC<BaseIconProps> = ({

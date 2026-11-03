@@ -159,35 +159,35 @@ When recreating a Figma design, use this guide to map Figma elements to Radiant 
 
 | Figma Color | Radiant Token |
 |-------------|---------------|
-| #1D232F | `systemColors.light['content-primary']` (default text) |
-| #777E8B | `systemColors.light['content-secondary']` (secondary text) |
-| #A5ACB9 | `systemColors.light['content-tertiary']` (disabled/placeholder) |
-| #2770EF | `systemColors.light['content-brand']` (link/primary) |
+| #1D232F | `sysVar('content-primary')` (default text) |
+| #777E8B | `sysVar('content-secondary')` (secondary text) |
+| #A5ACB9 | `sysVar('content-tertiary')` (disabled/placeholder) |
+| #2770EF | `sysVar('content-brand')` (link/primary) |
 
 ### Background Colors
 
 | Figma Color | Radiant Token |
 |-------------|---------------|
-| #FFFFFF | `systemColors.light['background-base']` (surface) |
-| #F6F8FA | `systemColors.light['background-sunken']` (page background) |
-| #EAEDF2 | `systemColors.light['background-muted']` (subtle background) |
+| #FFFFFF | `sysVar('background-base')` (surface) |
+| #F6F8FA | `sysVar('background-sunken')` (page background) |
+| #EAEDF2 | `sysVar('background-muted')` (subtle background) |
 
 ### Border Colors
 
 | Figma Color | Radiant Token |
 |-------------|---------------|
-| #EAEDF2 | `systemColors.light['border-subtle']` (default border) |
-| #C0C6CF | `systemColors.light['border-default']` (input border) |
-| #2770EF | `systemColors.light['border-brand']` (focus/active border) |
+| #EAEDF2 | `sysVar('border-subtle')` (default border) |
+| #C0C6CF | `sysVar('border-default')` (input border) |
+| #2770EF | `sysVar('border-brand')` (focus/active border) |
 
 ### Status Colors
 
 | Figma Color | Radiant Token |
 |-------------|---------------|
-| #06BF7F (green) | `systemColors.light['content-success']` (success) |
-| #E22B3D (red) | `systemColors.light['content-failure']` (error) |
-| #FCC838 (yellow) | `systemColors.light['content-warning']` (warning) |
-| #2770EF (blue) | `systemColors.light['content-brand']` (info) |
+| #06BF7F (green) | `sysVar('content-success')` (success) |
+| #E22B3D (red) | `sysVar('content-failure')` (error) |
+| #FCC838 (yellow) | `sysVar('content-warning')` (warning) |
+| #2770EF (blue) | `sysVar('content-brand')` (info) |
 
 ---
 
@@ -207,12 +207,15 @@ When recreating a Figma design, use this guide to map Figma elements to Radiant 
 
 ### Font Weights
 
+Figma uses Geist, a variable font. Headings and labels use the "Emphasis" weight (550).
+
 | Figma Weight | Radiant Token |
 |--------------|---------------|
-| Light / 300-400 | `fontWeight.light` (375) |
 | Regular / 400 | `fontWeight.regular` (400) |
 | Medium / 500 | `fontWeight.medium` (500) |
-| Semibold / 600 | `fontWeight.semibold` (600) |
+| Emphasis / 550 | `fontWeight.emphasis` (550) |
+
+`fontWeight.light` and `fontWeight.semibold` are deprecated aliases (400 and 550). Don't use them in new code.
 
 ### Text Style Mapping
 

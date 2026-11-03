@@ -1,0 +1,126 @@
+{
+  "_readme": "Rules for scripts/radiant-check/codemod.mjs. The exact-hex table is built at runtime from the light values in src/styles/tokens.css; `roleOverrides` picks the token when a value has several, and adds the Tailwind and legacy values from docs/2026-10-07-phase6-colour-mapping.md. That doc stays the human reference; this file is what runs.",
+
+  "protectedPaths": ["/src/tokens/", "/src/styles/tokens.css", "/src/components/", "/src/spotter/"],
+  "skipSegment": "/vendor/",
+
+  "roles": {
+    "text": ["color", "fill", "stroke", "caretColor", "caret-color", "textDecorationColor", "text-decoration-color", "accentColor", "accent-color", "iconColor", "currentColor"],
+    "surface": ["background", "backgroundColor", "background-color", "bg"],
+    "border": ["border", "borderColor", "border-color", "outline", "outlineColor", "outline-color", "columnRule", "column-rule"],
+    "borderPrefixes": ["border", "outline"],
+    "judgementProps": ["stopColor", "stop-color", "floodColor", "flood-color", "lightingColor"]
+  },
+
+  "tokenPreference": {
+    "text": { "prefix": "content-", "avoid": "inverse|alternate|link|accent|information" },
+    "surface": { "prefix": "background-", "avoid": "inverse|accent|raised|active|on-base|inset|ghost" },
+    "border": { "prefix": "border-", "avoid": "inverse|accent|gap|focus" }
+  },
+
+  "roleOverrides": {
+    "#FFFFFF": { "text": "content-inverse", "surface": "background-base", "border": "border-gap", "_note": "border-gap is white in light; flagged by `flagged` below" },
+    "#1D232F": { "text": "content-primary" },
+    "#111827": { "text": "content-primary" },
+    "#0F172A": { "text": "content-primary" },
+    "#1F2937": { "text": "content-primary" },
+    "#374151": { "text": "content-primary" },
+    "#4B5563": { "text": "content-secondary" },
+    "#6B7280": { "text": "content-secondary" },
+    "#777E8B": { "text": "content-secondary" },
+    "#9CA3AF": { "text": "content-tertiary" },
+    "#A5ACB9": { "text": "content-tertiary", "border": "border-bold-hover" },
+    "#C0C6CF": { "text": "content-tertiary", "border": "border-bold", "surface": "background-inset" },
+    "#D1D5DB": { "border": "border-bold" },
+    "#E5E7EB": { "border": "border-subtle", "surface": "background-secondary-action" },
+    "#E9EAEC": { "border": "border-subtle", "surface": "background-secondary-action" },
+    "#EAEDF2": { "border": "border-subtle", "surface": "background-secondary-action" },
+    "#F3F4F6": { "border": "border-subtle", "surface": "background-secondary-action" },
+    "#F9FAFB": { "surface": "background-sunken" },
+    "#FAFAFA": { "surface": "background-sunken" },
+    "#F6F8FA": { "surface": "background-sunken" },
+    "#DBDFE7": { "surface": "background-secondary-hover", "border": "border-subtle-hover" },
+    "#2770EF": { "text": "content-brand", "surface": "background-brand", "border": "border-brand" },
+    "#3B82F6": { "text": "content-brand", "surface": "background-brand", "border": "border-brand" },
+    "#2563EB": { "text": "content-brand", "surface": "background-brand", "border": "border-brand" },
+    "#007DC1": { "text": "content-brand", "surface": "background-brand", "border": "border-brand" },
+    "#EF4444": { "text": "content-failure", "border": "border-failure" },
+    "#DC2626": { "text": "content-failure", "border": "border-failure" },
+    "#B91C1C": { "text": "content-failure", "border": "border-failure" },
+    "#991B1B": { "text": "content-failure", "border": "border-failure" },
+    "#E61D2B": { "text": "content-failure", "border": "border-failure" },
+    "#E22B3D": { "text": "content-failure", "border": "border-failure" },
+    "#FEF2F2": { "surface": "background-failure" },
+    "#FEE2E2": { "surface": "background-failure" },
+    "#FECACA": { "surface": "background-failure" },
+    "#FFEBEC": { "surface": "background-failure" },
+    "#22C55E": { "text": "content-success" },
+    "#16A34A": { "text": "content-success" },
+    "#166534": { "text": "content-success" },
+    "#06BF7F": { "text": "content-success" },
+    "#DCFCE7": { "surface": "background-success" },
+    "#E0F8EF": { "surface": "background-success" },
+    "#F59E0B": { "text": "content-warning" },
+    "#F97316": { "text": "content-warning" },
+    "#FCC838": { "text": "content-warning", "border": "border-warning" },
+    "#FDE68A": { "surface": "background-warning" },
+    "#FEF3C7": { "surface": "background-warning" },
+    "#FFF8E5": { "surface": "background-warning" },
+    "#EFF6FF": { "surface": "background-information" },
+    "#DBEAFE": { "surface": "background-information" },
+    "#DEE8FA": { "surface": "background-information" },
+    "#8B5CF6": { "text": "content-accent-purple", "surface": "background-accent-purple-bold", "border": "border-accent-purple" },
+    "#7C3AED": { "text": "content-accent-purple", "surface": "background-accent-purple-bold", "border": "border-accent-purple" },
+    "#8C62F5": { "text": "content-accent-purple", "surface": "background-accent-purple-bold", "border": "border-accent-purple" },
+    "#F0EBFF": { "surface": "background-accent-purple-subtle" }
+  },
+
+  "flagged": {
+    "_readme": "Values converted mechanically but listed for a second look, or held back for judgement. `hold` means the codemod does not rewrite it.",
+    "surface:#1D232F": { "hold": true, "suggestion": "background-on-base or background-inverse", "reason": "Dark surface. Nav that follows the theme uses background-on-base (the Phase 6 choice); a surface meant to stay dark uses background-inverse" },
+    "surface:#323946": { "hold": true, "suggestion": "background-on-base or background-inverse", "reason": "Dark surface. Nav that follows the theme uses background-on-base; a surface meant to stay dark uses background-inverse" },
+    "surface:#1F2937": { "hold": true, "suggestion": "background-inverse", "reason": "Dark surface, usually a tooltip or toast. background-inverse keeps it inverted in both themes" },
+    "surface:#111827": { "hold": true, "suggestion": "background-inverse", "reason": "Dark surface, usually a tooltip or toast" },
+    "surface:#0F172A": { "hold": true, "suggestion": "background-inverse", "reason": "Dark surface, usually a tooltip or toast" },
+    "surface:#374151": { "hold": true, "suggestion": "background-inverse", "reason": "Dark surface, usually a tooltip or toast" },
+    "border:#FFFFFF": { "hold": true, "suggestion": "border-gap or background-base", "reason": "A white border is usually a gap ring around an avatar or dot; pick the surface it sits on" },
+    "surface:#FFFFFF+shadow": { "hold": false, "suggestion": "background-raised", "reason": "White surface in a block with a shadow; the codemod used background-base, raised may fit better" }
+  },
+
+  "legacyValues": {
+    "_readme": "Exact old token values, normalised without spaces, that map to one token whatever the property.",
+    "rgba(29,35,47,0.5)": "background-overlay"
+  },
+
+  "alphaTintRole": "text",
+
+  "shadow": {
+    "inks": ["0,0,0", "25,35,49", "29,35,47", "16,24,40", "15,23,42", "17,24,39"],
+    "_thresholds": "Elevation score = blur in px times opacity, largest layer. Under `menu` is surface, under `modal` is menu, the rest modal. Blur alone did not match Phase 6: 0 2px 8px at 0.08 was a card (surface) while 0 2px 8px at 0.15 was a toast (menu).",
+    "menu": 1,
+    "modal": 5
+  },
+
+  "fontFamily": {
+    "primary": "^\\s*['\"]?(Plain|Inter|Helvetica|Helvetica Neue|Arial|Roboto|-apple-system|system-ui|BlinkMacSystemFont|Segoe UI)['\"]?\\s*(,|$)",
+    "mono": "^\\s*['\"]?(SF Mono|Menlo|Monaco|Consolas|Fira Code|Fira Mono|Courier|Courier New|ui-monospace)['\"]?\\s*(,|$)|monospace\\s*$"
+  },
+
+  "weights": {
+    "600": "emphasis",
+    "550": "emphasis",
+    "375": "regular",
+    "400": "regular",
+    "normal": "regular",
+    "500": "medium",
+    "numeric": { "600": "550", "375": "400" },
+    "aliases": { "light": "regular", "semibold": "emphasis" },
+    "judgement": "No bold token in Figma; keep as a display weight or use emphasis"
+  },
+
+  "fontSizes": { "12": "xs", "14": "sm", "16": "md", "18": "lg", "20": "xl", "24": "2xl", "32": "3xl", "40": "4xl" },
+
+  "brandNames": ["Google", "Slack", "Figma", "Salesforce", "Notion", "Dropbox", "Canva", "OneDrive", "Microsoft", "Amazon", "Jira", "Asana", "Snowflake", "Anthropic", "Gemini", "ThoughtSpot", "GitHub", "Gong", "HubSpot", "Okta", "SAML", "Databricks", "BigQuery", "Redshift", "Teams", "Zoom", "Confluence", "OpenAI"],
+
+  "referenceNotes": "referenceColors reads are listed with a suggestion from the value and the property role. Phase 6 used gray['20'] as a border -> border-subtle and gray['30'] -> border-bold or background-secondary-hover."
+}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { componentRegistry } from '@/data/componentRegistry';
-import { systemColors } from '@tokens/colors';
+import { sysVar } from '@tokens/colors';
 import { spacing } from '@tokens/spacing';
 
 export interface LastUpdatedProps {
@@ -24,9 +24,9 @@ export const LastUpdated: React.FC<LastUpdatedProps> = ({ componentId, date }) =
   return (
     <div
       style={{
-        fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamily: 'var(--font-family-primary)',
         fontSize: 12,
-        color: systemColors.light['content-secondary'],
+        color: sysVar('content-secondary'),
         marginBottom: spacing.B,
         display: 'inline-flex',
         alignItems: 'center',

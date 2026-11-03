@@ -1,5 +1,6 @@
 import React, { forwardRef, useState, useRef, useEffect, useCallback } from 'react';
 import { Icon } from '../icons';
+import { useRadiantLook } from '../../context/RadiantLookContext';
 import styles from './Select.module.css';
 
 /**
@@ -92,6 +93,8 @@ export const Select = forwardRef<HTMLDivElement, SelectProps>(({
   className,
   ...props
 }, ref) => {
+  // Radiant 3.0: helper and error text move onto the label line, as in TextInput
+  const labelLine = useRadiantLook() === 'radiant-3' && !!label;
   const [isOpen, setIsOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -220,7 +223,17 @@ export const Select = forwardRef<HTMLDivElement, SelectProps>(({
       className={containerClasses}
       {...props}
     >
-      {label && (
+      {labelLine ? (
+        <label className={styles.label}>
+          {error ? (
+            <span className={styles.labelError}>
+              <Icon name="exclamation-point-circle" size="xs" aria-hidden />
+              {errorMessage || `Please choose “${label}”`}
+            </span>
+          ) : label}
+          {helperText && <span className={styles.helperInline}>({helperText})</span>}
+        </label>
+      ) : label && (
         <label className={styles.label}>{label}</label>
       )}
 
@@ -235,6 +248,9 @@ export const Select = forwardRef<HTMLDivElement, SelectProps>(({
         onClick={handleToggle}
         onKeyDown={handleKeyDown}
       >
+        {selectedOption?.icon && (
+          <Icon name={selectedOption.icon as never} size="s" className={styles.valueIcon} />
+        )}
         <span className={selectedOption ? styles.value : styles.placeholder}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
@@ -285,7 +301,12 @@ export const Select = forwardRef<HTMLDivElement, SelectProps>(({
                     onClick={() => handleOptionClick(option)}
                     onMouseEnter={() => setHighlightedIndex(index)}
                   >
-                    {option.label}
+                    <span className={styles.optionLabel}>
+                      {option.icon && (
+                        <Icon name={option.icon as never} size="s" className={styles.optionIcon} />
+                      )}
+                      {option.label}
+                    </span>
                     {isSelected && (
                       <Icon name="checkmark" size="s" className={styles.checkIcon} />
                     )}
@@ -301,7 +322,7 @@ export const Select = forwardRef<HTMLDivElement, SelectProps>(({
         </div>
       )}
 
-      {(helperText || (error && errorMessage)) && (
+      {!labelLine && (helperText || (error && errorMessage)) && (
         <span className={`${styles.helperText} ${error ? styles.errorText : ''}`}>
           {error && errorMessage ? errorMessage : helperText}
         </span>

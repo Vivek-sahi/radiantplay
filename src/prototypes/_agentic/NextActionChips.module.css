@@ -26,7 +26,7 @@
   background: transparent;
   color: var(--rd-sys-color-border-default-inverse);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   font-family: var(--font-family-primary);
   line-height: var(--line-height-md);
   cursor: pointer;
@@ -45,6 +45,8 @@
   pointer-events: none;
 }
 
+/* The cyan stop (#48D1E0, teal-60) has no system token yet, so it stays
+   literal. It reads well on both themes. Swap it once a teal accent token lands. */
 .enrich {
   border: 1px solid transparent;
   background-image:

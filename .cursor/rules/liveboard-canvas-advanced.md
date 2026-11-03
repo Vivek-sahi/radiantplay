@@ -50,7 +50,7 @@ GroupTile
 ```
 
 ### Header spacing
-`pt: 8px, px: 8px, pb: 4px`. Inner text padding `4px`. Title: `16px/600/24px lh/-0.4px tracking`. Description: `14px/375/20px lh`.
+`pt: 8px, px: 8px, pb: 4px`. Inner text padding `4px`. Title: `16px/550 (emphasis)/24px lh/0.4% tracking`. Description: `14px/400/20px lh`.
 
 ### Inner grid (same 12-column system)
 ```typescript

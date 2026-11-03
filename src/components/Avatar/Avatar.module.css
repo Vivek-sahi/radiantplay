@@ -76,7 +76,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-alternate);
   text-transform: uppercase;
   user-select: none;
@@ -105,7 +105,8 @@
 }
 
 .bgPurple {
-  background-color: var(--rd-ref-color-purple-60, #8C62F5);
+  /* Same purple in light; lighter in dark so the dark initials stay readable */
+  background-color: var(--rd-sys-color-background-accent-purple-bold);
 }
 
 .bgTeal {
@@ -114,6 +115,10 @@
 
 .bgOrange {
   background-color: var(--rd-ref-color-orange-60, #D97706);
+}
+
+:global([data-theme='dark']) .bgOrange {
+  background-color: color-mix(in srgb, var(--rd-ref-color-orange-60, #D97706) 65%, var(--rd-sys-color-content-primary));
 }
 
 .bgRed {
@@ -155,10 +160,12 @@
   height: var(--spacing-4, 16px);
   padding: 0 var(--spacing-1, 4px);
   border-radius: var(--radius-lg, 8px);
-  background-color: var(--rd-sys-color-background-failure);
+  /* Solid failure red with contrasting text and a ring that separates it from the avatar, in both themes */
+  background-color: var(--rd-sys-color-content-failure);
   color: var(--rd-sys-color-content-alternate);
+  box-shadow: 0 0 0 var(--border-width-medium, 2px) var(--rd-sys-color-border-gap);
   font-size: 10px;
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -201,3 +208,28 @@
 .bgGray {
   background-color: var(--rd-sys-color-background-inset);
 }
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   The name scales with the avatar: 12/18 up to 24px, 14/20 at 32px,
+   16/24 from 40px (Figma Avatar 25110:44700)
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .sizeXs .name,
+:global([data-rd-look="radiant-3"]) .sizeS .name {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-sm);
+}
+
+:global([data-rd-look="radiant-3"]) .sizeM .name {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+}
+
+:global([data-rd-look="radiant-3"]) .sizeL .name,
+:global([data-rd-look="radiant-3"]) .sizeXl .name,
+:global([data-rd-look="radiant-3"]) .sizeXxl .name {
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-lg);
+}
+

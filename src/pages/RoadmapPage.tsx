@@ -223,20 +223,20 @@ export const RoadmapPage: React.FC = () => {
 const styles: Record<string, React.CSSProperties> = {
   container: {
     maxWidth: '1000px',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
   },
   header: {
     marginBottom: '40px',
   },
   title: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '36px',
     fontWeight: 700,
     color: systemColors.light['content-primary'],
     marginBottom: '12px',
   },
   subtitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
     fontWeight: 400,
     color: systemColors.light['content-secondary'],
@@ -294,7 +294,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   overallProgressPercent: {
     fontSize: '14px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
   },
   overallProgressBarBg: {
@@ -350,7 +350,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   categoryTitle: {
     fontSize: '20px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['content-primary'],
     letterSpacing: '-0.3px',
   },
@@ -369,7 +369,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   sectionTitle: {
     fontSize: '15px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     color: systemColors.light['background-raised-inverse'],
   },
   sectionCount: {

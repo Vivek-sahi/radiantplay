@@ -1,0 +1,4418 @@
+{
+  "fileKey": "1QlRveXx4wppvDXyPVWUTK",
+  "collections": {
+    "Primitive": {
+      "modes": [
+        "Light"
+      ],
+      "count": 129
+    },
+    "Theme": {
+      "modes": [
+        "Light",
+        "Dark"
+      ],
+      "count": 112
+    }
+  },
+  "variables": {
+    "Background/Accent/Blue": {
+      "id": "VariableID:21598:58505",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#dee8fa",
+          "alias": {
+            "id": "VariableID:16098:18421",
+            "name": "Color/Blue/20"
+          }
+        },
+        "dark": {
+          "value": "#082559",
+          "alias": {
+            "id": "VariableID:16098:18401",
+            "name": "Color/Blue/90"
+          }
+        }
+      },
+      "description": "Use for for backgrounds when there is no meaning tied to the color, such as illustration background"
+    },
+    "Background/Accent/Gray": {
+      "id": "VariableID:21598:58507",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#f6f8fa",
+          "alias": {
+            "id": "VariableID:16098:18397",
+            "name": "Color/Gray/10"
+          }
+        },
+        "dark": {
+          "value": "#2d2f34",
+          "alias": {
+            "id": "VariableID:21306:10977",
+            "name": "Color/Dark Gray/15"
+          }
+        }
+      },
+      "description": "Use for for backgrounds when there is no meaning tied to the color, such as illustration background"
+    },
+    "Background/Accent/Green": {
+      "id": "VariableID:21598:58497",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#e0f8ef",
+          "alias": {
+            "id": "VariableID:16098:18382",
+            "name": "Color/Green/20"
+          }
+        },
+        "dark": {
+          "value": "#003b26",
+          "alias": {
+            "id": "VariableID:16098:18373",
+            "name": "Color/Green/90"
+          }
+        }
+      },
+      "description": "Use for for backgrounds when there is no meaning tied to the color, such as illustration background"
+    },
+    "Background/Accent/Purple Bold": {
+      "id": "VariableID:21598:58502",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#8c62f5",
+          "alias": {
+            "id": "VariableID:16098:18362",
+            "name": "Color/Purple/60"
+          }
+        },
+        "dark": {
+          "value": "#b094f8",
+          "alias": {
+            "id": "VariableID:16098:18361",
+            "name": "Color/Purple/50"
+          }
+        }
+      },
+      "description": "Use for for backgrounds when there is no meaning tied to the color, such as illustration background"
+    },
+    "Background/Accent/Purple Subtle": {
+      "id": "VariableID:21598:58501",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#f0ebff",
+          "alias": {
+            "id": "VariableID:16098:18359",
+            "name": "Color/Purple/20"
+          }
+        },
+        "dark": {
+          "value": "#422e75",
+          "alias": {
+            "id": "VariableID:16098:18363",
+            "name": "Color/Purple/80"
+          }
+        }
+      },
+      "description": "Use for for backgrounds when there is no meaning tied to the color, such as illustration background"
+    },
+    "Background/Accent/Red": {
+      "id": "VariableID:21598:58503",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffebec",
+          "alias": {
+            "id": "VariableID:16098:18388",
+            "name": "Color/Red/20"
+          }
+        },
+        "dark": {
+          "value": "#3d090e",
+          "alias": {
+            "id": "VariableID:16098:18441",
+            "name": "Color/Red/90"
+          }
+        }
+      },
+      "description": "Use for for backgrounds when there is no meaning tied to the color, such as illustration background"
+    },
+    "Background/Accent/Yellow": {
+      "id": "VariableID:21598:58499",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#fff8e5",
+          "alias": {
+            "id": "VariableID:16098:18452",
+            "name": "Color/Yellow/20"
+          }
+        },
+        "dark": {
+          "value": "#4f3d09",
+          "alias": {
+            "id": "VariableID:16098:18469",
+            "name": "Color/Yellow/90"
+          }
+        }
+      },
+      "description": "Use for for backgrounds when there is no meaning tied to the color, such as illustration background"
+    },
+    "Background/Active": {
+      "id": "VariableID:21350:40982",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffffff",
+          "alias": {
+            "id": "VariableID:16098:18396",
+            "name": "Color/Gray/0"
+          }
+        },
+        "dark": {
+          "value": "#5d636a",
+          "alias": {
+            "id": "VariableID:21306:10974",
+            "name": "Color/Dark Gray/40"
+          }
+        }
+      }
+    },
+    "Background/Base": {
+      "id": "VariableID:20686:11863",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffffff",
+          "alias": {
+            "id": "VariableID:16098:18396",
+            "name": "Color/Gray/0"
+          }
+        },
+        "dark": {
+          "value": "#1f2024",
+          "alias": {
+            "id": "VariableID:21306:10979",
+            "name": "Color/Dark Gray/5"
+          }
+        }
+      },
+      "description": "Applicable for : Frames &amp; Shapes only .....Default page, modal, and menu background. "
+    },
+    "Background/Brand": {
+      "id": "VariableID:21196:12021",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#2770ef",
+          "alias": {
+            "id": "VariableID:21502:25918",
+            "name": "Color/Brand/60"
+          }
+        },
+        "dark": {
+          "value": "#71a1f4",
+          "alias": {
+            "id": "VariableID:21502:25919",
+            "name": "Color/Brand/50"
+          }
+        }
+      },
+      "description": "Use for the background of elements used to reinforce our brand, that need to stand out a lot, like primary actions or spotlight cards, or to show progress"
+    },
+    "Background/Failure": {
+      "id": "VariableID:20686:11875",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffebec",
+          "alias": {
+            "id": "VariableID:16098:18388",
+            "name": "Color/Red/20"
+          }
+        },
+        "dark": {
+          "value": "#3d090e",
+          "alias": {
+            "id": "VariableID:16098:18441",
+            "name": "Color/Red/90"
+          }
+        }
+      },
+      "description": "Use for backgrounds communicating critical information, such in error banner messages."
+    },
+    "Background/Ghost Highlight": {
+      "id": "VariableID:20686:11870",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#71a1f41f",
+          "alias": {
+            "id": "VariableID:21502:25924",
+            "name": "Color/Brand/10A"
+          }
+        },
+        "dark": {
+          "value": "#71a1f41f",
+          "alias": {
+            "id": "VariableID:21502:25924",
+            "name": "Color/Brand/10A"
+          }
+        }
+      },
+      "description": "Use for backgrounds of selected state for transparent clickable UI elements."
+    },
+    "Background/Ghost Hover": {
+      "id": "VariableID:20686:11878",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#c0c6cf1f",
+          "alias": {
+            "id": "VariableID:20848:11185",
+            "name": "Color/Gray/10A"
+          }
+        },
+        "dark": {
+          "value": "#c0c6cf1f",
+          "alias": {
+            "id": "VariableID:20848:11185",
+            "name": "Color/Gray/10A"
+          }
+        }
+      },
+      "description": "Use for backgrounds of hover state for transparent clickable UI elements."
+    },
+    "Background/Information": {
+      "id": "VariableID:20686:11873",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#dee8fa",
+          "alias": {
+            "id": "VariableID:16098:18421",
+            "name": "Color/Blue/20"
+          }
+        },
+        "dark": {
+          "value": "#082559",
+          "alias": {
+            "id": "VariableID:16098:18401",
+            "name": "Color/Blue/90"
+          }
+        }
+      },
+      "description": "Use for backgrounds communicating information or something in-progress, such as in information banner messages."
+    },
+    "Background/Inverse": {
+      "id": "VariableID:20686:11877",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#323946",
+          "alias": {
+            "id": "VariableID:16098:18451",
+            "name": "Color/Gray/80"
+          }
+        },
+        "dark": {
+          "value": "#dfe0e2",
+          "alias": {
+            "id": "VariableID:21306:10970",
+            "name": "Color/Dark Gray/90"
+          }
+        }
+      },
+      "description": "Applicable for : Frames &amp; Shapes only.....Use for backgrounds Overlay background for modals."
+    },
+    "Background/On Base": {
+      "id": "VariableID:20686:11871",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#f6f8fa",
+          "alias": {
+            "id": "VariableID:16098:18397",
+            "name": "Color/Gray/10"
+          }
+        },
+        "dark": {
+          "value": "#26282c",
+          "alias": {
+            "id": "VariableID:21306:10978",
+            "name": "Color/Dark Gray/10"
+          }
+        }
+      },
+      "description": "Applicable for : Frames &amp; Shapes only....Use for objects that sit on Base. Example - Navigation bars, chat bubbles, etc."
+    },
+    "Background/Overlay": {
+      "id": "VariableID:20686:11864",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#1f2632cc",
+          "alias": {
+            "id": "VariableID:20848:11191",
+            "name": "Color/Gray/70A"
+          }
+        },
+        "dark": {
+          "value": "#00030aba",
+          "alias": {
+            "id": "VariableID:21549:50706",
+            "name": "Color/Dark Gray/30A"
+          }
+        }
+      },
+      "description": "Use for the screen overlay that appears with modal dialogs."
+    },
+    "Background/Raised": {
+      "id": "VariableID:21132:15291",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffffff",
+          "alias": {
+            "id": "VariableID:16098:18396",
+            "name": "Color/Gray/0"
+          }
+        },
+        "dark": {
+          "value": "#2d2f34",
+          "alias": {
+            "id": "VariableID:21306:10977",
+            "name": "Color/Dark Gray/15"
+          }
+        }
+      },
+      "description": "Use for objects that appear elevated over other UI elements, like menus and prompt bars. They must be paired with appropriate shadows."
+    },
+    "Background/Secondary Action": {
+      "id": "VariableID:21196:12020",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#eaedf2",
+          "alias": {
+            "id": "VariableID:16098:18399",
+            "name": "Color/Gray/20"
+          }
+        },
+        "dark": {
+          "value": "#34363c",
+          "alias": {
+            "id": "VariableID:21306:10976",
+            "name": "Color/Dark Gray/20"
+          }
+        }
+      },
+      "description": "Use for backgrounds of secondary clickable actions."
+    },
+    "Background/Success": {
+      "id": "VariableID:20686:11874",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#e0f8ef",
+          "alias": {
+            "id": "VariableID:16098:18382",
+            "name": "Color/Green/20"
+          }
+        },
+        "dark": {
+          "value": "#003b26",
+          "alias": {
+            "id": "VariableID:16098:18373",
+            "name": "Color/Green/90"
+          }
+        }
+      },
+      "description": "Use for backgrounds communicating success or a favourable outcome, such as success banner messages"
+    },
+    "Background/Sunken": {
+      "id": "VariableID:21538:51584",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#f6f8fa",
+          "alias": {
+            "id": "VariableID:16098:18397",
+            "name": "Color/Gray/10"
+          }
+        },
+        "dark": {
+          "value": "#18191b",
+          "alias": {
+            "id": "VariableID:21538:50764",
+            "name": "Color/Dark Gray/0"
+          }
+        }
+      },
+      "description": "Applicable for : Frames &amp; Shapes only.....Use for backgrounds that sit behind base, example search data or liveboard."
+    },
+    "Background/Warning": {
+      "id": "VariableID:20686:11865",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#fff8e5",
+          "alias": {
+            "id": "VariableID:16098:18452",
+            "name": "Color/Yellow/20"
+          }
+        },
+        "dark": {
+          "value": "#4f3d09",
+          "alias": {
+            "id": "VariableID:16098:18469",
+            "name": "Color/Yellow/90"
+          }
+        }
+      },
+      "description": "Use for backgrounds communicating caution, such as warning banner messages"
+    },
+    "Border/Accent/Blue": {
+      "id": "VariableID:22108:20561",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#2770ef",
+          "alias": {
+            "id": "VariableID:16098:18390",
+            "name": "Color/Blue/60"
+          }
+        },
+        "dark": {
+          "value": "#71a1f4",
+          "alias": {
+            "id": "VariableID:16098:18385",
+            "name": "Color/Blue/50"
+          }
+        }
+      },
+      "description": "Use for blue borders on accent backgrounds when there is no meaning tied to the color"
+    },
+    "Border/Accent/Gray": {
+      "id": "VariableID:22108:20562",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#777e8b",
+          "alias": {
+            "id": "VariableID:16098:18408",
+            "name": "Color/Gray/60"
+          }
+        },
+        "dark": {
+          "value": "#5d636a",
+          "alias": {
+            "id": "VariableID:21306:10974",
+            "name": "Color/Dark Gray/40"
+          }
+        }
+      },
+      "description": "Use for gray borders on accent backgrounds when there is no meaning tied to the color"
+    },
+    "Border/Accent/Green": {
+      "id": "VariableID:22108:20555",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#06bf7f",
+          "alias": {
+            "id": "VariableID:16098:18371",
+            "name": "Color/Green/60"
+          }
+        },
+        "dark": {
+          "value": "#56d3a8",
+          "alias": {
+            "id": "VariableID:16098:18370",
+            "name": "Color/Green/50"
+          }
+        }
+      },
+      "description": "Use for green borders on accent backgrounds when there is no meaning tied to the color"
+    },
+    "Border/Accent/Purple": {
+      "id": "VariableID:22108:20557",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#8c62f5",
+          "alias": {
+            "id": "VariableID:16098:18362",
+            "name": "Color/Purple/60"
+          }
+        },
+        "dark": {
+          "value": "#b094f8",
+          "alias": {
+            "id": "VariableID:16098:18361",
+            "name": "Color/Purple/50"
+          }
+        }
+      },
+      "description": "Use for purple borders on accent backgrounds when there is no meaning tied to the color"
+    },
+    "Border/Accent/Red": {
+      "id": "VariableID:22108:20560",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#e22b3d",
+          "alias": {
+            "id": "VariableID:16098:18411",
+            "name": "Color/Red/60"
+          }
+        },
+        "dark": {
+          "value": "#f47e89",
+          "alias": {
+            "id": "VariableID:16098:18392",
+            "name": "Color/Red/50"
+          }
+        }
+      },
+      "description": "Use for red borders on accent backgrounds when there is no meaning tied to the color"
+    },
+    "Border/Accent/Yellow": {
+      "id": "VariableID:22108:20556",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#fcc838",
+          "alias": {
+            "id": "VariableID:16098:18409",
+            "name": "Color/Yellow/60"
+          }
+        },
+        "dark": {
+          "value": "#fcd977",
+          "alias": {
+            "id": "VariableID:16098:18410",
+            "name": "Color/Yellow/50"
+          }
+        }
+      },
+      "description": "Use for yellow borders on accent backgrounds when there is no meaning tied to the color"
+    },
+    "Border/Bold": {
+      "id": "VariableID:20686:11938",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#c0c6cf",
+          "alias": {
+            "id": "VariableID:16098:18413",
+            "name": "Color/Gray/40"
+          }
+        },
+        "dark": {
+          "value": "#5d636a",
+          "alias": {
+            "id": "VariableID:21306:10974",
+            "name": "Color/Dark Gray/40"
+          }
+        }
+      },
+      "description": "Use for borders of selectable UI elements like input boxes, search bars, checkboxes, and radio buttons"
+    },
+    "Border/Bold Hover": {
+      "id": "VariableID:20686:11937",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#a5acb9",
+          "alias": {
+            "id": "VariableID:16098:18402",
+            "name": "Color/Gray/50"
+          }
+        },
+        "dark": {
+          "value": "#7a7d85",
+          "alias": {
+            "id": "VariableID:21350:47433",
+            "name": "Color/Dark Gray/50"
+          }
+        }
+      },
+      "description": "Use for hover borders of selectable UI elements like input boxes, search bars, checkboxes, and radio buttons"
+    },
+    "Border/Brand": {
+      "id": "VariableID:20686:11935",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#2770ef",
+          "alias": {
+            "id": "VariableID:21502:25918",
+            "name": "Color/Brand/60"
+          }
+        },
+        "dark": {
+          "value": "#71a1f4",
+          "alias": {
+            "id": "VariableID:21502:25919",
+            "name": "Color/Brand/50"
+          }
+        }
+      },
+      "description": "Use for borders or visual indicators of elements that reinforce our brand, such as selected states of form fields and cards"
+    },
+    "Border/Failure": {
+      "id": "VariableID:20686:11933",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#e22b3d",
+          "alias": {
+            "id": "VariableID:16098:18411",
+            "name": "Color/Red/60"
+          }
+        },
+        "dark": {
+          "value": "#f47e89",
+          "alias": {
+            "id": "VariableID:16098:18392",
+            "name": "Color/Red/50"
+          }
+        }
+      },
+      "description": "Use for borders communicating critical information, such as the borders on invalid text fields, which blocks a workflow"
+    },
+    "Border/Focus": {
+      "id": "VariableID:20967:16116",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#71a1f4",
+          "alias": {
+            "id": "VariableID:21502:25919",
+            "name": "Color/Brand/50"
+          }
+        },
+        "dark": {
+          "value": "#2770ef",
+          "alias": {
+            "id": "VariableID:21502:25918",
+            "name": "Color/Brand/60"
+          }
+        }
+      },
+      "description": "Use for focus rings of elements in a focus state.\n"
+    },
+    "Border/Gap": {
+      "id": "VariableID:21123:11133",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffffff",
+          "alias": {
+            "id": "VariableID:16098:18396",
+            "name": "Color/Gray/0"
+          }
+        },
+        "dark": {
+          "value": "#1f2024",
+          "alias": {
+            "id": "VariableID:21306:10979",
+            "name": "Color/Dark Gray/5"
+          }
+        }
+      },
+      "description": "Use for borders that need to appear invisible."
+    },
+    "Border/Subtle": {
+      "id": "VariableID:20686:11936",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#eaedf2",
+          "alias": {
+            "id": "VariableID:16098:18399",
+            "name": "Color/Gray/20"
+          }
+        },
+        "dark": {
+          "value": "#34363c",
+          "alias": {
+            "id": "VariableID:21306:10976",
+            "name": "Color/Dark Gray/20"
+          }
+        }
+      },
+      "description": "Use to visually group or separate unselectable UI elements, such as flat cards or dividers"
+    },
+    "Border/Subtle Hover": {
+      "id": "VariableID:22061:512",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#dbdfe7",
+          "alias": {
+            "id": "VariableID:16098:18472",
+            "name": "Color/Gray/30"
+          }
+        },
+        "dark": {
+          "value": "#46494e",
+          "alias": {
+            "id": "VariableID:21306:10975",
+            "name": "Color/Dark Gray/30"
+          }
+        }
+      },
+      "description": "Use for hover state for cards which are not selectable but can still be interacted with."
+    },
+    "Border/Warning": {
+      "id": "VariableID:20944:11224",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "STROKE_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#fcc838",
+          "alias": {
+            "id": "VariableID:16098:18409",
+            "name": "Color/Yellow/60"
+          }
+        },
+        "dark": {
+          "value": "#fcd977",
+          "alias": {
+            "id": "VariableID:16098:18410",
+            "name": "Color/Yellow/50"
+          }
+        }
+      },
+      "description": "Use for borders communicating caution."
+    },
+    "Button/Background/Overlay": {
+      "id": "VariableID:22447:17808",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#20293a99",
+          "alias": {
+            "id": "VariableID:20973:11190",
+            "name": "Color/Gray/60A"
+          }
+        },
+        "dark": {
+          "value": "#eaedf299",
+          "alias": {
+            "id": "VariableID:23641:25231",
+            "name": "Color/Gray/20A"
+          }
+        }
+      }
+    },
+    "Button/Background/Primary/Default": {
+      "id": "VariableID:22447:17844",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#2770ef",
+          "alias": {
+            "id": "VariableID:21502:25918",
+            "name": "Color/Brand/60"
+          }
+        },
+        "dark": {
+          "value": "#71a1f4",
+          "alias": {
+            "id": "VariableID:21502:25919",
+            "name": "Color/Brand/50"
+          }
+        }
+      }
+    },
+    "Button/Background/Primary/Hover": {
+      "id": "VariableID:22447:17836",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#2359b6",
+          "alias": {
+            "id": "VariableID:21502:25917",
+            "name": "Color/Brand/70"
+          }
+        },
+        "dark": {
+          "value": "#abc7f9",
+          "alias": {
+            "id": "VariableID:21502:25920",
+            "name": "Color/Brand/40"
+          }
+        }
+      }
+    },
+    "Button/Background/Primary/On Color Default": {
+      "id": "VariableID:22447:17804",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffffff",
+          "alias": {
+            "id": "VariableID:16098:18396",
+            "name": "Color/Gray/0"
+          }
+        },
+        "dark": {
+          "value": "#1f2024",
+          "alias": {
+            "id": "VariableID:21306:10979",
+            "name": "Color/Dark Gray/5"
+          }
+        }
+      }
+    },
+    "Button/Background/Primary/On Color Hover": {
+      "id": "VariableID:22447:17821",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#dee8fa",
+          "alias": {
+            "id": "VariableID:21502:25922",
+            "name": "Color/Brand/20"
+          }
+        },
+        "dark": {
+          "value": "#2d2f34",
+          "alias": {
+            "id": "VariableID:21306:10977",
+            "name": "Color/Dark Gray/15"
+          }
+        }
+      }
+    },
+    "Button/Background/Primary/On Color Pressed": {
+      "id": "VariableID:22447:17814",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#cedcf5",
+          "alias": {
+            "id": "VariableID:21502:25921",
+            "name": "Color/Brand/30"
+          }
+        },
+        "dark": {
+          "value": "#46494e",
+          "alias": {
+            "id": "VariableID:21306:10975",
+            "name": "Color/Dark Gray/30"
+          }
+        }
+      }
+    },
+    "Button/Background/Primary/Pressed": {
+      "id": "VariableID:22447:17805",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#163772",
+          "alias": {
+            "id": "VariableID:21502:25916",
+            "name": "Color/Brand/80"
+          }
+        },
+        "dark": {
+          "value": "#cedcf5",
+          "alias": {
+            "id": "VariableID:21502:25921",
+            "name": "Color/Brand/30"
+          }
+        }
+      }
+    },
+    "Button/Background/Secondary/Default": {
+      "id": "VariableID:22447:17843",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#eaedf2",
+          "alias": {
+            "id": "VariableID:16098:18399",
+            "name": "Color/Gray/20"
+          }
+        },
+        "dark": {
+          "value": "#34363c",
+          "alias": {
+            "id": "VariableID:21306:10976",
+            "name": "Color/Dark Gray/20"
+          }
+        }
+      }
+    },
+    "Button/Background/Secondary/Hover": {
+      "id": "VariableID:22447:17840",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#dbdfe7",
+          "alias": {
+            "id": "VariableID:16098:18472",
+            "name": "Color/Gray/30"
+          }
+        },
+        "dark": {
+          "value": "#46494e",
+          "alias": {
+            "id": "VariableID:21306:10975",
+            "name": "Color/Dark Gray/30"
+          }
+        }
+      }
+    },
+    "Button/Background/Secondary/Pressed": {
+      "id": "VariableID:22447:17803",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#c0c6cf",
+          "alias": {
+            "id": "VariableID:16098:18413",
+            "name": "Color/Gray/40"
+          }
+        },
+        "dark": {
+          "value": "#5d636a",
+          "alias": {
+            "id": "VariableID:21306:10974",
+            "name": "Color/Dark Gray/40"
+          }
+        }
+      }
+    },
+    "Button/Background/Tertiary/Hover": {
+      "id": "VariableID:22447:17829",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#c0c6cf1f",
+          "alias": {
+            "id": "VariableID:20848:11185",
+            "name": "Color/Gray/10A"
+          }
+        },
+        "dark": {
+          "value": "#c0c6cf1f",
+          "alias": {
+            "id": "VariableID:20848:11185",
+            "name": "Color/Gray/10A"
+          }
+        }
+      }
+    },
+    "Button/Background/Tertiary/Pressed": {
+      "id": "VariableID:22447:17827",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#71a1f41f",
+          "alias": {
+            "id": "VariableID:21502:25924",
+            "name": "Color/Brand/10A"
+          }
+        },
+        "dark": {
+          "value": "#71a1f41f",
+          "alias": {
+            "id": "VariableID:21502:25924",
+            "name": "Color/Brand/10A"
+          }
+        }
+      }
+    },
+    "Chip/Attribute/Active Border": {
+      "id": "VariableID:22447:17802",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#cedcf5",
+          "alias": {
+            "id": "VariableID:16098:18435",
+            "name": "Color/Blue/30"
+          }
+        },
+        "dark": {
+          "value": "#163772",
+          "alias": {
+            "id": "VariableID:16098:18406",
+            "name": "Color/Blue/80"
+          }
+        }
+      }
+    },
+    "Chip/Attribute/Default": {
+      "id": "VariableID:22447:17845",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#dee8fa",
+          "alias": {
+            "id": "VariableID:16098:18421",
+            "name": "Color/Blue/20"
+          }
+        },
+        "dark": {
+          "value": "#082559",
+          "alias": {
+            "id": "VariableID:16098:18401",
+            "name": "Color/Blue/90"
+          }
+        }
+      }
+    },
+    "Chip/Attribute/Hover": {
+      "id": "VariableID:22447:17810",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#cedcf5",
+          "alias": {
+            "id": "VariableID:16098:18435",
+            "name": "Color/Blue/30"
+          }
+        },
+        "dark": {
+          "value": "#163772",
+          "alias": {
+            "id": "VariableID:16098:18406",
+            "name": "Color/Blue/80"
+          }
+        }
+      }
+    },
+    "Chip/Attribute/Icon": {
+      "id": "VariableID:22447:17824",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#2770ef",
+          "alias": {
+            "id": "VariableID:16098:18390",
+            "name": "Color/Blue/60"
+          }
+        },
+        "dark": {
+          "value": "#71a1f4",
+          "alias": {
+            "id": "VariableID:16098:18385",
+            "name": "Color/Blue/50"
+          }
+        }
+      }
+    },
+    "Chip/Attribute/Pressed": {
+      "id": "VariableID:22447:17806",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#abc7f9",
+          "alias": {
+            "id": "VariableID:16098:18384",
+            "name": "Color/Blue/40"
+          }
+        },
+        "dark": {
+          "value": "#2359b6",
+          "alias": {
+            "id": "VariableID:16098:18460",
+            "name": "Color/Blue/70"
+          }
+        }
+      }
+    },
+    "Chip/Date/Active Border": {
+      "id": "VariableID:22447:17833",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#e3d9fc",
+          "alias": {
+            "id": "VariableID:16098:18375",
+            "name": "Color/Purple/30"
+          }
+        },
+        "dark": {
+          "value": "#422e75",
+          "alias": {
+            "id": "VariableID:16098:18363",
+            "name": "Color/Purple/80"
+          }
+        }
+      }
+    },
+    "Chip/Date/Default": {
+      "id": "VariableID:22447:17835",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#f0ebff",
+          "alias": {
+            "id": "VariableID:16098:18359",
+            "name": "Color/Purple/20"
+          }
+        },
+        "dark": {
+          "value": "#210f4f",
+          "alias": {
+            "id": "VariableID:16098:18366",
+            "name": "Color/Purple/90"
+          }
+        }
+      }
+    },
+    "Chip/Date/Hover": {
+      "id": "VariableID:22447:17828",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#e3d9fc",
+          "alias": {
+            "id": "VariableID:16098:18375",
+            "name": "Color/Purple/30"
+          }
+        },
+        "dark": {
+          "value": "#422e75",
+          "alias": {
+            "id": "VariableID:16098:18363",
+            "name": "Color/Purple/80"
+          }
+        }
+      }
+    },
+    "Chip/Date/Icon": {
+      "id": "VariableID:22447:17830",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#8c62f5",
+          "alias": {
+            "id": "VariableID:16098:18362",
+            "name": "Color/Purple/60"
+          }
+        },
+        "dark": {
+          "value": "#b094f8",
+          "alias": {
+            "id": "VariableID:16098:18361",
+            "name": "Color/Purple/50"
+          }
+        }
+      }
+    },
+    "Chip/Date/Pressed": {
+      "id": "VariableID:22447:17831",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#d1c0fb",
+          "alias": {
+            "id": "VariableID:16098:18360",
+            "name": "Color/Purple/40"
+          }
+        },
+        "dark": {
+          "value": "#6a4aba",
+          "alias": {
+            "id": "VariableID:16098:18454",
+            "name": "Color/Purple/70"
+          }
+        }
+      }
+    },
+    "Chip/Error/Active Border": {
+      "id": "VariableID:22447:17837",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#dbdfe7",
+          "alias": {
+            "id": "VariableID:16098:18472",
+            "name": "Color/Gray/30"
+          }
+        },
+        "dark": {
+          "value": "#b6313e",
+          "alias": {
+            "id": "VariableID:16098:18395",
+            "name": "Color/Red/70"
+          }
+        }
+      }
+    },
+    "Chip/Error/Default": {
+      "id": "VariableID:22447:17832",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffebec",
+          "alias": {
+            "id": "VariableID:16098:18388",
+            "name": "Color/Red/20"
+          }
+        },
+        "dark": {
+          "value": "#3d090e",
+          "alias": {
+            "id": "VariableID:16098:18441",
+            "name": "Color/Red/90"
+          }
+        }
+      }
+    },
+    "Chip/Error/Hover": {
+      "id": "VariableID:22447:17817",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#fcd4d7",
+          "alias": {
+            "id": "VariableID:16098:18391",
+            "name": "Color/Red/30"
+          }
+        },
+        "dark": {
+          "value": "#721f27",
+          "alias": {
+            "id": "VariableID:16098:18398",
+            "name": "Color/Red/80"
+          }
+        }
+      }
+    },
+    "Chip/Filter/Active Border": {
+      "id": "VariableID:22447:17826",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#dbdfe7",
+          "alias": {
+            "id": "VariableID:16098:18472",
+            "name": "Color/Gray/30"
+          }
+        },
+        "dark": {
+          "value": "#46494e",
+          "alias": {
+            "id": "VariableID:21306:10975",
+            "name": "Color/Dark Gray/30"
+          }
+        }
+      }
+    },
+    "Chip/Filter/Default": {
+      "id": "VariableID:22447:17838",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#eaedf2",
+          "alias": {
+            "id": "VariableID:16098:18399",
+            "name": "Color/Gray/20"
+          }
+        },
+        "dark": {
+          "value": "#34363c",
+          "alias": {
+            "id": "VariableID:21306:10976",
+            "name": "Color/Dark Gray/20"
+          }
+        }
+      }
+    },
+    "Chip/Filter/Hover": {
+      "id": "VariableID:22447:17841",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#dbdfe7",
+          "alias": {
+            "id": "VariableID:16098:18472",
+            "name": "Color/Gray/30"
+          }
+        },
+        "dark": {
+          "value": "#46494e",
+          "alias": {
+            "id": "VariableID:21306:10975",
+            "name": "Color/Dark Gray/30"
+          }
+        }
+      }
+    },
+    "Chip/Filter/Icon": {
+      "id": "VariableID:22447:17847",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#777e8b",
+          "alias": {
+            "id": "VariableID:16098:18408",
+            "name": "Color/Gray/60"
+          }
+        },
+        "dark": {
+          "value": "#9a9ea2",
+          "alias": {
+            "id": "VariableID:21306:10973",
+            "name": "Color/Dark Gray/60"
+          }
+        }
+      }
+    },
+    "Chip/Filter/Pressed": {
+      "id": "VariableID:22447:17842",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#c0c6cf",
+          "alias": {
+            "id": "VariableID:16098:18413",
+            "name": "Color/Gray/40"
+          }
+        },
+        "dark": {
+          "value": "#5d636a",
+          "alias": {
+            "id": "VariableID:21306:10974",
+            "name": "Color/Dark Gray/40"
+          }
+        }
+      }
+    },
+    "Chip/Input/Default": {
+      "id": "VariableID:22447:17807",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffffff",
+          "alias": {
+            "id": "VariableID:16098:18396",
+            "name": "Color/Gray/0"
+          }
+        },
+        "dark": {
+          "value": "#1f2024",
+          "alias": {
+            "id": "VariableID:21306:10979",
+            "name": "Color/Dark Gray/5"
+          }
+        }
+      }
+    },
+    "Chip/Input/Hover": {
+      "id": "VariableID:22447:17825",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#f6f8fa",
+          "alias": {
+            "id": "VariableID:16098:18397",
+            "name": "Color/Gray/10"
+          }
+        },
+        "dark": {
+          "value": "#2d2f34",
+          "alias": {
+            "id": "VariableID:21306:10977",
+            "name": "Color/Dark Gray/15"
+          }
+        }
+      }
+    },
+    "Chip/Input/Pressed": {
+      "id": "VariableID:22447:17823",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#eaedf2",
+          "alias": {
+            "id": "VariableID:16098:18399",
+            "name": "Color/Gray/20"
+          }
+        },
+        "dark": {
+          "value": "#34363c",
+          "alias": {
+            "id": "VariableID:21306:10976",
+            "name": "Color/Dark Gray/20"
+          }
+        }
+      }
+    },
+    "Chip/Input/Selected Default": {
+      "id": "VariableID:22447:17820",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#4a515e",
+          "alias": {
+            "id": "VariableID:16098:18456",
+            "name": "Color/Gray/70"
+          }
+        },
+        "dark": {
+          "value": "#afb2b6",
+          "alias": {
+            "id": "VariableID:21306:10972",
+            "name": "Color/Dark Gray/70"
+          }
+        }
+      }
+    },
+    "Chip/Input/Selected Hover": {
+      "id": "VariableID:22447:17839",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#323946",
+          "alias": {
+            "id": "VariableID:16098:18451",
+            "name": "Color/Gray/80"
+          }
+        },
+        "dark": {
+          "value": "#c7c9cc",
+          "alias": {
+            "id": "VariableID:21306:10971",
+            "name": "Color/Dark Gray/80"
+          }
+        }
+      }
+    },
+    "Chip/Input/Selected Pressed": {
+      "id": "VariableID:22447:17813",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#1d232f",
+          "alias": {
+            "id": "VariableID:16098:18415",
+            "name": "Color/Gray/90"
+          }
+        },
+        "dark": {
+          "value": "#dfe0e2",
+          "alias": {
+            "id": "VariableID:21306:10970",
+            "name": "Color/Dark Gray/90"
+          }
+        }
+      }
+    },
+    "Chip/Loading": {
+      "id": "VariableID:22447:17848",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "FRAME_FILL",
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#f6f8fa",
+          "alias": {
+            "id": "VariableID:16098:18397",
+            "name": "Color/Gray/10"
+          }
+        },
+        "dark": {
+          "value": "#26282c",
+          "alias": {
+            "id": "VariableID:21306:10978",
+            "name": "Color/Dark Gray/10"
+          }
+        }
+      }
+    },
+    "Chip/Measure/Active Border": {
+      "id": "VariableID:22447:17822",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#c7f2e3",
+          "alias": {
+            "id": "VariableID:16098:18369",
+            "name": "Color/Green/30"
+          }
+        },
+        "dark": {
+          "value": "#025b3c",
+          "alias": {
+            "id": "VariableID:16098:18372",
+            "name": "Color/Green/80"
+          }
+        }
+      }
+    },
+    "Chip/Measure/Default": {
+      "id": "VariableID:22447:17801",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#e0f8ef",
+          "alias": {
+            "id": "VariableID:16098:18382",
+            "name": "Color/Green/20"
+          }
+        },
+        "dark": {
+          "value": "#003b26",
+          "alias": {
+            "id": "VariableID:16098:18373",
+            "name": "Color/Green/90"
+          }
+        }
+      }
+    },
+    "Chip/Measure/Hover": {
+      "id": "VariableID:22447:17816",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#c7f2e3",
+          "alias": {
+            "id": "VariableID:16098:18369",
+            "name": "Color/Green/30"
+          }
+        },
+        "dark": {
+          "value": "#025b3c",
+          "alias": {
+            "id": "VariableID:16098:18372",
+            "name": "Color/Green/80"
+          }
+        }
+      }
+    },
+    "Chip/Measure/Icon": {
+      "id": "VariableID:22447:17846",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#06bf7f",
+          "alias": {
+            "id": "VariableID:16098:18371",
+            "name": "Color/Green/60"
+          }
+        },
+        "dark": {
+          "value": "#56d3a8",
+          "alias": {
+            "id": "VariableID:16098:18370",
+            "name": "Color/Green/50"
+          }
+        }
+      }
+    },
+    "Chip/Measure/Pressed": {
+      "id": "VariableID:22447:17834",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#9be5cb",
+          "alias": {
+            "id": "VariableID:16098:18434",
+            "name": "Color/Green/40"
+          }
+        },
+        "dark": {
+          "value": "#049160",
+          "alias": {
+            "id": "VariableID:16098:18445",
+            "name": "Color/Green/70"
+          }
+        }
+      }
+    },
+    "Color/Blue/10": {
+      "id": "VariableID:16098:18378",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#f2f7ff"
+        }
+      }
+    },
+    "Color/Blue/100": {
+      "id": "VariableID:16098:18386",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#001740"
+        }
+      }
+    },
+    "Color/Blue/10A": {
+      "id": "VariableID:20881:11189",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#71a1f41f"
+        }
+      }
+    },
+    "Color/Blue/20": {
+      "id": "VariableID:16098:18421",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#dee8fa"
+        }
+      }
+    },
+    "Color/Blue/30": {
+      "id": "VariableID:16098:18435",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#cedcf5"
+        }
+      }
+    },
+    "Color/Blue/40": {
+      "id": "VariableID:16098:18384",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#abc7f9"
+        }
+      }
+    },
+    "Color/Blue/50": {
+      "id": "VariableID:16098:18385",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#71a1f4"
+        }
+      }
+    },
+    "Color/Blue/60": {
+      "id": "VariableID:16098:18390",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#2770ef"
+        }
+      }
+    },
+    "Color/Blue/70": {
+      "id": "VariableID:16098:18460",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#2359b6"
+        }
+      }
+    },
+    "Color/Blue/80": {
+      "id": "VariableID:16098:18406",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#163772"
+        }
+      }
+    },
+    "Color/Blue/90": {
+      "id": "VariableID:16098:18401",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#082559"
+        }
+      }
+    },
+    "Color/Brand/10": {
+      "id": "VariableID:21502:25923",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#f2f7ff"
+        }
+      }
+    },
+    "Color/Brand/100": {
+      "id": "VariableID:21502:25914",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#001740"
+        }
+      }
+    },
+    "Color/Brand/10A": {
+      "id": "VariableID:21502:25924",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#71a1f41f"
+        }
+      }
+    },
+    "Color/Brand/20": {
+      "id": "VariableID:21502:25922",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#dee8fa"
+        }
+      }
+    },
+    "Color/Brand/30": {
+      "id": "VariableID:21502:25921",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#cedcf5"
+        }
+      }
+    },
+    "Color/Brand/40": {
+      "id": "VariableID:21502:25920",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#abc7f9"
+        }
+      }
+    },
+    "Color/Brand/50": {
+      "id": "VariableID:21502:25919",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#71a1f4"
+        }
+      }
+    },
+    "Color/Brand/60": {
+      "id": "VariableID:21502:25918",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#2770ef"
+        }
+      }
+    },
+    "Color/Brand/70": {
+      "id": "VariableID:21502:25917",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#2359b6"
+        }
+      }
+    },
+    "Color/Brand/80": {
+      "id": "VariableID:21502:25916",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#163772"
+        }
+      }
+    },
+    "Color/Brand/90": {
+      "id": "VariableID:21502:25915",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#082559"
+        }
+      }
+    },
+    "Color/Dark Gray/0": {
+      "id": "VariableID:21538:50764",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#18191b"
+        }
+      }
+    },
+    "Color/Dark Gray/10": {
+      "id": "VariableID:21306:10978",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#26282c"
+        }
+      }
+    },
+    "Color/Dark Gray/15": {
+      "id": "VariableID:21306:10977",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#2d2f34"
+        }
+      }
+    },
+    "Color/Dark Gray/20": {
+      "id": "VariableID:21306:10976",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#34363c"
+        }
+      }
+    },
+    "Color/Dark Gray/30": {
+      "id": "VariableID:21306:10975",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#46494e"
+        }
+      }
+    },
+    "Color/Dark Gray/30A": {
+      "id": "VariableID:21549:50706",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#00030aba"
+        }
+      }
+    },
+    "Color/Dark Gray/40": {
+      "id": "VariableID:21306:10974",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#5d636a"
+        }
+      }
+    },
+    "Color/Dark Gray/5": {
+      "id": "VariableID:21306:10979",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#1f2024"
+        }
+      }
+    },
+    "Color/Dark Gray/50": {
+      "id": "VariableID:21350:47433",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#7a7d85"
+        }
+      }
+    },
+    "Color/Dark Gray/60": {
+      "id": "VariableID:21306:10973",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#9a9ea2"
+        }
+      }
+    },
+    "Color/Dark Gray/70": {
+      "id": "VariableID:21306:10972",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#afb2b6"
+        }
+      }
+    },
+    "Color/Dark Gray/80": {
+      "id": "VariableID:21306:10971",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#c7c9cc"
+        }
+      }
+    },
+    "Color/Dark Gray/90": {
+      "id": "VariableID:21306:10970",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#dfe0e2"
+        }
+      }
+    },
+    "Color/Gray/0": {
+      "id": "VariableID:16098:18396",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffffff"
+        }
+      }
+    },
+    "Color/Gray/10": {
+      "id": "VariableID:16098:18397",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#f6f8fa"
+        }
+      }
+    },
+    "Color/Gray/100": {
+      "id": "VariableID:16098:18417",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#000000"
+        }
+      }
+    },
+    "Color/Gray/10A": {
+      "id": "VariableID:20848:11185",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#c0c6cf1f"
+        }
+      }
+    },
+    "Color/Gray/20": {
+      "id": "VariableID:16098:18399",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#eaedf2"
+        }
+      }
+    },
+    "Color/Gray/20A": {
+      "id": "VariableID:23641:25231",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#eaedf299"
+        }
+      }
+    },
+    "Color/Gray/30": {
+      "id": "VariableID:16098:18472",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#dbdfe7"
+        }
+      }
+    },
+    "Color/Gray/40": {
+      "id": "VariableID:16098:18413",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#c0c6cf"
+        }
+      }
+    },
+    "Color/Gray/40A": {
+      "id": "VariableID:20973:11191",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#16223a42"
+        }
+      }
+    },
+    "Color/Gray/50": {
+      "id": "VariableID:16098:18402",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#a5acb9"
+        }
+      }
+    },
+    "Color/Gray/60": {
+      "id": "VariableID:16098:18408",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#777e8b"
+        }
+      }
+    },
+    "Color/Gray/60A": {
+      "id": "VariableID:20973:11190",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#20293a99"
+        }
+      }
+    },
+    "Color/Gray/70": {
+      "id": "VariableID:16098:18456",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#4a515e"
+        }
+      }
+    },
+    "Color/Gray/70A": {
+      "id": "VariableID:20848:11191",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#1f2632cc"
+        }
+      }
+    },
+    "Color/Gray/80": {
+      "id": "VariableID:16098:18451",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#323946"
+        }
+      }
+    },
+    "Color/Gray/90": {
+      "id": "VariableID:16098:18415",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#1d232f"
+        }
+      }
+    },
+    "Color/Green/10": {
+      "id": "VariableID:16098:18368",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#edfff9"
+        }
+      }
+    },
+    "Color/Green/100": {
+      "id": "VariableID:16098:18418",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#001f14"
+        }
+      }
+    },
+    "Color/Green/20": {
+      "id": "VariableID:16098:18382",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#e0f8ef"
+        }
+      }
+    },
+    "Color/Green/30": {
+      "id": "VariableID:16098:18369",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#c7f2e3"
+        }
+      }
+    },
+    "Color/Green/40": {
+      "id": "VariableID:16098:18434",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#9be5cb"
+        }
+      }
+    },
+    "Color/Green/50": {
+      "id": "VariableID:16098:18370",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#56d3a8"
+        }
+      }
+    },
+    "Color/Green/60": {
+      "id": "VariableID:16098:18371",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#06bf7f"
+        }
+      }
+    },
+    "Color/Green/70": {
+      "id": "VariableID:16098:18445",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#049160"
+        }
+      }
+    },
+    "Color/Green/80": {
+      "id": "VariableID:16098:18372",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#025b3c"
+        }
+      }
+    },
+    "Color/Green/90": {
+      "id": "VariableID:16098:18373",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#003b26"
+        }
+      }
+    },
+    "Color/Orange/10": {
+      "id": "VariableID:16098:18436",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#fff5f0"
+        }
+      }
+    },
+    "Color/Orange/100": {
+      "id": "VariableID:16098:18389",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#331100"
+        }
+      }
+    },
+    "Color/Orange/20": {
+      "id": "VariableID:16098:18430",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffeee5"
+        }
+      }
+    },
+    "Color/Orange/30": {
+      "id": "VariableID:16098:18450",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffddcc"
+        }
+      }
+    },
+    "Color/Orange/40": {
+      "id": "VariableID:16098:18453",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffccb3"
+        }
+      }
+    },
+    "Color/Orange/50": {
+      "id": "VariableID:16098:18424",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffa97e"
+        }
+      }
+    },
+    "Color/Orange/60": {
+      "id": "VariableID:16098:18462",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#ff8142"
+        }
+      }
+    },
+    "Color/Orange/70": {
+      "id": "VariableID:16098:18465",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#c26232"
+        }
+      }
+    },
+    "Color/Orange/80": {
+      "id": "VariableID:16098:18455",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#7a3d1f"
+        }
+      }
+    },
+    "Color/Orange/90": {
+      "id": "VariableID:16098:18458",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#471f0b"
+        }
+      }
+    },
+    "Color/Purple/10": {
+      "id": "VariableID:16098:18364",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#f7f5ff"
+        }
+      }
+    },
+    "Color/Purple/100": {
+      "id": "VariableID:16098:18367",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#0e0033"
+        }
+      }
+    },
+    "Color/Purple/20": {
+      "id": "VariableID:16098:18359",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#f0ebff"
+        }
+      }
+    },
+    "Color/Purple/20A": {
+      "id": "VariableID:21601:53517",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#b094f82e"
+        }
+      }
+    },
+    "Color/Purple/30": {
+      "id": "VariableID:16098:18375",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#e3d9fc"
+        }
+      }
+    },
+    "Color/Purple/40": {
+      "id": "VariableID:16098:18360",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#d1c0fb"
+        }
+      }
+    },
+    "Color/Purple/50": {
+      "id": "VariableID:16098:18361",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#b094f8"
+        }
+      }
+    },
+    "Color/Purple/60": {
+      "id": "VariableID:16098:18362",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#8c62f5"
+        }
+      }
+    },
+    "Color/Purple/70": {
+      "id": "VariableID:16098:18454",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#6a4aba"
+        }
+      }
+    },
+    "Color/Purple/80": {
+      "id": "VariableID:16098:18363",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#422e75"
+        }
+      }
+    },
+    "Color/Purple/90": {
+      "id": "VariableID:16098:18366",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#210f4f"
+        }
+      }
+    },
+    "Color/Red/10": {
+      "id": "VariableID:16098:18428",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#fff0f0"
+        }
+      }
+    },
+    "Color/Red/100": {
+      "id": "VariableID:16098:18423",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#1f0003"
+        }
+      }
+    },
+    "Color/Red/20": {
+      "id": "VariableID:16098:18388",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffebec"
+        }
+      }
+    },
+    "Color/Red/30": {
+      "id": "VariableID:16098:18391",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#fcd4d7"
+        }
+      }
+    },
+    "Color/Red/40": {
+      "id": "VariableID:16098:18394",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#f9b3b9"
+        }
+      }
+    },
+    "Color/Red/50": {
+      "id": "VariableID:16098:18392",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#f47e89"
+        }
+      }
+    },
+    "Color/Red/60": {
+      "id": "VariableID:16098:18411",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#e22b3d"
+        }
+      }
+    },
+    "Color/Red/70": {
+      "id": "VariableID:16098:18395",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#b6313e"
+        }
+      }
+    },
+    "Color/Red/80": {
+      "id": "VariableID:16098:18398",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#721f27"
+        }
+      }
+    },
+    "Color/Red/90": {
+      "id": "VariableID:16098:18441",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#3d090e"
+        }
+      }
+    },
+    "Color/Teal/10": {
+      "id": "VariableID:16098:18464",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#edfdff"
+        }
+      }
+    },
+    "Color/Teal/100": {
+      "id": "VariableID:16098:18358",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#002d33"
+        }
+      }
+    },
+    "Color/Teal/20": {
+      "id": "VariableID:16098:18466",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#e1f7fa"
+        }
+      }
+    },
+    "Color/Teal/30": {
+      "id": "VariableID:16098:18467",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#c9f0f5"
+        }
+      }
+    },
+    "Color/Teal/40": {
+      "id": "VariableID:16098:18449",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#b5ecf2"
+        }
+      }
+    },
+    "Color/Teal/50": {
+      "id": "VariableID:16098:18432",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#82dfe9"
+        }
+      }
+    },
+    "Color/Teal/60": {
+      "id": "VariableID:16098:18393",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#48d1e0"
+        }
+      }
+    },
+    "Color/Teal/70": {
+      "id": "VariableID:16098:18468",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#369faa"
+        }
+      }
+    },
+    "Color/Teal/80": {
+      "id": "VariableID:16098:18457",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#22636b"
+        }
+      }
+    },
+    "Color/Teal/90": {
+      "id": "VariableID:16098:18471",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#0c3f45"
+        }
+      }
+    },
+    "Color/Yellow/10": {
+      "id": "VariableID:16098:18376",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#fffbf0"
+        }
+      }
+    },
+    "Color/Yellow/100": {
+      "id": "VariableID:16098:18470",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#2e2200"
+        }
+      }
+    },
+    "Color/Yellow/20": {
+      "id": "VariableID:16098:18452",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#fff8e5"
+        }
+      }
+    },
+    "Color/Yellow/30": {
+      "id": "VariableID:16098:18405",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#fcf1d1"
+        }
+      }
+    },
+    "Color/Yellow/40": {
+      "id": "VariableID:16098:18374",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#fde9af"
+        }
+      }
+    },
+    "Color/Yellow/50": {
+      "id": "VariableID:16098:18410",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#fcd977"
+        }
+      }
+    },
+    "Color/Yellow/60": {
+      "id": "VariableID:16098:18409",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#fcc838"
+        }
+      }
+    },
+    "Color/Yellow/70": {
+      "id": "VariableID:16098:18381",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#bf982a"
+        }
+      }
+    },
+    "Color/Yellow/80": {
+      "id": "VariableID:16098:18383",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#785f1a"
+        }
+      }
+    },
+    "Color/Yellow/90": {
+      "id": "VariableID:16098:18469",
+      "collection": "Primitive",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#4f3d09"
+        }
+      }
+    },
+    "Content/Accent/Blue": {
+      "id": "VariableID:22108:20569",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#2770ef",
+          "alias": {
+            "id": "VariableID:16098:18390",
+            "name": "Color/Blue/60"
+          }
+        },
+        "dark": {
+          "value": "#71a1f4",
+          "alias": {
+            "id": "VariableID:16098:18385",
+            "name": "Color/Blue/50"
+          }
+        }
+      },
+      "description": "Use for blue content on accent backgrounds when there is no meaning tied to the color."
+    },
+    "Content/Accent/Gray": {
+      "id": "VariableID:22108:20568",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#777e8b",
+          "alias": {
+            "id": "VariableID:16098:18408",
+            "name": "Color/Gray/60"
+          }
+        },
+        "dark": {
+          "value": "#5d636a",
+          "alias": {
+            "id": "VariableID:21306:10974",
+            "name": "Color/Dark Gray/40"
+          }
+        }
+      },
+      "description": "Use for gray content on accent backgrounds when there is no meaning tied to the color."
+    },
+    "Content/Accent/Green": {
+      "id": "VariableID:22108:20565",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#06bf7f",
+          "alias": {
+            "id": "VariableID:16098:18371",
+            "name": "Color/Green/60"
+          }
+        },
+        "dark": {
+          "value": "#56d3a8",
+          "alias": {
+            "id": "VariableID:16098:18370",
+            "name": "Color/Green/50"
+          }
+        }
+      },
+      "description": "Use for green content on accent backgrounds when there is no meaning tied to the color."
+    },
+    "Content/Accent/Purple": {
+      "id": "VariableID:22108:20570",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#8c62f5",
+          "alias": {
+            "id": "VariableID:16098:18362",
+            "name": "Color/Purple/60"
+          }
+        },
+        "dark": {
+          "value": "#b094f8",
+          "alias": {
+            "id": "VariableID:16098:18361",
+            "name": "Color/Purple/50"
+          }
+        }
+      },
+      "description": "Use for purple content on accent backgrounds when there is no meaning tied to the color."
+    },
+    "Content/Accent/Red": {
+      "id": "VariableID:22108:20567",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#e22b3d",
+          "alias": {
+            "id": "VariableID:16098:18411",
+            "name": "Color/Red/60"
+          }
+        },
+        "dark": {
+          "value": "#f47e89",
+          "alias": {
+            "id": "VariableID:16098:18392",
+            "name": "Color/Red/50"
+          }
+        }
+      },
+      "description": "Use for red content on accent backgrounds when there is no meaning tied to the color."
+    },
+    "Content/Accent/Yellow": {
+      "id": "VariableID:22108:20566",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#fcc838",
+          "alias": {
+            "id": "VariableID:16098:18409",
+            "name": "Color/Yellow/60"
+          }
+        },
+        "dark": {
+          "value": "#fcd977",
+          "alias": {
+            "id": "VariableID:16098:18410",
+            "name": "Color/Yellow/50"
+          }
+        }
+      },
+      "description": "Use for yellow content on accent backgrounds when there is no meaning tied to the color."
+    },
+    "Content/Brand": {
+      "id": "VariableID:20981:11259",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#2770ef",
+          "alias": {
+            "id": "VariableID:21502:25918",
+            "name": "Color/Brand/60"
+          }
+        },
+        "dark": {
+          "value": "#71a1f4",
+          "alias": {
+            "id": "VariableID:21502:25919",
+            "name": "Color/Brand/50"
+          }
+        }
+      },
+      "description": "Use for text and icon that reinforce our brand"
+    },
+    "Content/Failure": {
+      "id": "VariableID:20686:11911",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#e22b3d",
+          "alias": {
+            "id": "VariableID:16098:18411",
+            "name": "Color/Red/60"
+          }
+        },
+        "dark": {
+          "value": "#f47e89",
+          "alias": {
+            "id": "VariableID:16098:18392",
+            "name": "Color/Red/50"
+          }
+        }
+      },
+      "description": "Use for critical text and icon, which blocks a workflow"
+    },
+    "Content/Information": {
+      "id": "VariableID:20686:11910",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#2770ef",
+          "alias": {
+            "id": "VariableID:16098:18390",
+            "name": "Color/Blue/60"
+          }
+        },
+        "dark": {
+          "value": "#71a1f4",
+          "alias": {
+            "id": "VariableID:16098:18385",
+            "name": "Color/Blue/50"
+          }
+        }
+      },
+      "description": "Use for informative text and icon or to communicate something is in progress."
+    },
+    "Content/Inverse": {
+      "id": "VariableID:20686:11914",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffffff",
+          "alias": {
+            "id": "VariableID:16098:18396",
+            "name": "Color/Gray/0"
+          }
+        },
+        "dark": {
+          "value": "#1f2024",
+          "alias": {
+            "id": "VariableID:21306:10979",
+            "name": "Color/Dark Gray/5"
+          }
+        }
+      },
+      "description": "Text stays white in both modes....Use for text and icons on inverse backgrounds"
+    },
+    "Content/Primary": {
+      "id": "VariableID:20686:11916",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#1d232f",
+          "alias": {
+            "id": "VariableID:16098:18415",
+            "name": "Color/Gray/90"
+          }
+        },
+        "dark": {
+          "value": "#dfe0e2",
+          "alias": {
+            "id": "VariableID:21306:10970",
+            "name": "Color/Dark Gray/90"
+          }
+        }
+      },
+      "description": "Use for primary text like body copy, headers, and buttons, and icons paired with primary text or buttons"
+    },
+    "Content/Secondary": {
+      "id": "VariableID:20686:11915",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#777e8b",
+          "alias": {
+            "id": "VariableID:16098:18408",
+            "name": "Color/Gray/60"
+          }
+        },
+        "dark": {
+          "value": "#9a9ea2",
+          "alias": {
+            "id": "VariableID:21306:10973",
+            "name": "Color/Dark Gray/60"
+          }
+        }
+      },
+      "description": "Use for secondary text like footnote, captions, description, and icons paired with secondary text."
+    },
+    "Content/Success": {
+      "id": "VariableID:20686:11912",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "SHAPE_FILL",
+        "TEXT_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#06bf7f",
+          "alias": {
+            "id": "VariableID:16098:18371",
+            "name": "Color/Green/60"
+          }
+        },
+        "dark": {
+          "value": "#56d3a8",
+          "alias": {
+            "id": "VariableID:16098:18370",
+            "name": "Color/Green/50"
+          }
+        }
+      },
+      "description": "Use for text and icon to communicate a favourable outcome"
+    },
+    "Content/Tertiary": {
+      "id": "VariableID:21133:15992",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#c0c6cf",
+          "alias": {
+            "id": "VariableID:16098:18413",
+            "name": "Color/Gray/40"
+          }
+        },
+        "dark": {
+          "value": "#5d636a",
+          "alias": {
+            "id": "VariableID:21306:10974",
+            "name": "Color/Dark Gray/40"
+          }
+        }
+      },
+      "description": "Use for non clickable icons, like spinner, or illustrations"
+    },
+    "Content/Warning": {
+      "id": "VariableID:20686:11913",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "SHAPE_FILL"
+      ],
+      "values": {
+        "light": {
+          "value": "#fcc838",
+          "alias": {
+            "id": "VariableID:16098:18409",
+            "name": "Color/Yellow/60"
+          }
+        },
+        "dark": {
+          "value": "#fcd977",
+          "alias": {
+            "id": "VariableID:16098:18410",
+            "name": "Color/Yellow/50"
+          }
+        }
+      },
+      "description": "Use for icons to emphasize caution"
+    },
+    "Radius/12 px": {
+      "id": "VariableID:20917:11204",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "CORNER_RADIUS"
+      ],
+      "values": {
+        "light": {
+          "value": 12
+        }
+      }
+    },
+    "Radius/16 px": {
+      "id": "VariableID:20917:11201",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "CORNER_RADIUS"
+      ],
+      "values": {
+        "light": {
+          "value": 16
+        }
+      }
+    },
+    "Radius/4 px": {
+      "id": "VariableID:20917:11205",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "CORNER_RADIUS"
+      ],
+      "values": {
+        "light": {
+          "value": 4
+        }
+      }
+    },
+    "Radius/6 px": {
+      "id": "VariableID:20917:11203",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "CORNER_RADIUS"
+      ],
+      "values": {
+        "light": {
+          "value": 6
+        }
+      }
+    },
+    "Radius/8 px": {
+      "id": "VariableID:20917:11202",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "CORNER_RADIUS"
+      ],
+      "values": {
+        "light": {
+          "value": 8
+        }
+      }
+    },
+    "Segmented Control/Content/Active": {
+      "id": "VariableID:22447:17818",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#2770ef",
+          "alias": {
+            "id": "VariableID:16098:18390",
+            "name": "Color/Blue/60"
+          }
+        },
+        "dark": {
+          "value": "#dfe0e2",
+          "alias": {
+            "id": "VariableID:21306:10970",
+            "name": "Color/Dark Gray/90"
+          }
+        }
+      }
+    },
+    "Shadow/Menu/1/Blur": {
+      "id": "VariableID:22121:17900",
+      "collection": "Theme",
+      "type": "FLOAT",
+      "scopes": [
+        "EFFECT_FLOAT"
+      ],
+      "values": {
+        "light": {
+          "value": 4
+        },
+        "dark": {
+          "value": 6
+        }
+      }
+    },
+    "Shadow/Menu/1/Color": {
+      "id": "VariableID:22121:17901",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "EFFECT_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#19233114"
+        },
+        "dark": {
+          "value": "#00000029"
+        }
+      }
+    },
+    "Shadow/Menu/2/Blur": {
+      "id": "VariableID:22121:17903",
+      "collection": "Theme",
+      "type": "FLOAT",
+      "scopes": [
+        "EFFECT_FLOAT"
+      ],
+      "values": {
+        "light": {
+          "value": 24
+        },
+        "dark": {
+          "value": 28
+        }
+      }
+    },
+    "Shadow/Menu/2/Color": {
+      "id": "VariableID:22121:17904",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "EFFECT_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#1923311f"
+        },
+        "dark": {
+          "value": "#00000052"
+        }
+      }
+    },
+    "Shadow/Modal/1/Blur": {
+      "id": "VariableID:22121:17906",
+      "collection": "Theme",
+      "type": "FLOAT",
+      "scopes": [
+        "EFFECT_FLOAT"
+      ],
+      "values": {
+        "light": {
+          "value": 4
+        },
+        "dark": {
+          "value": 4
+        }
+      }
+    },
+    "Shadow/Modal/1/Color": {
+      "id": "VariableID:22121:17907",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "EFFECT_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#1923311a"
+        },
+        "dark": {
+          "value": "#00000066"
+        }
+      }
+    },
+    "Shadow/Modal/2/Blur": {
+      "id": "VariableID:22121:17909",
+      "collection": "Theme",
+      "type": "FLOAT",
+      "scopes": [
+        "EFFECT_FLOAT"
+      ],
+      "values": {
+        "light": {
+          "value": 32
+        },
+        "dark": {
+          "value": 32
+        }
+      }
+    },
+    "Shadow/Modal/2/Color": {
+      "id": "VariableID:22121:17910",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "EFFECT_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#19233129"
+        },
+        "dark": {
+          "value": "#00000099"
+        }
+      }
+    },
+    "Shadow/Surface/1/Blur": {
+      "id": "VariableID:22121:17887",
+      "collection": "Theme",
+      "type": "FLOAT",
+      "scopes": [
+        "EFFECT_FLOAT"
+      ],
+      "values": {
+        "light": {
+          "value": 4
+        },
+        "dark": {
+          "value": 4
+        }
+      }
+    },
+    "Shadow/Surface/1/Color": {
+      "id": "VariableID:22121:17886",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "EFFECT_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#1923311a"
+        },
+        "dark": {
+          "value": "#0000003d"
+        }
+      }
+    },
+    "Shadow/Surface/2/Blur": {
+      "id": "VariableID:22121:17897",
+      "collection": "Theme",
+      "type": "FLOAT",
+      "scopes": [
+        "EFFECT_FLOAT"
+      ],
+      "values": {
+        "light": {
+          "value": 4
+        },
+        "dark": {
+          "value": 8
+        }
+      }
+    },
+    "Shadow/Surface/2/Color": {
+      "id": "VariableID:22121:17896",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "EFFECT_COLOR"
+      ],
+      "values": {
+        "light": {
+          "value": "#1923310a"
+        },
+        "dark": {
+          "value": "#00000033"
+        }
+      }
+    },
+    "Space/A": {
+      "id": "VariableID:20917:11265",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP",
+        "LETTER_SPACING",
+        "PARAGRAPH_INDENT",
+        "PARAGRAPH_SPACING"
+      ],
+      "values": {
+        "light": {
+          "value": 4
+        }
+      }
+    },
+    "Space/B": {
+      "id": "VariableID:20917:11263",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP",
+        "LETTER_SPACING",
+        "PARAGRAPH_INDENT",
+        "PARAGRAPH_SPACING"
+      ],
+      "values": {
+        "light": {
+          "value": 8
+        }
+      }
+    },
+    "Space/C": {
+      "id": "VariableID:20917:11260",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP",
+        "LETTER_SPACING",
+        "PARAGRAPH_INDENT",
+        "PARAGRAPH_SPACING"
+      ],
+      "values": {
+        "light": {
+          "value": 12
+        }
+      }
+    },
+    "Space/D": {
+      "id": "VariableID:20917:11259",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP",
+        "LETTER_SPACING",
+        "PARAGRAPH_INDENT",
+        "PARAGRAPH_SPACING"
+      ],
+      "values": {
+        "light": {
+          "value": 16
+        }
+      }
+    },
+    "Space/E": {
+      "id": "VariableID:20917:11262",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP",
+        "LETTER_SPACING",
+        "PARAGRAPH_INDENT",
+        "PARAGRAPH_SPACING"
+      ],
+      "values": {
+        "light": {
+          "value": 20
+        }
+      }
+    },
+    "Space/F": {
+      "id": "VariableID:20917:11264",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP",
+        "LETTER_SPACING",
+        "PARAGRAPH_INDENT",
+        "PARAGRAPH_SPACING"
+      ],
+      "values": {
+        "light": {
+          "value": 24
+        }
+      }
+    },
+    "Space/G": {
+      "id": "VariableID:20917:11256",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP",
+        "LETTER_SPACING",
+        "PARAGRAPH_INDENT",
+        "PARAGRAPH_SPACING"
+      ],
+      "values": {
+        "light": {
+          "value": 28
+        }
+      }
+    },
+    "Space/H": {
+      "id": "VariableID:20917:11258",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP",
+        "LETTER_SPACING",
+        "PARAGRAPH_INDENT",
+        "PARAGRAPH_SPACING"
+      ],
+      "values": {
+        "light": {
+          "value": 32
+        }
+      }
+    },
+    "Space/I": {
+      "id": "VariableID:20917:11255",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP",
+        "LETTER_SPACING",
+        "PARAGRAPH_INDENT",
+        "PARAGRAPH_SPACING"
+      ],
+      "values": {
+        "light": {
+          "value": 40
+        }
+      }
+    },
+    "Space/J": {
+      "id": "VariableID:20917:11254",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP",
+        "LETTER_SPACING",
+        "PARAGRAPH_INDENT",
+        "PARAGRAPH_SPACING"
+      ],
+      "values": {
+        "light": {
+          "value": 48
+        }
+      }
+    },
+    "Space/K": {
+      "id": "VariableID:20917:11261",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP",
+        "LETTER_SPACING",
+        "PARAGRAPH_INDENT",
+        "PARAGRAPH_SPACING"
+      ],
+      "values": {
+        "light": {
+          "value": 56
+        }
+      }
+    },
+    "Space/L": {
+      "id": "VariableID:20917:11257",
+      "collection": "Primitive",
+      "type": "FLOAT",
+      "scopes": [
+        "GAP",
+        "LETTER_SPACING",
+        "PARAGRAPH_INDENT",
+        "PARAGRAPH_SPACING"
+      ],
+      "values": {
+        "light": {
+          "value": 64
+        }
+      }
+    },
+    "Toggle/Thumb/Off": {
+      "id": "VariableID:22447:17811",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#ffffff",
+          "alias": {
+            "id": "VariableID:16098:18396",
+            "name": "Color/Gray/0"
+          }
+        },
+        "dark": {
+          "value": "#c7c9cc",
+          "alias": {
+            "id": "VariableID:21306:10971",
+            "name": "Color/Dark Gray/80"
+          }
+        }
+      }
+    },
+    "Toggle/Thumb/On": {
+      "id": "VariableID:22447:17812",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#2770ef",
+          "alias": {
+            "id": "VariableID:21502:25918",
+            "name": "Color/Brand/60"
+          }
+        },
+        "dark": {
+          "value": "#cedcf5",
+          "alias": {
+            "id": "VariableID:21502:25921",
+            "name": "Color/Brand/30"
+          }
+        }
+      }
+    },
+    "Toggle/Thumb/Outline Off": {
+      "id": "VariableID:22447:17809",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#dbdfe7",
+          "alias": {
+            "id": "VariableID:16098:18472",
+            "name": "Color/Gray/30"
+          }
+        },
+        "dark": {
+          "value": "#c7c9cc",
+          "alias": {
+            "id": "VariableID:21306:10971",
+            "name": "Color/Dark Gray/80"
+          }
+        }
+      }
+    },
+    "Toggle/Track/Off": {
+      "id": "VariableID:22447:17815",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#c0c6cf",
+          "alias": {
+            "id": "VariableID:16098:18413",
+            "name": "Color/Gray/40"
+          }
+        },
+        "dark": {
+          "value": "#5d636a",
+          "alias": {
+            "id": "VariableID:21306:10974",
+            "name": "Color/Dark Gray/40"
+          }
+        }
+      }
+    },
+    "Toggle/Track/On": {
+      "id": "VariableID:22447:17819",
+      "collection": "Theme",
+      "type": "COLOR",
+      "scopes": [
+        "ALL_SCOPES"
+      ],
+      "values": {
+        "light": {
+          "value": "#cedcf5",
+          "alias": {
+            "id": "VariableID:21502:25921",
+            "name": "Color/Brand/30"
+          }
+        },
+        "dark": {
+          "value": "#163772",
+          "alias": {
+            "id": "VariableID:21502:25916",
+            "name": "Color/Brand/80"
+          }
+        }
+      }
+    }
+  }
+}

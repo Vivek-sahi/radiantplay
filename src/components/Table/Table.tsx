@@ -1,8 +1,15 @@
 import React, { forwardRef, useState, useMemo, ReactNode } from 'react';
 import { Icon } from '../icons';
+import type { IconName } from '../icons';
 import { Avatar, AvatarSize } from '../Avatar';
 import { Chip } from '../Chip';
 import type { ChipType } from '../Chip';
+import { Checkbox } from '../Checkbox';
+import { Token } from '../Token';
+import type { TokenType } from '../Token';
+import { Button } from '../Button';
+import type { ButtonVariant } from '../Button';
+import { useRadiantLook } from '../../context/RadiantLookContext';
 import styles from './Table.module.css';
 
 /**
@@ -181,6 +188,8 @@ export const Table = forwardRef<HTMLDivElement, TableProps>(({
   ].filter(Boolean).join(' ');
 
   const isAllSelected = data.length > 0 && selectedKeys.length === data.length;
+  // Radiant 3.0 (Figma Object table 17165:22524) uses Radiant checkboxes
+  const radiantCheckboxes = useRadiantLook() === 'radiant-3';
 
   return (
     <div ref={ref} className={containerClasses} {...props}>
@@ -189,12 +198,22 @@ export const Table = forwardRef<HTMLDivElement, TableProps>(({
           <tr>
             {selectable && (
               <th className={styles.th} style={{ width: '48px' }}>
-                <input
-                  type="checkbox"
-                  checked={isAllSelected}
-                  onChange={handleSelectAll}
-                  className={styles.checkbox}
-                />
+                {radiantCheckboxes ? (
+                  <Checkbox
+                    label="Select all rows"
+                    showLabel={false}
+                    checked={isAllSelected}
+                    indeterminate={selectedKeys.length > 0 && !isAllSelected}
+                    onChange={handleSelectAll}
+                  />
+                ) : (
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={handleSelectAll}
+                    className={styles.checkbox}
+                  />
+                )}
               </th>
             )}
             {columns.map(column => (
@@ -272,17 +291,26 @@ export const Table = forwardRef<HTMLDivElement, TableProps>(({
                   onClick={() => onRowClick?.(row, rowIndex)}
                 >
                   {selectable && (
-                    <td className={styles.td}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          handleSelectRow(key);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className={styles.checkbox}
-                      />
+                    <td className={styles.td} onClick={radiantCheckboxes ? (e) => e.stopPropagation() : undefined}>
+                      {radiantCheckboxes ? (
+                        <Checkbox
+                          label="Select row"
+                          showLabel={false}
+                          checked={isSelected}
+                          onChange={() => handleSelectRow(key)}
+                        />
+                      ) : (
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleSelectRow(key);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className={styles.checkbox}
+                        />
+                      )}
                     </td>
                   )}
                   {columns.map(column => {
@@ -444,6 +472,106 @@ export const TableCellRenderers = {
         maximumFractionDigits,
       });
     };
+  },
+
+  /**
+   * Render a Figma title cell: the value as a brand link-style title, with an
+   * optional icon, a description line and an error line from other row keys
+   */
+  title: (options: {
+    descriptionKey?: string;
+    errorKey?: string;
+    icon?: IconName;
+  } = {}) => {
+    const { descriptionKey, errorKey, icon } = options;
+    return (value: unknown, row: Record<string, unknown>): ReactNode => {
+      const description = descriptionKey ? row[descriptionKey] : undefined;
+      const error = errorKey ? row[errorKey] : undefined;
+      return (
+        <div className={styles.titleCell}>
+          {icon && <Icon name={icon} size="m" className={styles.titleIcon} />}
+          <div className={styles.titleText}>
+            <span className={styles.titleName}>{String(value ?? '')}</span>
+            {description ? <span className={styles.titleDescription}>{String(description)}</span> : null}
+            {error ? (
+              <span className={styles.titleError}>
+                <Icon name="exclamation-point-circle" size="xs" aria-hidden />
+                {String(error)}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      );
+    };
+  },
+
+  /**
+   * Render a cell with read-only tokens, for column names, formulas and the like
+   */
+  tokens: (options: {
+    type?: TokenType;
+    max?: number;
+  } = {}) => {
+    const { type = 'attribute', max = 3 } = options;
+    return (value: unknown): ReactNode => {
+      if (!Array.isArray(value)) return null;
+      const overflow = value.length - max;
+      return (
+        <div className={styles.tokensCell}>
+          {value.slice(0, max).map((item, i) => (
+            <Token key={i} label={String(item)} type={type} />
+          ))}
+          {overflow > 0 && <span className={styles.tokensOverflow}>+{overflow}</span>}
+        </div>
+      );
+    };
+  },
+
+  /**
+   * Render a cell with a button. The click doesn't select or open the row
+   */
+  button: (options: {
+    label: string;
+    onClick: (row: Record<string, unknown>) => void;
+    variant?: ButtonVariant;
+  }) => {
+    const { label, onClick, variant = 'secondary' } = options;
+    return (_value: unknown, row: Record<string, unknown>): ReactNode => (
+      <Button
+        variant={variant}
+        size="small"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick(row);
+        }}
+      >
+        {label}
+      </Button>
+    );
+  },
+
+  /**
+   * Render a cell with a round icon button. label is its accessible name
+   */
+  iconButton: (options: {
+    icon: IconName;
+    label: string;
+    onClick: (row: Record<string, unknown>) => void;
+  }) => {
+    const { icon, label, onClick } = options;
+    return (_value: unknown, row: Record<string, unknown>): ReactNode => (
+      <Button
+        variant="tertiary"
+        iconOnly
+        icon={icon}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick(row);
+        }}
+      >
+        {label}
+      </Button>
+    );
   },
 
   /**

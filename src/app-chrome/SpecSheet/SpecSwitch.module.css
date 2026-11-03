@@ -1,0 +1,72 @@
+/* Floats over the prototype, bottom centre, styled like the app's section
+   switcher: a raised track with the current view lifted on it */
+.switcher {
+  position: fixed;
+  bottom: var(--spacing-4);
+  left: 50%;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--rd-sys-color-background-raised) 92%, transparent);
+  box-shadow: var(--rd-sys-color-shadow-menu);
+  backdrop-filter: blur(8px);
+  transform: translateX(-50%);
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: 6px var(--spacing-4);
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--rd-sys-color-content-secondary);
+  font-family: var(--font-family-primary);
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.item:hover {
+  background: var(--rd-sys-color-background-ghost-hover);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--rd-sys-color-content-brand);
+}
+
+.active,
+.active:hover {
+  background: var(--rd-sys-color-background-base);
+  color: var(--rd-comp-color-segmented-control-content-active);
+  box-shadow: var(--rd-sys-color-shadow-surface);
+  cursor: default;
+}
+
+.dot {
+  width: var(--spacing-2);
+  height: var(--spacing-2);
+  border-radius: var(--radius-full);
+}
+
+.dotReady {
+  background: var(--rd-sys-color-content-success);
+}
+
+.dotDraft {
+  background: var(--rd-sys-color-content-tertiary);
+}
+
+.dotChanged {
+  background: var(--rd-sys-color-content-warning);
+}

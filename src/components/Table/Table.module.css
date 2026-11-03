@@ -158,3 +158,111 @@
 .emptyIcon {
   opacity: 0.5;
 }
+
+/* ============================================
+   CELL TYPES (TableCellRenderers.title, .tokens)
+   Figma body cell 18263:19242 and tokens cell 17807:19842
+   ============================================ */
+
+.titleCell {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.titleIcon {
+  flex-shrink: 0;
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.titleText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.titleName {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-emphasis);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-brand);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titleDescription {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-sm);
+  color: var(--rd-sys-color-content-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titleError {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-sm);
+  color: var(--rd-sys-color-content-failure);
+}
+
+.tokensCell {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.tokensOverflow {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-sm);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   Figma Object table 17165:22524: a 32px sentence-case header on On Base,
+   72px rows, and a sort icon that shows on hover
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .thead {
+  background-color: var(--rd-sys-color-background-on-base);
+}
+
+:global([data-rd-look="radiant-3"]) .table:not(.compact) .th {
+  height: var(--spacing-8);
+  padding: 0 var(--spacing-4);
+}
+
+:global([data-rd-look="radiant-3"]) .th {
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-sm);
+  text-transform: none;
+  letter-spacing: normal;
+  border-bottom-color: var(--rd-sys-color-border-subtle);
+}
+
+:global([data-rd-look="radiant-3"]) .sortable:hover {
+  color: var(--rd-sys-color-content-secondary);
+  background-color: var(--rd-sys-color-background-secondary-action);
+}
+
+:global([data-rd-look="radiant-3"]) .sortIconInactive {
+  opacity: 0;
+}
+
+:global([data-rd-look="radiant-3"]) .sortable:hover .sortIconInactive {
+  opacity: 1;
+}
+
+:global([data-rd-look="radiant-3"]) .table:not(.compact) .td {
+  height: calc(var(--spacing-12) + var(--spacing-6));
+}
+
+:global([data-rd-look="radiant-3"]) .tr {
+  border-bottom-color: var(--rd-sys-color-border-subtle);
+}
+

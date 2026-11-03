@@ -1,0 +1,42 @@
+/* SplitButton: Figma Split button (16818:14824)
+   Two Button halves joined by a 2px gap. Outer corners 16px, inner corners
+   near square. Colors, hover, pressed and disabled come from Button. */
+
+.splitButton {
+  display: inline-flex;
+  align-items: center;
+  /* Figma itemSpacing 2px, no spacing token */
+  gap: 2px;
+  vertical-align: middle;
+}
+
+/* Main action: 16px left, 8px right (Figma left half) */
+.splitButton .main {
+  height: 32px;
+  padding: 6px var(--spacing-2) 6px var(--spacing-4);
+  border-radius: var(--radius-2xl) var(--radius-xs) var(--radius-xs) var(--radius-2xl);
+}
+
+/* Icon type: 36x32 left half, 12px left and 8px right */
+.splitButton.iconType .main {
+  width: auto;
+  padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-3);
+}
+
+/* Chevron: 36x32, 8px left and 12px right */
+.splitButton .chevron {
+  width: auto;
+  height: 32px;
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-2) var(--spacing-2);
+  border-radius: var(--radius-xs) var(--radius-2xl) var(--radius-2xl) var(--radius-xs);
+}
+
+/* Figma uses 16px icons in both halves, in both looks. The Radiant 3.0 look
+   grows 32px icon-only Button icons to 18px, so pin them back here. */
+:global([data-rd-look="radiant-3"]) .splitButton.iconType .main.main > span,
+:global([data-rd-look="radiant-3"]) .splitButton.iconType .main.main svg,
+:global([data-rd-look="radiant-3"]) .splitButton.splitButton .chevron.chevron > span,
+:global([data-rd-look="radiant-3"]) .splitButton.splitButton .chevron.chevron svg {
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+}

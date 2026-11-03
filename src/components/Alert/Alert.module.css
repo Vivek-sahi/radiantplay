@@ -51,7 +51,7 @@
 }
 
 .page .dismissButton:hover {
-  background-color: rgba(0, 0, 0, 0.06);
+  background-color: color-mix(in srgb, var(--rd-sys-color-content-primary) 6%, transparent);
 }
 
 .page .dismissButton:focus-visible {
@@ -127,7 +127,7 @@
 
 .message {
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md);
   color: var(--rd-sys-color-content-primary);
   white-space: nowrap;
@@ -137,7 +137,7 @@
 
 .messageMulti {
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md);
   color: var(--rd-sys-color-content-primary);
   margin: 0;
@@ -147,7 +147,7 @@
 .link {
   font-family: var(--font-family-primary);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md);
   color: var(--rd-sys-color-content-brand);
   background: none;
@@ -213,7 +213,7 @@
 }
 
 .dismissButtonSmall:hover {
-  background-color: rgba(0, 0, 0, 0.06);
+  background-color: color-mix(in srgb, var(--rd-sys-color-content-primary) 6%, transparent);
 }
 
 .dismissButtonSmall:focus-visible {
@@ -228,4 +228,35 @@
 /* Muted variant doesn't have icon, so adjust text column */
 .muted .textColumn {
   margin-left: 0;
+}
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   Page action matches Button Primary White Small; dismiss buttons are the
+   round Ghost icon button
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .actionButton {
+  height: var(--spacing-6);
+  padding: 0 var(--spacing-3);
+  border-radius: var(--radius-full);
+  background-color: var(--rd-comp-color-button-primary-on-color-default);
+}
+
+:global([data-rd-look="radiant-3"]) .actionButton:hover {
+  background-color: var(--rd-comp-color-button-primary-on-color-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .actionButton:active {
+  background-color: var(--rd-comp-color-button-primary-on-color-pressed);
+}
+
+:global([data-rd-look="radiant-3"]) .dismissButton,
+:global([data-rd-look="radiant-3"]) .dismissButtonSmall {
+  border-radius: 50%;
+}
+
+:global([data-rd-look="radiant-3"]) .page .dismissButton:hover,
+:global([data-rd-look="radiant-3"]) .dismissButtonSmall:hover {
+  background-color: var(--rd-sys-color-background-ghost-hover);
 }

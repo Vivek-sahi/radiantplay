@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { systemColors, referenceColors } from '../tokens/colors';
+import { systemColors, referenceColors, sysVar } from '../tokens/colors';
 
 // Error Boundary to catch React rendering errors
 class TypographyPageErrorBoundary extends Component<
@@ -42,17 +42,17 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 40,
   },
   pageTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 36,
     fontWeight: 700,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     marginBottom: 12,
   },
   pageDescription: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 16,
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '26px',
     maxWidth: 700,
   },
@@ -64,25 +64,25 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 24,
     padding: 24,
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: 12,
     marginBottom: 12,
   },
   fontPreview: {
     width: 80,
     height: 80,
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: 12,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
   fontSample: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 36,
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
   },
   fontInfo: {
     flex: 1,
@@ -91,19 +91,19 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
   },
   fontStack: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 11,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     marginTop: 8,
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     padding: '6px 10px',
     borderRadius: 6,
   },
   typographyList: {
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -111,7 +111,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     padding: '16px 24px',
-    borderBottom: `1px solid ${systemColors.light['background-sunken']}`,
+    borderBottom: `1px solid ${sysVar('background-sunken')}`,
   },
   typographyMeta: {
     width: 240,
@@ -120,15 +120,15 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
   },
   variantCode: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 12,
     fontWeight: 500,
-    color: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
   },
   specsLabel: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 11,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
   },
   typographySample: {
     flex: 1,
@@ -140,17 +140,17 @@ const styles: Record<string, React.CSSProperties> = {
   },
   colorCard: {
     padding: 20,
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: 12,
     display: 'flex',
     flexDirection: 'column',
     gap: 8,
   },
   colorCode: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 11,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
   },
   guidelinesGrid: {
     display: 'grid',
@@ -159,29 +159,29 @@ const styles: Record<string, React.CSSProperties> = {
   },
   guidelineCard: {
     padding: 20,
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: 12,
     display: 'flex',
     flexDirection: 'column',
     gap: 6,
   },
   codeBlock: {
-    backgroundColor: systemColors.light['content-primary'],
+    backgroundColor: 'var(--rd-ref-color-dark-gray-00)', // code blocks stay dark in both themes
     borderRadius: 12,
     padding: 24,
     overflow: 'auto',
   },
   codeContent: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 13,
     lineHeight: '22px',
-    color: referenceColors.gray['30'],
+    color: 'var(--rd-ref-color-dark-gray-90)',
     margin: 0,
   },
   // Props Table
   propsTable: {
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -190,14 +190,14 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: '150px 1fr 120px 2fr',
     gap: 16,
     padding: '12px 16px',
-    backgroundColor: systemColors.light['background-sunken'],
-    borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-sunken'),
+    borderBottom: `1px solid ${sysVar('background-subtle')}`,
   },
   propsHeaderCell: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 12,
-    fontWeight: 600,
-    color: referenceColors.gray['70'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
@@ -206,17 +206,17 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: '150px 1fr 120px 2fr',
     gap: 16,
     padding: '12px 16px',
-    borderBottom: `1px solid ${systemColors.light['background-sunken']}`,
+    borderBottom: `1px solid ${sysVar('background-sunken')}`,
   },
   propsCell: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 12,
-    color: referenceColors.gray['70'],
+    color: sysVar('content-primary'),
   },
   // Examples
   exampleCard: {
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: 12,
     padding: 24,
     display: 'flex',
@@ -249,7 +249,7 @@ const TypographyExample: React.FC<TypographyExampleProps> = ({ variant, label, s
         <code style={styles.variantCode}>{variant}</code>
         <span style={styles.specsLabel}>{specs}</span>
       </div>
-      <div style={styles.typographySample}>
+      <div style={styles.typographySample} data-demo="typography-sample">
         <Typography variant={variant as any} noMargin>
           {sample || label}
         </Typography>
@@ -260,17 +260,17 @@ const TypographyExample: React.FC<TypographyExampleProps> = ({ variant, label, s
 
 const TypographyPageContent: React.FC = () => {
   const typographyVariants = [
-    { variant: 'headline-large', label: 'Headline Large', specs: '32px / 700 / -0.5px' },
-    { variant: 'page-title', label: 'Page Title', specs: '24px / 600 / -0.25px' },
-    { variant: 'modal-title', label: 'Modal Title', specs: '20px / 600 / 0' },
-    { variant: 'section-label', label: 'Section Label', specs: '18px / 600 / 0' },
-    { variant: 'content-label', label: 'Content Label', specs: '16px / 600 / 0' },
-    { variant: 'content-label-subhead', label: 'Content Label Subhead', specs: '16px / 500 / 0' },
-    { variant: 'body-large', label: 'Body Large', specs: '16px / 400 / 0' },
-    { variant: 'body-normal', label: 'Body Normal', specs: '14px / 400 / 0' },
-    { variant: 'footnote', label: 'Footnote', specs: '12px / 400 / 0' },
-    { variant: 'overline', label: 'OVERLINE', specs: '12px / 600 / 0.5px uppercase' },
-    { variant: 'caption', label: 'Caption', specs: '12px / 400 / 0' },
+    { variant: 'headline-large', label: 'Headline Large', specs: '32px / 550 / 0' },
+    { variant: 'page-title', label: 'Page Title', specs: '24px / 550 / 0' },
+    { variant: 'modal-title', label: 'Modal Title', specs: '20px / 550 / 0' },
+    { variant: 'section-label', label: 'Section Label', specs: '18px / 550 / 0.4%' },
+    { variant: 'content-label', label: 'Content Label', specs: '16px / 550 / 0.4%' },
+    { variant: 'content-label-subhead', label: 'Content Label Subhead', specs: '14px / 550 / 0.6%' },
+    { variant: 'body-large', label: 'Body Large', specs: '16px / 400 / 0.6%' },
+    { variant: 'body-normal', label: 'Body Normal', specs: '14px / 400 / 0.4%' },
+    { variant: 'footnote', label: 'Footnote', specs: '12px / 400 / 0.6%' },
+    { variant: 'overline', label: 'OVERLINE', specs: '12px / 500 / 0.02em uppercase' },
+    { variant: 'caption', label: 'Caption', specs: '12px / 400 / 0.6%' },
   ];
 
   const colorVariants = [
@@ -291,7 +291,7 @@ const TypographyPageContent: React.FC = () => {
         <h1 style={styles.pageTitle}>Typography</h1>
         <p style={styles.pageDescription}>
           The Radiant typography system provides consistent text styling across all components.
-          Built on the "Plain" font family with a comprehensive scale from headlines to footnotes.
+          Built on the Geist font family, with a comprehensive scale from headlines to footnotes.
         </p>
       </div>
 
@@ -303,26 +303,26 @@ const TypographyPageContent: React.FC = () => {
             <span style={styles.fontSample}>Aa</span>
           </div>
           <div style={styles.fontInfo}>
-            <Typography variant="content-label" noMargin>Plain</Typography>
+            <Typography variant="content-label" noMargin>Geist</Typography>
             <Typography variant="footnote" color="gray" noMargin>
               Primary typeface for UI text, labels, and body content
             </Typography>
             <code style={styles.fontStack}>
-              "Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif
+              "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif
             </code>
           </div>
         </div>
         <div style={styles.fontCard}>
           <div style={styles.fontPreview}>
-            <span style={{ ...styles.fontSample, fontFamily: '"SF Mono", Monaco, monospace' }}>Aa</span>
+            <span style={{ ...styles.fontSample, fontFamily: 'var(--font-family-mono)' }}>Aa</span>
           </div>
           <div style={styles.fontInfo}>
-            <Typography variant="content-label" noMargin>SF Mono</Typography>
+            <Typography variant="content-label" noMargin>Geist Mono</Typography>
             <Typography variant="footnote" color="gray" noMargin>
               Monospace font for code, tokens, and technical content
             </Typography>
             <code style={styles.fontStack}>
-              "SF Mono", Monaco, Inconsolata, "Roboto Mono", monospace
+              "Geist Mono", "SF Mono", Monaco, Inconsolata, monospace
             </code>
           </div>
         </div>
@@ -448,7 +448,7 @@ const TypographyPageContent: React.FC = () => {
       {/* Interactive Examples */}
       <section style={styles.section}>
         <Typography variant="modal-title" noMargin style={{ marginBottom: 16 }}>Examples</Typography>
-        <div style={styles.exampleCard}>
+        <div style={styles.exampleCard} data-demo="typography-examples">
           <div style={styles.exampleColumn}>
             <Typography variant="headline-large">Headline Large (32px)</Typography>
             <Typography variant="page-title">Page Title (24px)</Typography>

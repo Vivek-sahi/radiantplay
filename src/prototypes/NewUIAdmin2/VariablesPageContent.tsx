@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { systemColors, rdComponentColors } from '../../tokens/colors';
+import { sysVar, shadowVar, compVar } from '@tokens/colors';
 import { Modal, ModalFooter } from '@components/Modal';
 import { Button } from '@components/Button';
 import { Toast } from '@components/Toast';
 import { ConfirmDialog } from './ConfirmDialog';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-const brand = systemColors.light['content-brand'];
+const font = 'var(--font-family-primary)';
+const brand = sysVar('content-brand');
+const brandFill = sysVar('background-brand');
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -59,15 +60,15 @@ function mockOrgRowsForVariable(v: Variable): OrgRow[] {
 
 const InfoIcon = () => (
   <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style={{ flexShrink: 0, marginLeft: '4px', verticalAlign: 'middle' }}>
-    <circle cx="6.5" cy="6.5" r="5.75" stroke="#9CA3AF" strokeWidth="1.2" />
-    <path d="M6.5 5.5v4M6.5 4h.01" stroke="#9CA3AF" strokeWidth="1.2" strokeLinecap="round" />
+    <circle cx="6.5" cy="6.5" r="5.75" stroke={sysVar('content-tertiary')} strokeWidth="1.2" />
+    <path d="M6.5 5.5v4M6.5 4h.01" stroke={sysVar('content-tertiary')} strokeWidth="1.2" strokeLinecap="round" />
   </svg>
 );
 
 const ErrorDot = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
-    <circle cx="7" cy="7" r="6.25" fill="#EF4444" />
-    <path d="M7 4v3.5M7 9.5h.01" stroke="#FFFFFF" strokeWidth="1.3" strokeLinecap="round" />
+    <circle cx="7" cy="7" r="6.25" fill={sysVar('content-failure')} />
+    <path d="M7 4v3.5M7 9.5h.01" stroke={sysVar('background-base')} strokeWidth="1.3" strokeLinecap="round" />
   </svg>
 );
 
@@ -75,13 +76,13 @@ const RadioOption: React.FC<{ label: string; checked: boolean; onChange: () => v
   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' as const }}>
     <div onClick={onChange} style={{
       width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0,
-      border: `1.5px solid ${checked ? brand : '#D1D5DB'}`, backgroundColor: '#FFFFFF',
+      border: `1.5px solid ${checked ? brand : sysVar('border-bold')}`, backgroundColor: sysVar('background-base'),
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       transition: 'border-color 0.15s', cursor: 'pointer',
     }}>
-      {checked && <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: brand }} />}
+      {checked && <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: brandFill }} />}
     </div>
-    <span onClick={onChange} style={{ fontSize: '13.5px', color: '#374151', fontFamily: font }}>{label}</span>
+    <span onClick={onChange} style={{ fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font }}>{label}</span>
   </label>
 );
 
@@ -89,18 +90,18 @@ const Checkbox: React.FC<{ checked: boolean; onChange: () => void; label?: strin
   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' as const }}>
     <button onClick={onChange} role="checkbox" aria-checked={checked} style={{
       width: '16px', height: '16px', borderRadius: '3px', flexShrink: 0,
-      border: `1.5px solid ${checked ? brand : '#D1D5DB'}`,
-      backgroundColor: checked ? brand : '#FFFFFF',
+      border: `1.5px solid ${checked ? brand : sysVar('border-bold')}`,
+      backgroundColor: checked ? brandFill : sysVar('background-base'),
       cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
       transition: 'border-color 0.15s, background-color 0.15s',
     }}>
       {checked && (
         <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-          <path d="M1 3.5l2.5 2.5L8 1" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M1 3.5l2.5 2.5L8 1" stroke={sysVar('background-base')} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )}
     </button>
-    {label && <span style={{ fontSize: '13.5px', color: '#374151', fontFamily: font }}>{label}</span>}
+    {label && <span style={{ fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font }}>{label}</span>}
   </label>
 );
 
@@ -116,7 +117,7 @@ const OrgMappingForm: React.FC<{
 }> = ({ rows, error, onUpdate, onRemove, onAdd, onDismissError }) => (
   <div>
     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
-      <span style={{ fontSize: '13px', fontWeight: 500, color: '#374151', fontFamily: font }}>Org mapping</span>
+      <span style={{ fontSize: '13px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font }}>Org mapping</span>
       <InfoIcon />
     </div>
 
@@ -124,23 +125,23 @@ const OrgMappingForm: React.FC<{
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '10px 14px', marginBottom: '16px',
-        backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '6px',
+        backgroundColor: sysVar('background-failure'), border: `1px solid ${sysVar('border-failure')}`, borderRadius: '6px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ErrorDot />
-          <span style={{ fontSize: '12.5px', color: '#B91C1C', fontFamily: font }}>{error}</span>
+          <span style={{ fontSize: '12.5px', color: sysVar('content-failure'), fontFamily: font }}>{error}</span>
         </div>
         <button onClick={onDismissError} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}>
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M1 1l10 10M11 1L1 11" stroke="#6B7280" strokeWidth="1.4" strokeLinecap="round" />
+            <path d="M1 1l10 10M11 1L1 11" stroke={sysVar('content-secondary')} strokeWidth="1.4" strokeLinecap="round" />
           </svg>
         </button>
       </div>
     )}
 
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 32px', gap: '8px', marginBottom: '8px' }}>
-      <span style={{ fontSize: '12px', fontWeight: 500, color: '#6B7280', fontFamily: font }}>Org name</span>
-      <span style={{ fontSize: '12px', fontWeight: 500, color: '#6B7280', fontFamily: font }}>Variable value</span>
+      <span style={{ fontSize: '12px', fontWeight: 500, color: sysVar('content-secondary'), fontFamily: font }}>Org name</span>
+      <span style={{ fontSize: '12px', fontWeight: 500, color: sysVar('content-secondary'), fontFamily: font }}>Variable value</span>
       <span />
     </div>
 
@@ -154,10 +155,10 @@ const OrgMappingForm: React.FC<{
               onChange={(e) => onUpdate(row.id, 'org', e.target.value)}
               style={{
                 height: '36px', padding: '0 10px',
-                border: `1px solid ${rowHasError && !row.org ? '#EF4444' : '#D1D5DB'}`,
+                border: `1px solid ${rowHasError && !row.org ? sysVar('border-failure') : sysVar('border-bold')}`,
                 borderRadius: '6px', fontFamily: font, fontSize: '13px',
-                color: row.org ? '#111827' : '#9CA3AF', outline: 'none',
-                backgroundColor: rowHasError && !row.org ? '#FEF2F2' : '#FFFFFF',
+                color: row.org ? sysVar('content-primary') : sysVar('content-tertiary'), outline: 'none',
+                backgroundColor: rowHasError && !row.org ? sysVar('background-failure') : sysVar('background-base'),
                 appearance: 'none' as const, cursor: 'pointer',
                 backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7280' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
                 backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: '28px',
@@ -172,22 +173,22 @@ const OrgMappingForm: React.FC<{
               placeholder="Enter value"
               style={{
                 height: '36px', padding: '0 12px',
-                border: `1px solid ${rowHasError && !row.value.trim() ? '#EF4444' : '#D1D5DB'}`,
-                borderRadius: '6px', fontFamily: font, fontSize: '13px', color: '#111827',
-                outline: 'none', backgroundColor: rowHasError && !row.value.trim() ? '#FEF2F2' : '#FFFFFF',
+                border: `1px solid ${rowHasError && !row.value.trim() ? sysVar('border-failure') : sysVar('border-bold')}`,
+                borderRadius: '6px', fontFamily: font, fontSize: '13px', color: sysVar('content-primary'),
+                outline: 'none', backgroundColor: rowHasError && !row.value.trim() ? sysVar('background-failure') : sysVar('background-base'),
                 boxSizing: 'border-box' as const,
               }}
               onFocus={(e) => { if (!(rowHasError && !row.value.trim())) e.currentTarget.style.borderColor = brand; }}
-              onBlur={(e) => { if (!(rowHasError && !row.value.trim())) e.currentTarget.style.borderColor = '#D1D5DB'; }}
+              onBlur={(e) => { if (!(rowHasError && !row.value.trim())) e.currentTarget.style.borderColor = sysVar('border-bold'); }}
             />
             <button
               onClick={() => onRemove(row.id)}
               style={{ width: '28px', height: '28px', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px' }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F3F4F6'; }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = sysVar('background-secondary-action'); }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M1 1l10 10M11 1L1 11" stroke="#6B7280" strokeWidth="1.4" strokeLinecap="round" />
+                <path d="M1 1l10 10M11 1L1 11" stroke={sysVar('content-secondary')} strokeWidth="1.4" strokeLinecap="round" />
               </svg>
             </button>
           </div>
@@ -223,16 +224,16 @@ const DotsMenu: React.FC<{
     <div style={{ position: 'relative' }}>
       <button onClick={() => setOpen(!open)} style={{
         width: '32px', height: '32px', borderRadius: '50%', border: 'none',
-        backgroundColor: open ? '#F3F4F6' : 'transparent',
+        backgroundColor: open ? sysVar('background-secondary-action') : 'transparent',
         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F3F4F6'; }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = sysVar('background-secondary-action'); }}
         onMouseLeave={(e) => { if (!open) (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
       >
         <svg width="16" height="4" viewBox="0 0 16 4" fill="none">
-          <circle cx="2" cy="2" r="1.5" fill="#6B7280" />
-          <circle cx="8" cy="2" r="1.5" fill="#6B7280" />
-          <circle cx="14" cy="2" r="1.5" fill="#6B7280" />
+          <circle cx="2" cy="2" r="1.5" fill={sysVar('content-secondary')} />
+          <circle cx="8" cy="2" r="1.5" fill={sysVar('content-secondary')} />
+          <circle cx="14" cy="2" r="1.5" fill={sysVar('content-secondary')} />
         </svg>
       </button>
       {open && (
@@ -240,17 +241,17 @@ const DotsMenu: React.FC<{
           <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setOpen(false)} />
           <div style={{
             position: 'absolute', top: 'calc(100% + 4px)', right: 0,
-            backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '8px',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 100, overflow: 'hidden', minWidth: '140px',
+            backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px',
+            boxShadow: shadowVar('menu'), zIndex: 100, overflow: 'hidden', minWidth: '140px',
           }}>
             {actions.map(({ label, fn }) => (
               <button key={label} onClick={() => { setOpen(false); fn(); }} style={{
                 display: 'block', width: '100%', padding: '10px 16px',
                 border: 'none', textAlign: 'left', fontFamily: font, fontSize: '13px',
-                color: label === 'Delete' ? '#EF4444' : '#111827',
+                color: label === 'Delete' ? sysVar('content-failure') : sysVar('content-primary'),
                 backgroundColor: 'transparent', cursor: 'pointer',
               }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = label === 'Delete' ? '#FEF2F2' : '#F9FAFB'; }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = label === 'Delete' ? sysVar('background-failure') : sysVar('background-sunken'); }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
               >
                 {label}
@@ -362,11 +363,11 @@ export const VariablesPageContent: React.FC = () => {
   const createStep1Content = (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div>
-        <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#374151', fontFamily: font, marginBottom: '6px' }}>Name</label>
+        <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font, marginBottom: '6px' }}>Name</label>
         {nameError && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
             <ErrorDot />
-            <span style={{ fontSize: '12.5px', color: '#EF4444', fontFamily: font }}>{nameError}</span>
+            <span style={{ fontSize: '12.5px', color: sysVar('content-failure'), fontFamily: font }}>{nameError}</span>
           </div>
         )}
         <input
@@ -375,17 +376,17 @@ export const VariablesPageContent: React.FC = () => {
           placeholder="e.g., publish_demo_schema_var"
           style={{
             width: '100%', height: '36px', padding: '0 12px',
-            border: `1px solid ${nameError ? '#EF4444' : '#D1D5DB'}`, borderRadius: '6px',
-            boxSizing: 'border-box' as const, fontFamily: font, fontSize: '13px', color: '#111827',
-            outline: 'none', backgroundColor: nameError ? '#FEF2F2' : '#FFFFFF',
+            border: `1px solid ${nameError ? sysVar('border-failure') : sysVar('border-bold')}`, borderRadius: '6px',
+            boxSizing: 'border-box' as const, fontFamily: font, fontSize: '13px', color: sysVar('content-primary'),
+            outline: 'none', backgroundColor: nameError ? sysVar('background-failure') : sysVar('background-base'),
           }}
           onFocus={(e) => { if (!nameError) e.currentTarget.style.borderColor = brand; }}
-          onBlur={(e) => { if (!nameError) e.currentTarget.style.borderColor = '#D1D5DB'; }}
+          onBlur={(e) => { if (!nameError) e.currentTarget.style.borderColor = sysVar('border-bold'); }}
         />
       </div>
       <div>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 500, color: '#374151', fontFamily: font }}>Purpose</span>
+          <span style={{ fontSize: '13px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font }}>Purpose</span>
           <InfoIcon />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -396,7 +397,7 @@ export const VariablesPageContent: React.FC = () => {
       </div>
       <div>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 500, color: '#374151', fontFamily: font }}>Information type</span>
+          <span style={{ fontSize: '13px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font }}>Information type</span>
           <InfoIcon />
         </div>
         <Checkbox checked={isSensitive} onChange={() => setIsSensitive(!isSensitive)} label="Sensitive information" />
@@ -407,7 +408,7 @@ export const VariablesPageContent: React.FC = () => {
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: sysVar('background-base') }}>
 
       {/* Toast */}
       {toast.visible && (
@@ -505,11 +506,11 @@ export const VariablesPageContent: React.FC = () => {
           }
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <p style={{ margin: 0, fontSize: '13.5px', color: '#374151', fontFamily: font }}>
+            <p style={{ margin: 0, fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font }}>
               Enter a new name for the variable.
             </p>
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#374151', fontFamily: font, marginBottom: '6px' }}>Name</label>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font, marginBottom: '6px' }}>Name</label>
               <input
                 value={renameName}
                 onChange={(e) => setRenameName(e.target.value)}
@@ -517,11 +518,11 @@ export const VariablesPageContent: React.FC = () => {
                 autoFocus
                 style={{
                   width: '100%', height: '36px', padding: '0 12px',
-                  border: '1px solid #D1D5DB', borderRadius: '6px',
-                  boxSizing: 'border-box' as const, fontFamily: font, fontSize: '13px', color: '#111827', outline: 'none',
+                  border: `1px solid ${sysVar('border-bold')}`, borderRadius: '6px',
+                  boxSizing: 'border-box' as const, fontFamily: font, fontSize: '13px', color: sysVar('content-primary'), outline: 'none',
                 }}
                 onFocus={(e) => { e.currentTarget.style.borderColor = brand; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = sysVar('border-bold'); }}
               />
             </div>
           </div>
@@ -529,9 +530,9 @@ export const VariablesPageContent: React.FC = () => {
       )}
 
       {/* ── Sticky header ── */}
-      <div style={{ flexShrink: 0, padding: '28px 40px 20px', borderBottom: '1px solid #E5E7EB', backgroundColor: '#FFFFFF' }}>
-        <h1 style={{ margin: '0 0 6px 0', fontSize: '22px', fontWeight: 700, color: '#0F172A', fontFamily: font, letterSpacing: '-0.3px' }}>Variables</h1>
-        <p style={{ margin: 0, fontSize: '13.5px', color: '#6B7280', fontFamily: font }}>Create and manage variables for your ThoughtSpot instance.</p>
+      <div style={{ flexShrink: 0, padding: '28px 40px 20px', borderBottom: `1px solid ${sysVar('border-subtle')}`, backgroundColor: sysVar('background-base') }}>
+        <h1 style={{ margin: '0 0 6px 0', fontSize: '22px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, letterSpacing: '-0.3px' }}>Variables</h1>
+        <p style={{ margin: 0, fontSize: '13.5px', color: sysVar('content-secondary'), fontFamily: font }}>Create and manage variables for your ThoughtSpot instance.</p>
       </div>
 
       {/* ── Scrollable content ── */}
@@ -542,21 +543,21 @@ export const VariablesPageContent: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ position: 'absolute', left: '10px' }}>
-                <circle cx="6" cy="6" r="4.5" stroke="#9CA3AF" strokeWidth="1.4" />
-                <line x1="9.5" y1="9.5" x2="12.5" y2="12.5" stroke="#9CA3AF" strokeWidth="1.4" strokeLinecap="round" />
+                <circle cx="6" cy="6" r="4.5" stroke={sysVar('content-tertiary')} strokeWidth="1.4" />
+                <line x1="9.5" y1="9.5" x2="12.5" y2="12.5" stroke={sysVar('content-tertiary')} strokeWidth="1.4" strokeLinecap="round" />
               </svg>
               <input type="text" placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)}
-                style={{ width: '200px', height: '36px', paddingLeft: '32px', paddingRight: '12px', border: '1px solid #D1D5DB', borderRadius: '8px', fontFamily: font, fontSize: '13px', color: '#111827', outline: 'none', backgroundColor: '#FFFFFF' }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; }}
+                style={{ width: '200px', height: '36px', paddingLeft: '32px', paddingRight: '12px', border: `1px solid ${sysVar('border-bold')}`, borderRadius: '8px', fontFamily: font, fontSize: '13px', color: sysVar('content-primary'), outline: 'none', backgroundColor: sysVar('background-base') }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)`; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = sysVar('border-bold'); e.currentTarget.style.boxShadow = 'none'; }}
               />
             </div>
-            <button onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '36px', padding: '0 18px', borderRadius: '20px', border: 'none', backgroundColor: rdComponentColors.light['button-secondary-default'], cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 600, color: '#111827', transition: 'opacity 0.15s' }}
+            <button onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '36px', padding: '0 18px', borderRadius: '20px', border: 'none', backgroundColor: compVar('button-secondary-default'), cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), transition: 'opacity 0.15s' }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.8'; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M6 1v10M1 6h10" stroke="#111827" strokeWidth="1.6" strokeLinecap="round" />
+                <path d="M6 1v10M1 6h10" stroke={sysVar('content-primary')} strokeWidth="1.6" strokeLinecap="round" />
               </svg>
               Create Variable
             </button>
@@ -565,22 +566,22 @@ export const VariablesPageContent: React.FC = () => {
           {/* Table */}
           <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: font }}>
             <thead>
-              <tr style={{ borderBottom: '1.5px solid #E5E7EB' }}>
+              <tr style={{ borderBottom: `1.5px solid ${sysVar('border-subtle')}` }}>
                 <th style={{ width: '44px', padding: '10px 12px 10px 0', textAlign: 'left' }}>
                   <Checkbox checked={allSelected} onChange={toggleAll} />
                 </th>
-                <th style={{ padding: '10px 16px 10px 0', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: '#374151' }}>Name</th>
-                <th style={{ padding: '10px 16px 10px 0', textAlign: 'left', fontSize: '13px', fontWeight: 500, color: '#9CA3AF' }}>Type</th>
-                <th style={{ padding: '10px 16px 10px 0', textAlign: 'left', fontSize: '13px', fontWeight: 500, color: '#9CA3AF' }}>Sensitive values</th>
-                <th style={{ padding: '10px 16px 10px 0', textAlign: 'left', fontSize: '13px', fontWeight: 500, color: '#9CA3AF' }}>Values assigned</th>
+                <th style={{ padding: '10px 16px 10px 0', textAlign: 'left', fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary') }}>Name</th>
+                <th style={{ padding: '10px 16px 10px 0', textAlign: 'left', fontSize: '13px', fontWeight: 500, color: sysVar('content-tertiary') }}>Type</th>
+                <th style={{ padding: '10px 16px 10px 0', textAlign: 'left', fontSize: '13px', fontWeight: 500, color: sysVar('content-tertiary') }}>Sensitive values</th>
+                <th style={{ padding: '10px 16px 10px 0', textAlign: 'left', fontSize: '13px', fontWeight: 500, color: sysVar('content-tertiary') }}>Values assigned</th>
                 <th style={{ padding: '10px 0', width: '48px' }} />
               </tr>
             </thead>
             <tbody>
               {filtered.map((v) => (
                 <tr key={v.id}
-                  style={{ borderBottom: '1px solid #F3F4F6', backgroundColor: selected.has(v.id) ? `${brand}08` : 'transparent', transition: 'background-color 0.1s' }}
-                  onMouseEnter={(e) => { if (!selected.has(v.id)) (e.currentTarget as HTMLTableRowElement).style.backgroundColor = '#FAFAFA'; }}
+                  style={{ borderBottom: `1px solid ${sysVar('border-subtle')}`, backgroundColor: selected.has(v.id) ? `color-mix(in srgb, ${brand} 3%, transparent)` : 'transparent', transition: 'background-color 0.1s' }}
+                  onMouseEnter={(e) => { if (!selected.has(v.id)) (e.currentTarget as HTMLTableRowElement).style.backgroundColor = sysVar('background-sunken'); }}
                   onMouseLeave={(e) => { if (!selected.has(v.id)) (e.currentTarget as HTMLTableRowElement).style.backgroundColor = 'transparent'; }}
                 >
                   <td style={{ padding: '16px 12px 16px 0', verticalAlign: 'middle' }}>
@@ -590,13 +591,13 @@ export const VariablesPageContent: React.FC = () => {
                     <span style={{ fontSize: '13.5px', fontWeight: 500, color: brand, fontFamily: font, cursor: 'pointer' }}>{v.name}</span>
                   </td>
                   <td style={{ padding: '16px 16px 16px 0', verticalAlign: 'middle' }}>
-                    <span style={{ fontSize: '13.5px', color: '#374151', fontFamily: font }}>{v.type}</span>
+                    <span style={{ fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font }}>{v.type}</span>
                   </td>
                   <td style={{ padding: '16px 16px 16px 0', verticalAlign: 'middle' }}>
-                    <span style={{ fontSize: '13.5px', color: '#374151', fontFamily: font }}>{v.sensitive ? 'True' : 'False'}</span>
+                    <span style={{ fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font }}>{v.sensitive ? 'True' : 'False'}</span>
                   </td>
                   <td style={{ padding: '16px 16px 16px 0', verticalAlign: 'middle' }}>
-                    <span style={{ fontSize: '13.5px', color: '#374151', fontFamily: font }}>{v.values}</span>
+                    <span style={{ fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font }}>{v.values}</span>
                   </td>
                   <td style={{ padding: '16px 0', verticalAlign: 'middle', textAlign: 'right' }}>
                     <DotsMenu onEdit={() => openEdit(v)} onRename={() => openRename(v)} onDelete={() => setDeleteVar(v)} />

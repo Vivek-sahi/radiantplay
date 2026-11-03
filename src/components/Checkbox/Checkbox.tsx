@@ -1,5 +1,5 @@
 import React, { useCallback, useId } from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import styles from './Checkbox.module.css';
 
 export type CheckboxState = 'unchecked' | 'checked' | 'indeterminate';
@@ -78,16 +78,9 @@ export const Checkbox: React.FC<CheckboxProps> = ({
 
   const state = getCheckboxState();
 
-  // Determine border color - using semantic tokens
-  const getBorderColor = () => {
-    if (error) return systemColors.light['content-failure'];
-    if (state !== 'unchecked') return systemColors.light['content-brand'];
-    return systemColors.light['border-default'];
-  };
-
   const getIconColor = () => {
-    if (error) return systemColors.light['content-failure'];
-    return systemColors.light['content-brand'];
+    if (error) return sysVar('content-failure');
+    return sysVar('content-brand');
   };
 
   const containerClasses = [
@@ -113,9 +106,11 @@ export const Checkbox: React.FC<CheckboxProps> = ({
         className={styles.input}
         aria-checked={indeterminate ? 'mixed' : checked}
       />
-      <span 
-        className={styles.box}
-        style={{ borderColor: getBorderColor() }}
+      <span
+        className={[
+          styles.box,
+          error ? styles.boxError : state !== 'unchecked' && styles.boxSelected,
+        ].filter(Boolean).join(' ')}
       >
         {state === 'checked' && (
           <svg 

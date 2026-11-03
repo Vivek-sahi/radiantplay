@@ -6,7 +6,7 @@ import { Checkbox } from '../../../components/Checkbox';
 import { Tabs } from '../../../components/Tabs';
 import { pickerStyles as s } from '../styles';
 import { mockLiveboards, mockAnswers, type LiveboardItem } from '../data/mockData';
-import { systemColors } from '../../../tokens/colors';
+import { sysVar } from '../../../tokens/colors';
 
 interface ObjectPickerModalProps {
   isOpen: boolean;
@@ -138,9 +138,9 @@ export const ObjectPickerModal: React.FC<ObjectPickerModalProps> = ({
               onChange={handleSelectAll}
             />
           </div>
-          <div style={{ ...s.colName, fontWeight: 600 }}>Name</div>
-          <div style={{ ...s.colOwner, fontWeight: 600 }}>Owner</div>
-          <div style={{ ...s.colType, fontWeight: 600 }}>Type</div>
+          <div style={{ ...s.colName, fontWeight: 'var(--font-weight-emphasis)' }}>Name</div>
+          <div style={{ ...s.colOwner, fontWeight: 'var(--font-weight-emphasis)' }}>Owner</div>
+          <div style={{ ...s.colType, fontWeight: 'var(--font-weight-emphasis)' }}>Type</div>
         </div>
 
         {/* Data rows */}
@@ -149,7 +149,7 @@ export const ObjectPickerModal: React.FC<ObjectPickerModalProps> = ({
             style={{
               padding: '32px',
               textAlign: 'center',
-              color: systemColors.light['content-tertiary'],
+              color: sysVar('content-tertiary'),
               fontSize: '14px',
             }}
           >

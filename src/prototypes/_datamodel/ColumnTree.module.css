@@ -67,7 +67,7 @@
 
 .tableName {
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   color: var(--rd-sys-color-content-primary);
   font-family: var(--font-family-primary);
   white-space: nowrap;
@@ -156,7 +156,7 @@
 
 .colName {
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   color: var(--rd-sys-color-content-primary);
   font-family: var(--font-family-primary);
   white-space: nowrap;
@@ -167,7 +167,7 @@
 .empty {
   padding: var(--spacing-8) var(--spacing-5);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   color: var(--rd-sys-color-border-hover);
   text-align: center;
   line-height: var(--line-height-md);

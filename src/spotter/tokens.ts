@@ -5,24 +5,16 @@
  * Prefer importing from `@tokens/colors` directly when possible.
  */
 
-import { systemColors } from '../tokens/colors';
-
-const hexToRgba = (hex: string, alpha: number): string => {
-  const normalized = hex.replace('#', '');
-  const value = Number.parseInt(normalized, 16);
-  const r = (value >> 16) & 255;
-  const g = (value >> 8) & 255;
-  const b = value & 255;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
+import { sysVar } from '../tokens/colors';
 
 /**
  * Soft radial glow behind the welcome prompt. Derived from the brand color at
- * low alpha. Radiant's system tokens are opaque, so this lives in Spotter.
+ * low alpha through color-mix, so it follows the theme. Radiant's system
+ * tokens are opaque, so this lives in Spotter.
  */
 export const spotterGlow = {
-  from: hexToRgba(systemColors.light['content-brand'], 0.08),
-  to: hexToRgba(systemColors.light['content-brand'], 0),
+  from: `color-mix(in srgb, ${sysVar('content-brand')} 8%, transparent)`,
+  to: `color-mix(in srgb, ${sysVar('content-brand')} 0%, transparent)`,
 } as const;
 
 /**
@@ -31,9 +23,9 @@ export const spotterGlow = {
  * names instead of reaching into the system palette directly.
  */
 export const spotterChartBg = {
-  measure: systemColors.light['background-success'],
-  keyword: systemColors.light['background-information'],
-  filter: systemColors.light['background-subtle'],
+  measure: sysVar('background-success'),
+  keyword: sysVar('background-information'),
+  filter: sysVar('background-subtle'),
 } as const;
 
 export type SpotterChartTokenKind = keyof typeof spotterChartBg;

@@ -113,7 +113,7 @@ const WelcomeCustomDemo: React.FC = () => {
     <div style={{ width: '100%', height: PREVIEW_HEIGHT, overflow: 'hidden', display: 'flex' }}>
       <SpotterWelcome
         greeting={
-          <h1 style={{ margin: 0, fontFamily: '"Plain", sans-serif', fontSize: 28, fontWeight: 600, color: 'var(--rd-sys-color-content-primary)', textAlign: 'center' }}>
+          <h1 style={{ margin: 0, fontFamily: 'var(--font-family-primary)', fontSize: 28, fontWeight: 'var(--font-weight-emphasis)', color: 'var(--rd-sys-color-content-primary)', textAlign: 'center' }}>
             Welcome back, Mohammed.
           </h1>
         }

@@ -1,5 +1,0 @@
-﻿Object,Number,Name,Description,Dynamic Behavior,Default State,Error State,Content Rules
-"OL.4 Editable Object table ",1,Object row cell,A single cell from the editable object table,"Clicking on the cell will give the users two options. Either to enter in content directly or they can select from a predefined selection pulldown list.
-If the cell activates a pull down cell menu, the menu will appear below the cell by default (if there is enough space). ","By default the cell is in an unselected mode. 
-Click once on the cell will select the cell and will allow the user to directly edit the cell or select from the cell pulldown menu. ",N/A,N/A
-OL.4 Editable Object table,2,Object row cell pull down,"Pulldown cell menu. ",Clicking on the object row cell pulldown will allows the user to select from a pre defined option or they can click on any other cell to dismiss the pulldown,Object Row cell pulldown default state is to have a single item selected,N/A,N/A

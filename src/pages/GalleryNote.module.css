@@ -1,0 +1,74 @@
+/* Matches the gallery chrome: a raised row like the Help menu panel. Not fully
+   round, so it still looks right when the text wraps to two lines. */
+.note {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-4);
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: var(--radius-2xl);
+  background: color-mix(in srgb, var(--rd-sys-color-background-raised) 88%, transparent);
+  box-shadow: var(--rd-sys-color-shadow-surface);
+  backdrop-filter: blur(8px);
+  font-family: var(--font-family-primary);
+}
+
+.icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--rd-sys-color-content-brand);
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  color: var(--rd-sys-color-content-primary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+}
+
+/* The Sort pill's shape, in brand colour because it's the note's one action */
+.action {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 var(--spacing-4);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--rd-sys-color-background-brand);
+  color: var(--rd-sys-color-content-alternate);
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.action:hover {
+  background: var(--rd-comp-color-button-primary-hover);
+}
+
+.dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--rd-sys-color-content-secondary);
+  cursor: pointer;
+}
+
+.dismiss:hover {
+  background: var(--rd-sys-color-background-subtle);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.action:focus-visible,
+.dismiss:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--rd-sys-color-content-brand);
+}

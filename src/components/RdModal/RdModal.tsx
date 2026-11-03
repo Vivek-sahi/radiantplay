@@ -1,8 +1,8 @@
 import React from 'react';
-import { systemColors, rdComponentColors } from '@tokens/colors';
+import { sysVar, compVar, shadowVar } from '@tokens/colors';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-const brand = systemColors.light['content-brand'];
+const font = 'var(--font-family-primary)';
+const brand = sysVar('content-brand');
 
 // ─── RdModal ───────────────────────────────────────────────────────────────────
 // Standardised modal component for the Radiant design system.
@@ -18,11 +18,11 @@ const brand = systemColors.light['content-brand'];
 //   Pass onCancel/onConfirm to show those buttons. Both are optional.
 //
 // Spec:
-//   Container  — border-radius: 6px, bg: #FFFFFF, shadow: 0 24px 56px rgba(0,0,0,0.20)
-//   Header     — height: 68px, padding: 0 24px, border-bottom: 1px solid #E5E7EB
+//   Container  — border-radius: 6px, bg: background-base, shadow: shadow-modal
+//   Header     — height: 68px, padding: 0 24px, border-bottom: 1px solid border-divider
 //   Content    — padding: 24px, flex: 1, overflow-y: scroll
 //   Stepper    — 3px bar, brand fill, max 4 steps, transition width 0.3s
-//   Footer     — height: 72px, padding: 0 24px, bg: #F6F8FA, border-top: 1px solid #E5E7EB
+//   Footer     — height: 72px, padding: 0 24px, bg: background-sunken, border-top: 1px solid border-divider
 
 export type ModalSize = 'M1' | 'M2' | 'M3' | 'M4';
 
@@ -89,7 +89,7 @@ export const RdModal: React.FC<RdModalProps> = ({
     <div
       style={{
         position: 'fixed', inset: 0,
-        backgroundColor: 'rgba(0,0,0,0.38)',
+        backgroundColor: sysVar('background-overlay'),
         zIndex: 10001,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}
@@ -98,9 +98,9 @@ export const RdModal: React.FC<RdModalProps> = ({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: sysVar('background-base'),
           borderRadius: '6px',
-          boxShadow: '0 24px 56px rgba(0,0,0,0.20)',
+          boxShadow: shadowVar('modal'),
           width: `${WIDTHS[size]}px`,
           maxWidth: '96vw',
           maxHeight: isM4 ? '90vh' : '85vh',
@@ -118,7 +118,7 @@ export const RdModal: React.FC<RdModalProps> = ({
             justifyContent: 'space-between',
             height: '68px',
             padding: '0 24px',
-            borderBottom: '1px solid #E5E7EB',
+            borderBottom: `1px solid ${sysVar('border-divider')}`,
             flexShrink: 0,
             boxSizing: 'border-box',
           }}
@@ -127,7 +127,7 @@ export const RdModal: React.FC<RdModalProps> = ({
             {eyebrow && (
               <div
                 style={{
-                  fontSize: '12px', fontWeight: 500, color: '#9CA3AF',
+                  fontSize: '12px', fontWeight: 500, color: sysVar('content-secondary'),
                   fontFamily: font, marginBottom: '4px',
                 }}
               >
@@ -138,7 +138,7 @@ export const RdModal: React.FC<RdModalProps> = ({
               style={{
                 fontSize: isM4 ? '18px' : '17px',
                 fontWeight: 700,
-                color: '#111827',
+                color: sysVar('content-primary'),
                 fontFamily: font,
               }}
             >
@@ -174,7 +174,7 @@ export const RdModal: React.FC<RdModalProps> = ({
 
         {/* ── Stepper bar (eyebrow variant only) ── */}
         {hasStepper && (
-          <div style={{ height: '3px', backgroundColor: '#E5E7EB', flexShrink: 0 }}>
+          <div style={{ height: '3px', backgroundColor: sysVar('background-subtle'), flexShrink: 0 }}>
             <div
               style={{
                 height: '100%',
@@ -195,8 +195,8 @@ export const RdModal: React.FC<RdModalProps> = ({
               justifyContent: 'space-between',
               height: '72px',
               padding: '0 24px',
-              backgroundColor: '#F6F8FA',
-              borderTop: '1px solid #E5E7EB',
+              backgroundColor: sysVar('background-sunken'),
+              borderTop: `1px solid ${sysVar('border-divider')}`,
               flexShrink: 0,
               boxSizing: 'border-box',
             }}
@@ -209,10 +209,10 @@ export const RdModal: React.FC<RdModalProps> = ({
                   style={{
                     border: 'none', background: 'none', cursor: 'pointer',
                     fontFamily: font, fontSize: '13.5px', fontWeight: 500,
-                    color: '#374151', padding: 0,
+                    color: sysVar('content-primary'), padding: 0,
                   }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#111827'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#374151'; }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = sysVar('content-brand'); }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = sysVar('content-primary'); }}
                 >
                   {tertiaryLabel}
                 </button>
@@ -227,9 +227,9 @@ export const RdModal: React.FC<RdModalProps> = ({
                   style={{
                     height: '36px', padding: '0 24px', borderRadius: '20px',
                     border: 'none',
-                    backgroundColor: rdComponentColors.light['button-secondary-default'],
+                    backgroundColor: compVar('button-secondary-default'),
                     cursor: 'pointer', fontFamily: font, fontSize: '13.5px',
-                    fontWeight: 500, color: '#374151', transition: 'opacity 0.15s',
+                    fontWeight: 500, color: sysVar('content-primary'), transition: 'opacity 0.15s',
                   }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.82'; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}
@@ -242,9 +242,9 @@ export const RdModal: React.FC<RdModalProps> = ({
                   onClick={onConfirm}
                   style={{
                     height: '36px', padding: '0 24px', borderRadius: '20px',
-                    border: 'none', backgroundColor: brand,
+                    border: 'none', backgroundColor: compVar('button-primary-default'),
                     cursor: 'pointer', fontFamily: font, fontSize: '13.5px',
-                    fontWeight: 600, color: '#FFFFFF', transition: 'opacity 0.15s',
+                    fontWeight: 'var(--font-weight-emphasis)', color: compVar('button-primary-on-color-default'), transition: 'opacity 0.15s',
                   }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.9'; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}

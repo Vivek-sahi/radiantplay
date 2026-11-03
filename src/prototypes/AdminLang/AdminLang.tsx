@@ -6,7 +6,7 @@ import { Button } from '../../components/Button';
 import { CsvTranslationSection } from './components';
 import { contentStyles, sectionStyles as s, moduleTableStyles as mt } from './styles';
 import { homepageModules } from './data/mockData';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 
 type SidebarTabId = 'insights' | 'data' | 'develop' | 'admin';
 
@@ -138,7 +138,7 @@ export const AdminLang: React.FC = () => {
     <AppShell
       headerProps={headerProps}
       sidebarProps={sidebarProps}
-      contentBackground="#FFFFFF"
+      contentBackground={sysVar('background-base')}
       style={{ height: '100vh' }}
     >
       <div style={contentStyles.page}>
@@ -207,15 +207,15 @@ export const AdminLang: React.FC = () => {
             style={{
               marginTop: '48px',
               padding: '16px',
-              backgroundColor: '#F9FAFB',
+              backgroundColor: sysVar('background-sunken'),
               borderRadius: '8px',
-              border: '1px dashed #D1D5DB',
+              border: `1px dashed ${sysVar('border-bold')}`,
             }}
           >
-            <p style={{ fontSize: '12px', fontWeight: 600, color: systemColors.light['content-tertiary'], textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 8px' }}>
+            <p style={{ fontSize: '12px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-tertiary'), textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 8px' }}>
               Prototype controls
             </p>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: systemColors.light['content-secondary'], cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: sysVar('content-secondary'), cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={clusterCsvEnabled}

@@ -3,7 +3,7 @@ import { AutoResizeTextarea } from './AutoResizeTextarea';
 import { AppShell } from '../../components/AppShell';
 import type { AppSidebarProps, SidebarTab, SidebarCategory, ScopeToggle } from '../../components/AppSidebar';
 import type { GlobalHeaderProps } from '../../components/GlobalHeader';
-import { systemColors, referenceColors } from '../../tokens/colors';
+import { sysVar, shadowVar, compVar } from '@tokens/colors';
 import { CustomisationPageContent } from './CustomisationPageContent';
 import { AISettingsPageContent } from './AISettingsPageContent';
 import { SearchSpotIQPageContent } from './SearchSpotIQPageContent';
@@ -20,8 +20,8 @@ import { BillingQueryStatsPageContent } from './BillingQueryStatsPageContent';
 import { TermsPageContent } from './TermsPageContent';
 import { ScheduledMaintenancePageContent } from './ScheduledMaintenancePageContent';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-const brand = systemColors.light['content-brand'];
+const font = 'var(--font-family-primary)';
+const brand = sysVar('content-brand');
 
 type SidebarTabId = 'insights' | 'data' | 'develop' | 'admin';
 
@@ -127,7 +127,7 @@ const Toggle: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked,
       height: '20px',
       borderRadius: '10px',
       border: 'none',
-      backgroundColor: checked ? brand : referenceColors.gray['30'],
+      backgroundColor: checked ? compVar('toggle-track-on') : compVar('toggle-track-off'),
       cursor: 'pointer',
       padding: 0,
       flexShrink: 0,
@@ -142,9 +142,9 @@ const Toggle: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked,
         width: '16px',
         height: '16px',
         borderRadius: '50%',
-        backgroundColor: '#fff',
+        backgroundColor: sysVar('background-base'),
         transition: 'left 0.2s ease',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.18)',
+        boxShadow: shadowVar('surface'),
       }}
     />
   </button>
@@ -191,16 +191,16 @@ const Dropdown: React.FC<{ value: string; options: string[]; width?: number }> =
           width: '100%',
           height: '36px',
           padding: '0 12px',
-          border: `1px solid ${open ? brand : '#D1D5DB'}`,
+          border: `1px solid ${open ? brand : sysVar('border-bold')}`,
           borderRadius: '6px',
-          backgroundColor: '#FFFFFF',
+          backgroundColor: sysVar('background-base'),
           cursor: 'pointer',
           fontFamily: font,
           fontSize: '13px',
-          color: '#111827',
+          color: sysVar('content-primary'),
           outline: 'none',
           textAlign: 'left',
-          boxShadow: open ? `0 0 0 2px ${brand}22` : 'none',
+          boxShadow: open ? `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)` : 'none',
           transition: 'border-color 0.15s, box-shadow 0.15s',
         }}
       >
@@ -217,7 +217,7 @@ const Dropdown: React.FC<{ value: string; options: string[]; width?: number }> =
             transition: 'transform 0.15s ease',
           }}
         >
-          <path d="M2.5 4.5l3.5 3.5 3.5-3.5" stroke="#9CA3AF" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M2.5 4.5l3.5 3.5 3.5-3.5" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
 
@@ -228,10 +228,10 @@ const Dropdown: React.FC<{ value: string; options: string[]; width?: number }> =
             top: menuPos.top,
             left: menuPos.left,
             width: menuPos.width,
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #E5E7EB',
+            backgroundColor: sysVar('background-raised'),
+            border: '1px solid var(--rd-sys-color-border-subtle)',
             borderRadius: '8px',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+            boxShadow: shadowVar('menu'),
             zIndex: 9999,
             overflow: 'hidden',
           }}
@@ -248,14 +248,14 @@ const Dropdown: React.FC<{ value: string; options: string[]; width?: number }> =
                 textAlign: 'left',
                 fontFamily: font,
                 fontSize: '13px',
-                fontWeight: opt === selected ? 500 : 400,
-                color: opt === selected ? brand : '#111827',
-                backgroundColor: opt === selected ? `${brand}10` : 'transparent',
+                fontWeight: opt === selected ? 'var(--font-weight-medium)' : 'var(--font-weight-regular)',
+                color: opt === selected ? brand : sysVar('content-primary'),
+                backgroundColor: opt === selected ? `color-mix(in srgb, ${brand} 6%, transparent)` : 'transparent',
                 cursor: 'pointer',
                 transition: 'background-color 0.1s',
               }}
               onMouseEnter={(e) => {
-                if (opt !== selected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F9FAFB';
+                if (opt !== selected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = sysVar('background-sunken');
               }}
               onMouseLeave={(e) => {
                 if (opt !== selected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
@@ -284,17 +284,17 @@ const SettingRow: React.FC<{
       justifyContent: 'space-between',
       gap: '32px',
       padding: '20px 24px',
-      backgroundColor: '#FFFFFF',
-      border: '1px solid #E9EAEC',
+      backgroundColor: sysVar('background-base'),
+      border: '1px solid var(--rd-sys-color-border-subtle)',
       borderRadius: '8px',
     }}
   >
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font, lineHeight: 1.4 }}>
+      <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font, lineHeight: 1.4 }}>
         {label}
       </div>
       {description && (
-        <div style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, marginTop: '4px', lineHeight: 1.6 }}>
+        <div style={{ fontSize: '12.5px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '4px', lineHeight: 1.6 }}>
           {description}
         </div>
       )}
@@ -320,8 +320,8 @@ const Card: React.FC<{
   return (
     <div
       style={{
-        backgroundColor: '#F3F4F6',
-        border: '1px solid #E5E7EB',
+        backgroundColor: sysVar('background-secondary-action'),
+        border: '1px solid var(--rd-sys-color-border-subtle)',
         borderRadius: '12px',
         overflow: 'hidden',
       }}
@@ -330,7 +330,7 @@ const Card: React.FC<{
       {collapsible ? (
         <div style={{
           display: 'flex', alignItems: 'center',
-          borderBottom: open ? '1px solid #E5E7EB' : 'none',
+          borderBottom: open ? '1px solid var(--rd-sys-color-border-subtle)' : 'none',
           padding: '16px 24px',
         }}>
           <button
@@ -344,9 +344,9 @@ const Card: React.FC<{
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
               style={{ flexShrink: 0, transform: open ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.22s ease' }}
             >
-              <path d="M3 5.5l4 4 4-4" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M3 5.5l4 4 4-4" stroke="var(--rd-sys-color-content-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+            <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>
               {title}
             </span>
           </button>
@@ -360,12 +360,12 @@ const Card: React.FC<{
           )}
         </div>
       ) : (
-        <div style={{ padding: '16px 24px 12px', borderBottom: '1px solid #E5E7EB' }}>
-          <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+        <div style={{ padding: '16px 24px 12px', borderBottom: '1px solid var(--rd-sys-color-border-subtle)' }}>
+          <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>
             {title}
           </div>
           {description && (
-            <div style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, marginTop: '4px', lineHeight: 1.5 }}>
+            <div style={{ fontSize: '12.5px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '4px', lineHeight: 1.5 }}>
               {description}
             </div>
           )}
@@ -467,36 +467,36 @@ export const NewUIAdmin2: React.FC = () => {
     <AppShell
       headerProps={headerProps}
       sidebarProps={sidebarProps}
-      contentBackground="#FFFFFF"
+      contentBackground="var(--rd-sys-color-background-base)"
       style={{ height: '100vh' }}
     >
       {/* Route to Customisation page when that nav item is selected */}
       {sidebarNav === 'home' ? (
-        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' }}>
+        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: sysVar('background-base') }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: '32px',
-            border: `1.5px dashed ${brand}66`, borderRadius: '12px',
+            border: `1.5px dashed color-mix(in srgb, ${brand} 40%, transparent)`, borderRadius: '12px',
             padding: '36px 40px', maxWidth: '680px', width: '100%',
           }}>
             <div style={{ flexShrink: 0, width: '96px', height: '96px' }}>
               <svg width="96" height="96" viewBox="0 0 96 96" fill="none">
-                <rect x="20" y="56" width="56" height="22" rx="4" fill="#F3F4F6" stroke="#D1D5DB" strokeWidth="1.5" />
-                <rect x="28" y="30" width="40" height="26" rx="4" fill="#F3F4F6" stroke="#D1D5DB" strokeWidth="1.5" />
-                <rect x="36" y="14" width="24" height="18" rx="4" fill="#F3F4F6" stroke="#D1D5DB" strokeWidth="1.5" />
-                <rect x="32" y="34" width="12" height="8" rx="2" fill="#D1D5DB" />
-                <rect x="48" y="34" width="12" height="3" rx="1.5" fill="#D1D5DB" />
-                <rect x="48" y="40" width="8" height="3" rx="1.5" fill="#D1D5DB" />
-                <rect x="28" y="61" width="16" height="8" rx="2" fill="#D1D5DB" />
-                <rect x="50" y="61" width="18" height="3" rx="1.5" fill="#D1D5DB" />
-                <rect x="50" y="67" width="12" height="3" rx="1.5" fill="#D1D5DB" />
+                <rect x="20" y="56" width="56" height="22" rx="4" fill="var(--rd-sys-color-border-subtle)" stroke="var(--rd-sys-color-border-bold)" strokeWidth="1.5" />
+                <rect x="28" y="30" width="40" height="26" rx="4" fill="var(--rd-sys-color-border-subtle)" stroke="var(--rd-sys-color-border-bold)" strokeWidth="1.5" />
+                <rect x="36" y="14" width="24" height="18" rx="4" fill="var(--rd-sys-color-border-subtle)" stroke="var(--rd-sys-color-border-bold)" strokeWidth="1.5" />
+                <rect x="32" y="34" width="12" height="8" rx="2" fill="var(--rd-sys-color-content-tertiary)" />
+                <rect x="48" y="34" width="12" height="3" rx="1.5" fill="var(--rd-sys-color-content-tertiary)" />
+                <rect x="48" y="40" width="8" height="3" rx="1.5" fill="var(--rd-sys-color-content-tertiary)" />
+                <rect x="28" y="61" width="16" height="8" rx="2" fill="var(--rd-sys-color-content-tertiary)" />
+                <rect x="50" y="61" width="18" height="3" rx="1.5" fill="var(--rd-sys-color-content-tertiary)" />
+                <rect x="50" y="67" width="12" height="3" rx="1.5" fill="var(--rd-sys-color-content-tertiary)" />
                 <path d="M48 30v-4M44 26l4-4 4 4" stroke={brand} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.4" />
               </svg>
             </div>
             <div>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: '#374151', fontFamily: font, lineHeight: 1.4, marginBottom: '10px' }}>
+              <div style={{ fontSize: '18px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, lineHeight: 1.4, marginBottom: '10px' }}>
                 Admin home <span style={{ color: brand }}>coming soon</span>
               </div>
-              <div style={{ fontSize: '14px', color: '#9CA3AF', fontFamily: font, lineHeight: 1.7 }}>
+              <div style={{ fontSize: '14px', color: sysVar('content-tertiary'), fontFamily: font, lineHeight: 1.7 }}>
                 The admin home dashboard is being built. Check back for an at-a-glance overview of your system health, key metrics, and recent activity.
               </div>
             </div>
@@ -519,27 +519,27 @@ export const NewUIAdmin2: React.FC = () => {
        sidebarNav === 'terms' ? <TermsPageContent /> :
        sidebarNav === 'scheduled-maintenance' ? <ScheduledMaintenancePageContent /> : (
 
-      <div style={{ height: '100%', overflowY: 'auto', backgroundColor: '#FFFFFF' }}>
+      <div style={{ height: '100%', overflowY: 'auto', backgroundColor: sysVar('background-base') }}>
 
         {/* ── Page header: full-width, title left + tabs inline ── */}
         <div
           style={{
             flexShrink: 0, display: 'flex', alignItems: 'center',
             height: '92px', padding: '0 40px',
-            borderBottom: '1px solid #E5E7EB', boxSizing: 'border-box',
+            borderBottom: '1px solid var(--rd-sys-color-border-subtle)', boxSizing: 'border-box',
           }}
         >
           <h1
             style={{
               margin: 0, fontSize: '22px', fontWeight: 700,
-              color: '#0F172A', fontFamily: font, letterSpacing: '-0.3px',
+              color: sysVar('content-primary'), fontFamily: font, letterSpacing: '-0.3px',
               whiteSpace: 'nowrap', flexShrink: 0,
             }}
           >
             Application settings
           </h1>
 
-          <div style={{ width: '1px', height: '24px', backgroundColor: '#D1D5DB', margin: '0 24px', flexShrink: 0 }} />
+          <div style={{ width: '1px', height: '24px', backgroundColor: sysVar('border-bold'), margin: '0 24px', flexShrink: 0 }} />
 
           <div style={{ display: 'flex', alignItems: 'stretch', flex: 1, alignSelf: 'stretch' }}>
             {pageTabs.map((tab) => (
@@ -551,8 +551,8 @@ export const NewUIAdmin2: React.FC = () => {
                   padding: '0 14px',
                   border: 'none', background: 'none', cursor: 'pointer',
                   fontFamily: font, fontSize: '13.5px',
-                  fontWeight: activeTab === tab.id ? 600 : 400,
-                  color: activeTab === tab.id ? brand : '#6B7280',
+                  fontWeight: activeTab === tab.id ? 'var(--font-weight-emphasis)' : 'var(--font-weight-regular)',
+                  color: activeTab === tab.id ? brand : sysVar('content-secondary'),
                   borderBottom: activeTab === tab.id ? `2px solid ${brand}` : '2px solid transparent',
                   marginBottom: '-1px', transition: 'color 0.15s', whiteSpace: 'nowrap',
                 }}
@@ -670,8 +670,8 @@ export const NewUIAdmin2: React.FC = () => {
                       placeholder="Text"
                       style={{
                         width: '311px', height: '36px', padding: '0 12px',
-                        border: '1px solid #D1D5DB', borderRadius: '6px',
-                        fontFamily: font, fontSize: '13px', color: '#111827',
+                        border: '1px solid var(--rd-sys-color-border-bold)', borderRadius: '6px',
+                        fontFamily: font, fontSize: '13px', color: sysVar('content-primary'),
                         outline: 'none', boxSizing: 'border-box' as const,
                       }}
                     />
@@ -690,8 +690,8 @@ export const NewUIAdmin2: React.FC = () => {
                       placeholder="Text"
                       style={{
                         width: '311px', height: '36px', padding: '0 12px',
-                        border: '1px solid #D1D5DB', borderRadius: '6px',
-                        fontFamily: font, fontSize: '13px', color: '#111827',
+                        border: '1px solid var(--rd-sys-color-border-bold)', borderRadius: '6px',
+                        fontFamily: font, fontSize: '13px', color: sysVar('content-primary'),
                         outline: 'none', boxSizing: 'border-box' as const,
                       }}
                     />

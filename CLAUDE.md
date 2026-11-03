@@ -23,6 +23,7 @@ Run via Monitor (persistent: true). When it fires during a session, the user jus
 
 ## Behavior Rules
 
+- **Keep replies short and plain.** Lead with the answer or the result in a few lines. Skip step-by-step recaps of what you did, and give more detail only when asked. Many people using Radiant Play are not engineers.
 - When asked to save or write content, write directly to the file. Do NOT create sub-tasks, todo items, or intermediate plans unless explicitly asked.
 - Do NOT add unsolicited UI elements, features, badges, or enhancements not in the request. Build exactly what was asked.
 - The project is branded as **Radiant Play** — not figmaradiant, RadiantPlay, or other legacy names in user-facing content.
@@ -39,21 +40,34 @@ Run via Monitor (persistent: true). When it fires during a session, the user jus
 |---|---|---|
 | `main` | Shared library + samples (what other designers sync from) | origin + galaxy |
 | `staging` | Shared preview / QA | origin + galaxy |
-| `personal` | Maintainer's personal prototypes (in `registry-mine.ts`) | **origin only — never galaxy** |
-| `personal/<name>` | Feature branch for a specific personal exploration | **origin only — never galaxy** |
+| `faris` | Maintainer's daily working branch: personal prototypes (in `registry-mine.ts`) and decks | origin + galaxy (the galaxy copy deploys the radiantplay-faris Coolify app) |
 | `feat/*`, `fix/*`, `chore/*` | Shared work branches | origin + galaxy |
 
-`personal` and `personal/*` are origin-only. A pre-push hook enforces this — pushing them to galaxy will be refused. Do not bypass the hook with `--no-verify` unless the user explicitly says to.
+`faris` is pushed to both remotes; the galaxy copy is what the radiantplay-faris Coolify app deploys. A pre-push hook refuses force-pushes and deletions of `faris`, because it is real history rather than a mirror. `faris` is never merged into `main` or `staging` — shared work is cut from `main` on a `feat/*`, `fix/*` or `chore/*` branch, and `faris` picks it up by merging `main` in. Do not bypass the hook with `--no-verify` unless the user explicitly says to.
 
-**The maintainer's daily working branch is `personal`.** New personal prototypes are built on `personal/<name>` branches off `personal`, merged back to `personal`, and the feature branch is deleted after merge. Personal prototypes live in `registry-mine.ts`. To promote a personal prototype to the shared library: switch to `main`, move the entry from `registry-mine.ts` to `registry-core.ts`, commit, and push to both remotes.
+There is also a `public` remote (`github.com/thoughtspot/radiant-play`), the curated public release mirror. **Never push to it directly.** The public snapshot is published separately, and only with explicit per-push approval for that specific push.
+
+**The maintainer's daily working branch is `faris`.** Work directly on `faris`; if a side branch is used, merge it back promptly rather than leaving it long-lived. Push it with a plain `git push`: `origin` has two push URLs, GitHub and galaxy, so one push reaches both remotes (set up by `bash internal/scripts/install-maintainer-hooks.sh`; `internal/scripts/push-faris.sh` still works). Keep it current by merging `main` into `faris`, never the other way round. Personal prototypes live in `registry-mine.ts`. To promote a personal prototype to the shared library: switch to `main`, move the entry from `registry-mine.ts` to `registry-core.ts`, commit, and push to both remotes.
 
 Run `git remote -v` to confirm which remotes exist. Default deploy target is **staging**, not main — do not push to main unless explicitly asked.
 
-**Before pushing to main (main maintainer only)**: if both `origin` and `galaxy` remotes exist, always ask whether to run `bash scripts/release.sh` first. This updates the platform version and changelog. If the user confirms they've already run it or wants to skip, proceed with the push. On designer forks (only `origin` exists), skip this prompt — the release ritual is a maintainer concern.
+**Before pushing to main (main maintainer only)**: if both `origin` and `galaxy` remotes exist, always ask whether to run `bash internal/scripts/release.sh` first. This updates the platform version and changelog. If the user confirms they've already run it or wants to skip, proceed with the push. On designer forks (only `origin` exists), skip this prompt — the release ritual is a maintainer concern.
+
+## Rule files: read before UI work
+
+Nothing in `.cursor/rules/` loads on its own in Claude Code. **Before any UI or prototype task, read `.cursor/rules/_orchestration.md` and follow it:** classify the task, read only the rule files that tier lists, and run its Requirements Gate (questions to the user) before building a new Liveboard, Data Model Editor or Spotter prototype.
+
+| Tier | Task | Rule files to read |
+|---|---|---|
+| Exploratory | `/rp-explore`, UI outside Radiant | None, constraints relaxed |
+| 0 | Fix a value, swap a prop, change a label | None, this file is enough |
+| 1 | Add a section, modal, table or menu | 1 to 3, by concern |
+| 2 | New prototype or Figma page | `prototype-generation.md` and `component-inventory.md`, plus concerns |
+| 3 | Create or change a shared component in `src/components/` | `design-system.md`, `component-inventory.md`, `token-usage.md`, `content-guidelines.md` |
 
 ## Tech Stack
 
-React 19 + TypeScript + Vite 7, deployed on Vercel. When building or modifying pages, verify the build succeeds before considering the task complete.
+React 19 + TypeScript + Vite 7. Deployed on ThoughtSpot's self-hosted Coolify (main, staging, faris — see `docs/coolify/`). Vercel is switched off; `vercel.json`, `middleware.ts` and `api/chat.ts` stay only so forks that still deploy there keep working. When building or modifying pages, verify the build succeeds before considering the task complete.
 
 ## Commands
 
@@ -78,7 +92,9 @@ npm run new-prototype  # Scaffold a new prototype
 
 `@components/*` is the **Radiant DS** — product-agnostic primitives. `@spotter/*` is the **Spotter DS** — agentic-domain blocks (chat, answers, viz, page shell) built on top of Radiant. Same conventions apply (tokens only, sentence case, layout primitives) but Spotter components encode AI-flavoured patterns.
 
-When working on Spotter surfaces, the orchestrator auto-loads the Spotter cursor rules. For a new Spotter prototype the orchestrator runs a Requirements Gate first (mode / welcome state / data). See `.cursor/rules/_orchestration.md` → Spotter Requirements Gate.
+New Spotter chat surfaces render `Reasoning`, `UserMessage` and `PromptBar` from `@spotter/chat`. `ReasoningBlock` and `UserBubble` are adapters kept for consumers holding a runtime `ChatMessage`. Never vendor a Spotter block into a prototype — import from `@spotter/*` and PR improvements against `src/spotter/`. Both composers (`SpotterPrompt` and `PromptBar`) ship until the composer decision lands — see `docs/2026-09-02-spotter-refresh-adoption-plan.md` §8.1.
+
+Nothing loads the Spotter rules automatically. For a new Spotter prototype, run the Spotter Requirements Gate in `.cursor/rules/_orchestration.md` first (mode, welcome state, data), then read the Spotter rule files it names.
 
 **Spotter modes:**
 - **Standalone Spotter** — full-page agentic chat (`src/prototypes/Spotter/`)
@@ -122,8 +138,11 @@ src/
 ### 1. Design Tokens — NEVER hard-code values
 
 ```typescript
-// Colors (3-layer: reference → system → component)
-import { systemColors, referenceColors, rdComponentColors } from '@tokens/colors';
+// Colors: theme-aware CSS variables, so the UI follows light and dark mode
+import { sysVar, compVar, shadowVar } from '@tokens/colors';
+// sysVar('content-primary') → 'var(--rd-sys-color-content-primary)'
+// compVar('chip-filter-default') → 'var(--rd-comp-color-chip-filter-default)'
+// shadowVar('menu') → 'var(--rd-sys-color-shadow-menu)'
 
 // Spacing (4px base: A=4, B=8, C=12, D=16, E=20, F=24, G=28, H=32, I=40, J=48)
 import { spacing, componentSpacing } from '@tokens/spacing';
@@ -132,11 +151,13 @@ import { spacing, componentSpacing } from '@tokens/spacing';
 import { fontFamily, fontSize, fontWeight, lineHeight, v2TextStyles } from '@tokens/typography';
 ```
 
-Common system colors: `background-base`, `background-sunken`, `background-subtle`, `content-primary`, `content-secondary`, `content-brand`, `border-default`, `border-divider`.
+Common system colors: `background-base`, `background-sunken`, `background-on-base`, `background-secondary-action`, `content-primary`, `content-secondary`, `content-brand`, `border-subtle`, `border-bold`.
 
-In CSS Modules use CSS variables: `var(--rd-sys-color-content-primary)`, `var(--spacing-4)`, `var(--radius-md)`.
+In CSS Modules use CSS variables: `var(--rd-sys-color-content-primary)`, `var(--rd-sys-color-shadow-surface)`, `var(--spacing-4)`, `var(--radius-md)`.
 
-**Forbidden:** hardcoded hex (`#2770EF`), raw `rgb()`/`rgba()`, magic spacing (`17px`), hardcoded font families.
+**Dark mode.** Every prototype runs in light and dark (ThemeSwitch, Ctrl+D). Never read `systemColors.light[...]`, `rdComponentColors.light[...]` or `referenceColors.*` for UI: they stay light in dark mode. Those objects are token data for docs pages and canvas charts only. Charts use `useChartTheme()` from `src/prototypes/_shared/tiles/chartTheme`. For tints use `color-mix(in srgb, var(--x) 12%, transparent)`, not alpha suffixes on hex. Check a prototype with `npm run scan:dark -- src/prototypes/<Name>` or `/rp-radiant-check`.
+
+**Forbidden:** hardcoded hex (`#2770EF`), raw `rgb()`/`rgba()`, `systemColors.light[...]` in UI, magic spacing (`17px`), hardcoded font families and weights (use `fontFamily.*` and the `--font-weight-*` tokens).
 
 ### 2. Always Use Radiant Components
 
@@ -180,21 +201,25 @@ Apply the 5 conventions above + verify `npm run build` passes before finishing a
 
 | Branch | Purpose | Deploys to | Pushed to |
 |--------|---------|------------|-----------|
-| `main` | Production (shared library) | radiantplay.vercel.app | origin + galaxy |
-| `staging` | Shared preview / QA | staging-radiantplay.vercel.app | origin + galaxy |
-| `personal` | Maintainer's daily working branch — personal prototypes in `registry-mine.ts` | Per-branch Vercel preview | **origin only** |
-| `personal/<name>` | Feature branch off `personal` for a specific personal exploration | Per-branch Vercel preview | **origin only** |
+| `main` | Production (shared library) | radiantplay.design.coolify.thoughtspot.com | origin + galaxy |
+| `staging` | Shared preview / QA | radiantplay-staging.design.coolify.thoughtspot.com | origin + galaxy |
+| `faris` | Maintainer's daily working branch — personal prototypes in `registry-mine.ts`, decks | radiantplay-faris.design.coolify.thoughtspot.com (from galaxy) | origin + galaxy |
 | `feat/*`, `fix/*`, `chore/*` | Shared work branches | — | origin + galaxy |
 
-The `personal` and `personal/*` branches are enforced as origin-only by a pre-push hook (`scripts/hooks/pre-push`). Pushing them to galaxy is refused. To "promote" a personal prototype to the shared library, switch to `main`, move the entry from `registry-mine.ts` to `registry-core.ts`, commit, and push to both remotes.
+The pre-push hook (`scripts/hooks/pre-push`) refuses force-pushes and deletions of `faris`, since it is the real working branch rather than a mirror. Coolify deploys from `galaxy` (setup and operations in `docs/coolify/`); `origin` is the GitHub copy and deploys nothing. To "promote" a personal prototype to the shared library, switch to `main`, move the entry from `registry-mine.ts` to `registry-core.ts`, commit, and push to both remotes.
 
 ### Remotes
 
 **Designer forks** have one remote:
 - `origin` — the designer's own fork (GitHub or galaxy)
 
-**Main maintainer** has two remotes that must stay in sync (on shared branches):
+**Main maintainer** has three remotes:
 - `origin` — GitHub (`https://github.com/faris-ts/radiantplay.git`)
 - `galaxy` — ThoughtSpot (HTTPS: `https://galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay.git` or SSH: `git@galaxy.corp.thoughtspot.com:mohammed-faris/radiantplay.git`)
+- `public` — the public mirror (`https://github.com/thoughtspot/radiant-play.git`). A curated, stripped snapshot, not a sync peer. **Never push to it directly without explicit per-push approval for that specific push.**
+
+`origin` and `galaxy` must stay in sync on shared branches. `public` is a one-way publish target.
+
+On the maintainer's machine `origin` has two push URLs (GitHub and galaxy), so `git push origin <branch>` updates both and there is no separate `git push galaxy` step. `origin` still fetches from GitHub, and `galaxy` stays as its own remote for fetches. `bash internal/scripts/install-maintainer-hooks.sh` sets this up on a new clone. Every push to `origin` lands on galaxy too, so keep temp branches local.
 
 Always run `git remote -v` to confirm which remotes exist before pushing.

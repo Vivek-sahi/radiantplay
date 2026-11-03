@@ -29,7 +29,7 @@ const ContextChipButton: React.FC<{
       padding: `${spacing.B}px ${spacing.D}px`,
       borderRadius: `${radius['3xl']}px`,
       border: `1px solid ${isActive ? colors.borderBrand : colors.borderDefault}`,
-      backgroundColor: isActive ? `${colors.textBrand}08` : colors.bg,
+      backgroundColor: isActive ? `color-mix(in srgb, ${colors.textBrand} 3%, transparent)` : colors.bg,
       fontFamily: font.family,
       fontSize: font.size.sm,
       fontWeight: isActive ? font.weight.medium : font.weight.regular,

@@ -2,13 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AppShell } from '../../components/AppShell';
 import type { AppSidebarProps, SidebarTab, SidebarCategory, ScopeToggle } from '../../components/AppSidebar';
 import type { GlobalHeaderProps } from '../../components/GlobalHeader';
-import { systemColors, referenceColors } from '../../tokens/colors';
+import { sysVar, shadowVar } from '@tokens/colors';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Modal, ModalFooter } from '@components/Modal';
 import { Button } from '@components/Button';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-const brand = systemColors.light['content-brand'];
+const font = 'var(--font-family-primary)';
+const brand = sysVar('content-brand');
+const brandFill = sysVar('background-brand');
 
 type SidebarTabId = 'insights' | 'data' | 'develop' | 'admin';
 
@@ -68,7 +69,7 @@ const Chevron: React.FC<{ open: boolean; size?: number }> = ({ open, size = 14 }
     width={size} height={size} viewBox="0 0 14 14" fill="none"
     style={{ flexShrink: 0, transform: open ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.22s ease' }}
   >
-    <path d="M3 5.5l4 4 4-4" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M3 5.5l4 4 4-4" stroke={sysVar('content-secondary')} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
@@ -79,14 +80,14 @@ const Toggle: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked,
     onClick={onChange} role="switch" aria-checked={checked}
     style={{
       position: 'relative', width: '36px', height: '20px', borderRadius: '10px',
-      border: 'none', backgroundColor: checked ? brand : referenceColors.gray['30'],
+      border: 'none', backgroundColor: checked ? brandFill : sysVar('border-bold'),
       cursor: 'pointer', padding: 0, flexShrink: 0, transition: 'background-color 0.2s ease',
     }}
   >
     <span style={{
       position: 'absolute', top: '2px', left: checked ? '18px' : '2px',
-      width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#fff',
-      transition: 'left 0.2s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.18)',
+      width: '16px', height: '16px', borderRadius: '50%', backgroundColor: sysVar('background-base'),
+      transition: 'left 0.2s ease', boxShadow: shadowVar('surface'),
     }} />
   </button>
 );
@@ -115,10 +116,10 @@ const Dropdown: React.FC<{ value: string; options: string[]; width?: number; pla
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           width: '100%', height: '34px', padding: '0 10px',
-          border: `1px solid ${open ? brand : '#D1D5DB'}`, borderRadius: '6px',
-          backgroundColor: '#FFFFFF', cursor: 'pointer', fontFamily: font, fontSize: '13px',
-          color: selected ? '#111827' : '#9CA3AF', outline: 'none',
-          boxShadow: open ? `0 0 0 2px ${brand}22` : 'none',
+          border: `1px solid ${open ? brand : sysVar('border-bold')}`, borderRadius: '6px',
+          backgroundColor: sysVar('background-base'), cursor: 'pointer', fontFamily: font, fontSize: '13px',
+          color: selected ? sysVar('content-primary') : sysVar('content-tertiary'), outline: 'none',
+          boxShadow: open ? `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)` : 'none',
           transition: 'border-color 0.15s, box-shadow 0.15s',
         }}
       >
@@ -128,14 +129,14 @@ const Dropdown: React.FC<{ value: string; options: string[]; width?: number; pla
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
           style={{ flexShrink: 0, marginLeft: '6px', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }}
         >
-          <path d="M2.5 4.5l3.5 3.5 3.5-3.5" stroke="#9CA3AF" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M2.5 4.5l3.5 3.5 3.5-3.5" stroke={sysVar('content-tertiary')} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
-          backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '8px',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.10)', zIndex: 100, overflow: 'hidden',
+          backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px',
+          boxShadow: shadowVar('menu'), zIndex: 100, overflow: 'hidden',
           animation: 'dropdownFade 0.15s ease',
         }}>
           {options.map((opt) => (
@@ -143,12 +144,12 @@ const Dropdown: React.FC<{ value: string; options: string[]; width?: number; pla
               style={{
                 display: 'block', width: '100%', padding: '9px 14px', border: 'none',
                 textAlign: 'left', fontFamily: font, fontSize: '13px',
-                fontWeight: opt === selected ? 500 : 400,
-                color: opt === selected ? brand : '#111827',
-                backgroundColor: opt === selected ? `${brand}10` : 'transparent',
+                fontWeight: opt === selected ? 'var(--font-weight-medium)' : 'var(--font-weight-regular)',
+                color: opt === selected ? brand : sysVar('content-primary'),
+                backgroundColor: opt === selected ? `color-mix(in srgb, ${brand} 6%, transparent)` : 'transparent',
                 cursor: 'pointer',
               }}
-              onMouseEnter={(e) => { if (opt !== selected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F9FAFB'; }}
+              onMouseEnter={(e) => { if (opt !== selected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = sysVar('background-sunken'); }}
               onMouseLeave={(e) => { if (opt !== selected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
             >
               {opt}
@@ -173,9 +174,9 @@ const Card: React.FC<{
   const multi = React.Children.count(children) > 1;
   const isOpen = multi ? open : true;
   return (
-  <div style={{ backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '12px' }}>
+  <div style={{ backgroundColor: sysVar('background-secondary-action'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '12px' }}>
     {/* Header row */}
-    <div style={{ display: 'flex', alignItems: 'flex-start', padding: '14px 24px 10px', borderBottom: isOpen ? '1px solid #E5E7EB' : 'none' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', padding: '14px 24px 10px', borderBottom: isOpen ? `1px solid ${sysVar('border-subtle')}` : 'none' }}>
       {multi ? (
         <button
           onClick={onToggle}
@@ -186,18 +187,18 @@ const Card: React.FC<{
         >
           <Chevron open={isOpen} />
           <div>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</span>
+            <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>{title}</span>
             {description && (
-              <div style={{ fontSize: '12px', color: '#9CA3AF', fontFamily: font, marginTop: '2px', lineHeight: 1.5 }}>{description}</div>
+              <div style={{ fontSize: '12px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '2px', lineHeight: 1.5 }}>{description}</div>
             )}
           </div>
         </button>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
           <div>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</span>
+            <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>{title}</span>
             {description && (
-              <div style={{ fontSize: '12px', color: '#9CA3AF', fontFamily: font, marginTop: '2px', lineHeight: 1.5 }}>{description}</div>
+              <div style={{ fontSize: '12px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '2px', lineHeight: 1.5 }}>{description}</div>
             )}
           </div>
         </div>
@@ -228,15 +229,15 @@ const SettingRow: React.FC<{
   <div style={{
     display: 'flex', alignItems: description ? 'flex-start' : 'center',
     justifyContent: 'space-between', gap: '24px', padding: '16px 20px',
-    backgroundColor: noBg ? 'transparent' : '#FFFFFF',
-    border: noBg ? 'none' : '1px solid #E9EAEC', borderRadius: '8px',
+    backgroundColor: noBg ? 'transparent' : sysVar('background-base'),
+    border: noBg ? 'none' : `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px',
   }}>
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font, lineHeight: 1.4 }}>
+      <div style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font, lineHeight: 1.4 }}>
         {label}
       </div>
       {description && (
-        <div style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, marginTop: '4px', lineHeight: 1.55 }}>
+        <div style={{ fontSize: '12.5px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '4px', lineHeight: 1.55 }}>
           {description}
         </div>
       )}
@@ -259,13 +260,13 @@ const ImageUploadArea: React.FC = () => {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '16px 20px', backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
+      padding: '16px 20px', backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px',
       minHeight: '72px',
     }}>
       {/* Preview / placeholder */}
       <div style={{
         width: '56px', height: '44px', borderRadius: '6px',
-        backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB',
+        backgroundColor: sysVar('background-secondary-action'), border: `1px solid ${sysVar('border-subtle')}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         overflow: 'hidden',
       }}>
@@ -273,9 +274,9 @@ const ImageUploadArea: React.FC = () => {
           <img src={preview} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         ) : (
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <rect x="2" y="4" width="16" height="12" rx="2" stroke="#C0C6D0" strokeWidth="1.3" />
-            <circle cx="7.5" cy="8.5" r="1.5" stroke="#C0C6D0" strokeWidth="1.3" />
-            <path d="M2 13l4-3 3 2.5 3-4 4 4.5" stroke="#C0C6D0" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+            <rect x="2" y="4" width="16" height="12" rx="2" stroke={sysVar('border-bold')} strokeWidth="1.3" />
+            <circle cx="7.5" cy="8.5" r="1.5" stroke={sysVar('border-bold')} strokeWidth="1.3" />
+            <path d="M2 13l4-3 3 2.5 3-4 4 4.5" stroke={sysVar('border-bold')} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )}
       </div>
@@ -293,8 +294,8 @@ const ImageUploadArea: React.FC = () => {
       <button
         onClick={() => inputRef.current?.click()}
         style={{
-          height: '32px', padding: '0 16px', border: '1px solid #D1D5DB', borderRadius: '6px',
-          backgroundColor: '#FFFFFF', fontSize: '13px', fontWeight: 500, color: '#374151',
+          height: '32px', padding: '0 16px', border: `1px solid ${sysVar('border-bold')}`, borderRadius: '6px',
+          backgroundColor: sysVar('background-base'), fontSize: '13px', fontWeight: 500, color: sysVar('content-primary'),
           fontFamily: font, cursor: 'pointer',
         }}
       >
@@ -308,9 +309,10 @@ const ImageUploadArea: React.FC = () => {
 
 // ─── Font options ─────────────────────────────────────────────────────────────
 
+// Data: font style samples render in the colour each style defines.
 const FONT_OPTIONS: { label: string; fontFamily: string; color?: string; fontWeight?: number }[] = [
-  { label: 'Optimo Plain, helvetica Neue, Helvetica, Arial, Sans serif', fontFamily: '"Plain", -apple-system, sans-serif', color: brand },
-  { label: 'Testing font', fontFamily: 'Georgia, "Times New Roman", serif', color: '#111827' },
+  { label: 'Optimo Plain, helvetica Neue, Helvetica, Arial, Sans serif', fontFamily: 'var(--font-family-primary)', color: brand },
+  { label: 'Testing font', fontFamily: 'Georgia, "Times New Roman", serif', color: sysVar('content-primary') },
   { label: 'Ashu all org 2 font', fontFamily: '"Brush Script MT", "Segoe Script", cursive', color: '#1F2937' },
   { label: 'Primary Org style', fontFamily: 'Papyrus, fantasy', color: '#14B8A6' },
   { label: 'Custom Font 1', fontFamily: 'Palatino, "Palatino Linotype", "Book Antiqua", serif', color: '#7C3AED' },
@@ -348,22 +350,22 @@ const FontDropdown: React.FC<{ value: string; width?: number }> = ({ value, widt
         ref={btnRef}
         onClick={handleOpen}
         style={{
-          width, height: '34px', padding: '0 10px', border: '1px solid #D1D5DB', borderRadius: '6px',
-          backgroundColor: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px',
+          width, height: '34px', padding: '0 10px', border: `1px solid ${sysVar('border-bold')}`, borderRadius: '6px',
+          backgroundColor: sysVar('background-base'), cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px',
         }}
       >
-        <span style={{ fontFamily: selectedOpt.fontFamily, fontSize: '13.5px', color: selectedOpt.color ?? '#111827', fontWeight: selectedOpt.fontWeight, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ fontFamily: selectedOpt.fontFamily, fontSize: '13.5px', color: selectedOpt.color ?? sysVar('content-primary'), fontWeight: selectedOpt.fontWeight, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {selectedOpt.label}
         </span>
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ flexShrink: 0 }}>
-          <path d="M2 4l3 3 3-3" stroke="#9CA3AF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M2 4l3 3 3-3" stroke={sysVar('content-tertiary')} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
       {open && (
         <div style={{
           position: 'fixed', top: menuPos.top, left: menuPos.left, zIndex: 9999,
-          backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '8px',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.12)', width, maxHeight: '280px', overflowY: 'auto',
+          backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px',
+          boxShadow: shadowVar('menu'), width, maxHeight: '280px', overflowY: 'auto',
         }}>
           {FONT_OPTIONS.map((opt) => (
             <button
@@ -371,10 +373,10 @@ const FontDropdown: React.FC<{ value: string; width?: number }> = ({ value, widt
               onClick={() => { setSelected(opt.label); setOpen(false); }}
               style={{
                 width: '100%', textAlign: 'left', padding: '10px 14px', border: 'none',
-                backgroundColor: selected === opt.label ? `${brand}10` : 'transparent',
+                backgroundColor: selected === opt.label ? `color-mix(in srgb, ${brand} 6%, transparent)` : 'transparent',
                 cursor: 'pointer', display: 'block',
                 fontFamily: opt.fontFamily, fontSize: '15px',
-                color: opt.color ?? '#111827', fontWeight: opt.fontWeight,
+                color: opt.color ?? sysVar('content-primary'), fontWeight: opt.fontWeight,
               }}
             >
               {opt.label}
@@ -396,9 +398,9 @@ const DoubleDropdownRow: React.FC<{
 }> = ({ label, value1, options1, value2, options2, fontMode }) => (
   <div style={{
     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px',
-    padding: '14px 20px', backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
+    padding: '14px 20px', backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px',
   }}>
-    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+    <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>
       {label}
     </span>
     <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
@@ -410,6 +412,7 @@ const DoubleDropdownRow: React.FC<{
 
 // ─── Color picker grid ────────────────────────────────────────────────────────
 
+// Data: the colour picker offers literal colours for the customer to choose.
 const PICKER_COLORS = [
   ['#FFFFFF', '#FECACA', '#FED7AA', '#FEF3C7', '#DCFCE7', '#CFFAFE', '#DBEAFE', '#EDE9FE'],
   ['#F3F4F6', '#FCA5A5', '#FDBA74', '#FDE68A', '#BBF7D0', '#A5F3FC', '#BFDBFE', '#DDD6FE'],
@@ -452,8 +455,8 @@ const ColorSwatch: React.FC<{ color: string }> = ({ color: initialColor }) => {
         style={{
           display: 'flex', alignItems: 'center', gap: '4px',
           height: '32px', padding: '0 8px', borderRadius: '6px',
-          border: open ? `2px solid ${brand}` : '1px solid #D1D5DB',
-          backgroundColor: '#FFFFFF', cursor: 'pointer',
+          border: open ? `2px solid ${brand}` : `1px solid ${sysVar('border-bold')}`,
+          backgroundColor: sysVar('background-base'), cursor: 'pointer',
           boxSizing: 'border-box',
         }}
       >
@@ -461,7 +464,7 @@ const ColorSwatch: React.FC<{ color: string }> = ({ color: initialColor }) => {
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
           style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}
         >
-          <path d="M2 4l3 3 3-3" stroke="#9CA3AF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M2 4l3 3 3-3" stroke={sysVar('content-tertiary')} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>
 
@@ -469,8 +472,8 @@ const ColorSwatch: React.FC<{ color: string }> = ({ color: initialColor }) => {
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 6px)', left: 0,
-          backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB',
-          borderRadius: '10px', boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
+          backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`,
+          borderRadius: '10px', boxShadow: shadowVar('menu'),
           zIndex: 300, padding: '12px', width: '220px',
           animation: 'dropdownFade 0.15s ease',
         }}>
@@ -483,8 +486,8 @@ const ColorSwatch: React.FC<{ color: string }> = ({ color: initialColor }) => {
                 style={{
                   width: '22px', height: '22px', borderRadius: '3px',
                   backgroundColor: c, cursor: 'pointer', boxSizing: 'border-box',
-                  border: c === color ? `2px solid ${brand}` : '1px solid rgba(0,0,0,0.08)',
-                  outline: c === color ? '2px solid white' : 'none',
+                  border: c === color ? `2px solid ${brand}` : `1px solid ${sysVar('border-subtle')}`,
+                  outline: c === color ? `2px solid ${sysVar('background-base')}` : 'none',
                   outlineOffset: '-3px',
                 }}
               />
@@ -492,7 +495,7 @@ const ColorSwatch: React.FC<{ color: string }> = ({ color: initialColor }) => {
           </div>
 
           {/* Hex input */}
-          <div style={{ fontSize: '12px', color: '#374151', fontFamily: font, marginBottom: '6px', fontWeight: 500 }}>
+          <div style={{ fontSize: '12px', color: sysVar('content-primary'), fontFamily: font, marginBottom: '6px', fontWeight: 500 }}>
             Hex color
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -502,13 +505,13 @@ const ColorSwatch: React.FC<{ color: string }> = ({ color: initialColor }) => {
               placeholder="#000000"
               style={{
                 flex: 1, height: '32px', padding: '0 10px',
-                border: '1px solid #D1D5DB', borderRadius: '6px',
-                fontSize: '13px', fontFamily: font, color: '#111827', outline: 'none',
+                border: `1px solid ${sysVar('border-bold')}`, borderRadius: '6px',
+                fontSize: '13px', fontFamily: font, color: sysVar('content-primary'), outline: 'none',
               }}
             />
             <div style={{
               width: '28px', height: '28px', borderRadius: '50%',
-              backgroundColor: color, border: '1px solid #E5E7EB', flexShrink: 0,
+              backgroundColor: color, border: `1px solid ${sysVar('border-subtle')}`, flexShrink: 0,
             }} />
           </div>
         </div>
@@ -526,7 +529,7 @@ const Checkbox: React.FC<{ label: string; checked: boolean; onChange: () => void
       type="checkbox" checked={checked} onChange={onChange}
       style={{ width: '14px', height: '14px', accentColor: brand, cursor: 'pointer' }}
     />
-    <span style={{ fontSize: '13px', color: '#374151', fontFamily: font }}>{label}</span>
+    <span style={{ fontSize: '13px', color: sysVar('content-primary'), fontFamily: font }}>{label}</span>
   </label>
 );
 
@@ -535,21 +538,21 @@ const Checkbox: React.FC<{ label: string; checked: boolean; onChange: () => void
 const TextInputRow: React.FC<{ label: string; placeholder?: string }> = ({ label, placeholder }) => (
   <div style={{
     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px',
-    padding: '14px 20px', backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
+    padding: '14px 20px', backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px',
   }}>
-    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+    <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>
       {label}
     </span>
     <input
       type="text" placeholder={placeholder || 'Enter text'}
       style={{
         height: '34px', width: '220px', padding: '0 12px',
-        border: '1px solid #D1D5DB', borderRadius: '6px',
-        fontSize: '13px', fontFamily: font, color: '#111827',
+        border: `1px solid ${sysVar('border-bold')}`, borderRadius: '6px',
+        fontSize: '13px', fontFamily: font, color: sysVar('content-primary'),
         outline: 'none', flexShrink: 0,
       }}
-      onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; }}
-      onBlur={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; }}
+      onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)`; }}
+      onBlur={(e) => { e.currentTarget.style.borderColor = sysVar('border-bold'); e.currentTarget.style.boxShadow = 'none'; }}
     />
   </div>
 );
@@ -581,9 +584,9 @@ const AddNewFontModal: React.FC<{ onClose: () => void; onConfirm: () => void }> 
   const hasFile = fileName !== '';
 
   const inputStyle: React.CSSProperties = {
-    flex: 1, height: '40px', padding: '0 12px', border: '1px solid #D1D5DB',
-    borderRadius: '8px', fontSize: '13.5px', fontFamily: font, color: hasFile ? '#111827' : '#9CA3AF',
-    outline: 'none', backgroundColor: '#F9FAFB', cursor: 'default', boxSizing: 'border-box',
+    flex: 1, height: '40px', padding: '0 12px', border: `1px solid ${sysVar('border-bold')}`,
+    borderRadius: '8px', fontSize: '13.5px', fontFamily: font, color: hasFile ? sysVar('content-primary') : sysVar('content-tertiary'),
+    outline: 'none', backgroundColor: sysVar('background-sunken'), cursor: 'default', boxSizing: 'border-box',
   };
 
   return (
@@ -602,7 +605,7 @@ const AddNewFontModal: React.FC<{ onClose: () => void; onConfirm: () => void }> 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {/* Upload field */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 500, color: '#374151', fontFamily: font }}>
+          <span style={{ fontSize: '13px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font }}>
             Upload .otf/.ttf font file
           </span>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -622,9 +625,9 @@ const AddNewFontModal: React.FC<{ onClose: () => void; onConfirm: () => void }> 
             <button
               onClick={() => fileRef.current?.click()}
               style={{
-                height: '40px', padding: '0 20px', border: '1px solid #D1D5DB',
-                borderRadius: '8px', backgroundColor: '#F3F4F6', fontSize: '13.5px',
-                fontWeight: 500, color: '#374151', fontFamily: font, cursor: 'pointer', flexShrink: 0,
+                height: '40px', padding: '0 20px', border: `1px solid ${sysVar('border-bold')}`,
+                borderRadius: '8px', backgroundColor: sysVar('background-secondary-action'), fontSize: '13.5px',
+                fontWeight: 500, color: sysVar('content-primary'), fontFamily: font, cursor: 'pointer', flexShrink: 0,
               }}
             >
               Upload
@@ -634,7 +637,7 @@ const AddNewFontModal: React.FC<{ onClose: () => void; onConfirm: () => void }> 
 
         {/* Preview — only shown when a file is chosen */}
         {hasFile && (
-          <span style={{ fontFamily: '"Brush Script MT", "Segoe Script", cursive', fontSize: '22px', color: '#374151', display: 'block' }}>
+          <span style={{ fontFamily: '"Brush Script MT", "Segoe Script", cursive', fontSize: '22px', color: sysVar('content-primary'), display: 'block' }}>
             The quick brown fox jumps over the lazy dog
           </span>
         )}
@@ -654,12 +657,12 @@ const HOMEPAGE_ITEMS_ORDER = ['Announcement', 'Spotter', 'Watchlist', 'Library',
 
 const DragHandle: React.FC = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, cursor: 'grab' }}>
-    <circle cx="5" cy="4" r="1.2" fill="#C0C6CF" />
-    <circle cx="5" cy="8" r="1.2" fill="#C0C6CF" />
-    <circle cx="5" cy="12" r="1.2" fill="#C0C6CF" />
-    <circle cx="11" cy="4" r="1.2" fill="#C0C6CF" />
-    <circle cx="11" cy="8" r="1.2" fill="#C0C6CF" />
-    <circle cx="11" cy="12" r="1.2" fill="#C0C6CF" />
+    <circle cx="5" cy="4" r="1.2" fill={sysVar('border-bold')} />
+    <circle cx="5" cy="8" r="1.2" fill={sysVar('border-bold')} />
+    <circle cx="5" cy="12" r="1.2" fill={sysVar('border-bold')} />
+    <circle cx="11" cy="4" r="1.2" fill={sysVar('border-bold')} />
+    <circle cx="11" cy="8" r="1.2" fill={sysVar('border-bold')} />
+    <circle cx="11" cy="12" r="1.2" fill={sysVar('border-bold')} />
   </svg>
 );
 
@@ -686,7 +689,7 @@ const CustomiseHomepageModal: React.FC<{
         />
       }
     >
-      <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
+      <div style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px', overflow: 'hidden' }}>
         {HOMEPAGE_ITEMS_ORDER.map((label, i) => {
           const key = keyMap[label];
           const enabled = toggles[key];
@@ -696,12 +699,12 @@ const CustomiseHomepageModal: React.FC<{
               style={{
                 display: 'flex', alignItems: 'center', gap: '12px',
                 padding: '14px 16px',
-                borderBottom: i < HOMEPAGE_ITEMS_ORDER.length - 1 ? '1px solid #F3F4F6' : 'none',
-                backgroundColor: '#FFFFFF',
+                borderBottom: i < HOMEPAGE_ITEMS_ORDER.length - 1 ? `1px solid ${sysVar('border-subtle')}` : 'none',
+                backgroundColor: sysVar('background-base'),
               }}
             >
               <DragHandle />
-              <span style={{ flex: 1, fontSize: '14px', color: enabled ? '#111827' : '#9CA3AF', fontFamily: font }}>
+              <span style={{ flex: 1, fontSize: '14px', color: enabled ? sysVar('content-primary') : sysVar('content-tertiary'), fontFamily: font }}>
                 {label}
               </span>
               <Toggle checked={enabled} onChange={() => onToggle(key)} />
@@ -740,15 +743,15 @@ const SimpleRow: React.FC<{
   <div style={{
     display: 'flex', alignItems: description ? 'flex-start' : 'center',
     justifyContent: 'space-between', gap: '24px',
-    padding: '14px 20px', backgroundColor: '#FFFFFF',
-    border: '1px solid #E9EAEC', borderRadius: '8px',
+    padding: '14px 20px', backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px',
   }}>
     <div style={{ flex: 1 }}>
-      <span style={{ fontSize: '14px', color: dimmed ? '#9CA3AF' : '#111827', fontFamily: font, lineHeight: 1.4 }}>
+      <span style={{ fontSize: '14px', color: dimmed ? sysVar('content-tertiary') : sysVar('content-primary'), fontFamily: font, lineHeight: 1.4 }}>
         {label}
       </span>
       {description && (
-        <div style={{ fontSize: '12.5px', color: '#9CA3AF', fontFamily: font, marginTop: '3px', lineHeight: 1.55 }}>
+        <div style={{ fontSize: '12.5px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '3px', lineHeight: 1.55 }}>
           {description}{learnMore && <> <button style={{ border: 'none', background: 'none', fontSize: '12.5px', color: brand, fontFamily: font, cursor: 'pointer', padding: 0 }}>Learn more</button></>}
         </div>
       )}
@@ -765,10 +768,10 @@ const SimpleRow: React.FC<{
 const ValueRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <div style={{
     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px',
-    padding: '14px 20px', backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px',
+    padding: '14px 20px', backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px',
   }}>
-    <span style={{ fontSize: '14px', color: '#111827', fontFamily: font }}>{label}</span>
-    <span style={{ fontSize: '13px', color: '#6B7280', fontFamily: font, maxWidth: '340px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>
+    <span style={{ fontSize: '14px', color: sysVar('content-primary'), fontFamily: font }}>{label}</span>
+    <span style={{ fontSize: '13px', color: sysVar('content-secondary'), fontFamily: font, maxWidth: '340px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>
       {value}
     </span>
   </div>
@@ -776,12 +779,13 @@ const ValueRow: React.FC<{ label: string; value: string }> = ({ label, value }) 
 
 // ─── Chart Avatar ─────────────────────────────────────────────────────────────
 
+// Data: avatar uses a fixed gradient, like a user-picked avatar colour.
 const ChartAvatar: React.FC = () => (
   <div style={{
     width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
     background: 'linear-gradient(135deg, #6366f1, #a855f7)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 10, fontWeight: 600, color: '#fff', fontFamily: font,
+    fontSize: 10, fontWeight: 'var(--font-weight-emphasis)', color: '#fff', fontFamily: font,
   }}>
     AK
   </div>
@@ -791,13 +795,13 @@ const ChartAvatar: React.FC = () => (
 // ─── Email Read-only Rows ─────────────────────────────────────────────────────
 
 const EmailShownRow: React.FC<{ label: string; children?: React.ReactNode }> = ({ label, children }) => (
-  <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px', overflow: 'hidden' }}>
+  <div style={{ backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px', overflow: 'hidden' }}>
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px' }}>
-      <span style={{ fontSize: '14px', fontWeight: 500, color: '#111827', fontFamily: font }}>{label}</span>
-      <span style={{ fontSize: '13px', color: '#9CA3AF', fontFamily: font }}>Shown</span>
+      <span style={{ fontSize: '14px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font }}>{label}</span>
+      <span style={{ fontSize: '13px', color: sysVar('content-tertiary'), fontFamily: font }}>Shown</span>
     </div>
     {children && (
-      <div style={{ borderTop: '1px solid #F3F4F6', padding: '14px 20px 16px' }}>
+      <div style={{ borderTop: `1px solid ${sysVar('border-subtle')}`, padding: '14px 20px 16px' }}>
         {children}
       </div>
     )}
@@ -805,9 +809,9 @@ const EmailShownRow: React.FC<{ label: string; children?: React.ReactNode }> = (
 );
 
 const EmailDotRow: React.FC<{ label: string }> = ({ label }) => (
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px' }}>
-    <span style={{ fontSize: '14px', fontWeight: 500, color: '#111827', fontFamily: font }}>{label}</span>
-    <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: brand, flexShrink: 0 }} />
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px' }}>
+    <span style={{ fontSize: '14px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font }}>{label}</span>
+    <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: brandFill, flexShrink: 0 }} />
   </div>
 );
 
@@ -816,11 +820,11 @@ const EmailDotRow: React.FC<{ label: string }> = ({ label }) => (
 
 const HelpMenuIcon: React.FC<{ type: 'document' | 'video' | 'rocket' | 'people' | 'info' }> = ({ type }) => {
   const paths: Record<string, React.ReactNode> = {
-    document: <><rect x="4" y="1.5" width="12" height="17" rx="1.5" stroke="#6B7280" strokeWidth="1.4" /><path d="M7 7h6M7 10.5h6M7 14h4" stroke="#6B7280" strokeWidth="1.3" strokeLinecap="round" /></>,
-    video:    <><rect x="1.5" y="4" width="17" height="12" rx="1.5" stroke="#6B7280" strokeWidth="1.4" /><path d="M8.5 8.5l5 2.5-5 2.5V8.5z" fill="#6B7280" /></>,
-    rocket:   <><path d="M10 2c0 0-5 4.5-5 9a5 5 0 0 0 10 0c0-4.5-5-9-5-9z" stroke="#6B7280" strokeWidth="1.4" strokeLinejoin="round" /><path d="M7 14c-1.5 1-2.5 2.5-2.5 4h11c0-1.5-1-3-2.5-4" stroke="#6B7280" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /><circle cx="10" cy="11" r="1.5" fill="#6B7280" /></>,
-    people:   <><circle cx="7.5" cy="6.5" r="3" stroke="#6B7280" strokeWidth="1.4" /><path d="M1.5 19v-1.5A5.5 5.5 0 0 1 13 17.5V19" stroke="#6B7280" strokeWidth="1.4" strokeLinecap="round" /><circle cx="15" cy="7" r="2.5" stroke="#6B7280" strokeWidth="1.2" /><path d="M18.5 19v-1a4 4 0 0 0-3-3.87" stroke="#6B7280" strokeWidth="1.2" strokeLinecap="round" /></>,
-    info:     <><circle cx="10" cy="10" r="8.5" stroke="#6B7280" strokeWidth="1.4" /><path d="M10 9.5V14" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" /><circle cx="10" cy="7" r="0.8" fill="#6B7280" /></>,
+    document: <><rect x="4" y="1.5" width="12" height="17" rx="1.5" stroke={sysVar('content-secondary')} strokeWidth="1.4" /><path d="M7 7h6M7 10.5h6M7 14h4" stroke={sysVar('content-secondary')} strokeWidth="1.3" strokeLinecap="round" /></>,
+    video:    <><rect x="1.5" y="4" width="17" height="12" rx="1.5" stroke={sysVar('content-secondary')} strokeWidth="1.4" /><path d="M8.5 8.5l5 2.5-5 2.5V8.5z" fill={sysVar('content-secondary')} /></>,
+    rocket:   <><path d="M10 2c0 0-5 4.5-5 9a5 5 0 0 0 10 0c0-4.5-5-9-5-9z" stroke={sysVar('content-secondary')} strokeWidth="1.4" strokeLinejoin="round" /><path d="M7 14c-1.5 1-2.5 2.5-2.5 4h11c0-1.5-1-3-2.5-4" stroke={sysVar('content-secondary')} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /><circle cx="10" cy="11" r="1.5" fill={sysVar('content-secondary')} /></>,
+    people:   <><circle cx="7.5" cy="6.5" r="3" stroke={sysVar('content-secondary')} strokeWidth="1.4" /><path d="M1.5 19v-1.5A5.5 5.5 0 0 1 13 17.5V19" stroke={sysVar('content-secondary')} strokeWidth="1.4" strokeLinecap="round" /><circle cx="15" cy="7" r="2.5" stroke={sysVar('content-secondary')} strokeWidth="1.2" /><path d="M18.5 19v-1a4 4 0 0 0-3-3.87" stroke={sysVar('content-secondary')} strokeWidth="1.2" strokeLinecap="round" /></>,
+    info:     <><circle cx="10" cy="10" r="8.5" stroke={sysVar('content-secondary')} strokeWidth="1.4" /><path d="M10 9.5V14" stroke={sysVar('content-secondary')} strokeWidth="1.5" strokeLinecap="round" /><circle cx="10" cy="7" r="0.8" fill={sysVar('content-secondary')} /></>,
   };
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none">{paths[type]}</svg>;
 };
@@ -841,14 +845,14 @@ const HelpMenuItemModal: React.FC<{
   const fileRef = useRef<HTMLInputElement>(null);
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', height: '40px', padding: '0 14px', border: '1px solid #D1D5DB',
-    borderRadius: '8px', fontSize: '13.5px', color: '#111827', fontFamily: font,
-    outline: 'none', boxSizing: 'border-box', backgroundColor: '#FFFFFF',
+    width: '100%', height: '40px', padding: '0 14px', border: `1px solid ${sysVar('border-bold')}`,
+    borderRadius: '8px', fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font,
+    outline: 'none', boxSizing: 'border-box', backgroundColor: sysVar('background-base'),
   };
 
   const fieldRow = (labelText: string, content: React.ReactNode) => (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '32px', marginBottom: '20px' }}>
-      <span style={{ width: '160px', flexShrink: 0, fontSize: '14px', fontWeight: 500, color: '#111827', fontFamily: font, paddingTop: '9px' }}>
+      <span style={{ width: '160px', flexShrink: 0, fontSize: '14px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font, paddingTop: '9px' }}>
         {labelText}
       </span>
       <div style={{ flex: 1 }}>{content}</div>
@@ -875,8 +879,8 @@ const HelpMenuItemModal: React.FC<{
             type="text" value={label} onChange={(e) => setLabel(e.target.value)}
             placeholder="Enter list item"
             style={inputStyle}
-            onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)`; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = sysVar('border-bold'); e.currentTarget.style.boxShadow = 'none'; }}
           />
         ))}
 
@@ -886,8 +890,8 @@ const HelpMenuItemModal: React.FC<{
             type="text" value={url} onChange={(e) => setUrl(e.target.value)}
             placeholder="Item URL here"
             style={inputStyle}
-            onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)`; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = sysVar('border-bold'); e.currentTarget.style.boxShadow = 'none'; }}
           />
         ))}
 
@@ -897,10 +901,10 @@ const HelpMenuItemModal: React.FC<{
             <div style={{ display: 'flex', gap: '10px' }}>
               <input
                 type="text" value={iconFile} readOnly placeholder="upload icon image"
-                style={{ ...inputStyle, backgroundColor: '#FFFFFF', cursor: 'default', color: iconFile ? '#111827' : '#9CA3AF' }}
+                style={{ ...inputStyle, backgroundColor: sysVar('background-base'), cursor: 'default', color: iconFile ? sysVar('content-primary') : sysVar('content-tertiary') }}
               />
               <input ref={fileRef} type="file" accept=".png,.svg" style={{ display: 'none' }} onChange={(e) => { if (e.target.files?.[0]) setIconFile(e.target.files[0].name); }} />
-              <button onClick={() => fileRef.current?.click()} style={{ height: '40px', padding: '0 20px', border: '1px solid #D1D5DB', borderRadius: '8px', backgroundColor: '#F3F4F6', fontSize: '13.5px', fontWeight: 500, color: '#374151', fontFamily: font, cursor: 'pointer', flexShrink: 0 }}>
+              <button onClick={() => fileRef.current?.click()} style={{ height: '40px', padding: '0 20px', border: `1px solid ${sysVar('border-bold')}`, borderRadius: '8px', backgroundColor: sysVar('background-secondary-action'), fontSize: '13.5px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font, cursor: 'pointer', flexShrink: 0 }}>
                 Upload
               </button>
             </div>
@@ -911,11 +915,11 @@ const HelpMenuItemModal: React.FC<{
                   <HelpMenuIcon type={item.icon} />
                 </div>
               ) : (
-                <div style={{ width: '48px', height: '48px', border: '1.5px dashed #D1D5DB', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9FAFB' }}>
+                <div style={{ width: '48px', height: '48px', border: `1.5px dashed ${sysVar('border-bold')}`, borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: sysVar('background-sunken') }}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <rect x="3" y="3" width="18" height="18" rx="2" stroke="#D1D5DB" strokeWidth="1.5"/>
-                    <path d="M3 16l5-5 4 4 3-3 6 6" stroke="#D1D5DB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <circle cx="8.5" cy="8.5" r="1.5" fill="#D1D5DB"/>
+                    <rect x="3" y="3" width="18" height="18" rx="2" stroke={sysVar('border-bold')} strokeWidth="1.5"/>
+                    <path d="M3 16l5-5 4 4 3-3 6 6" stroke={sysVar('border-bold')} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="8.5" cy="8.5" r="1.5" fill={sysVar('border-bold')}/>
                   </svg>
                 </div>
               )}
@@ -940,8 +944,10 @@ const HELP_ITEMS: { label: string; icon: 'document' | 'video' | 'rocket' | 'peop
 
 // ─── Color data ───────────────────────────────────────────────────────────────
 
+// Data: chart colours a customer picks. Literal colours by design.
 const PRIMARY_COLORS = ['#2770EF', '#00BCD4', '#F59E0B', '#22C55E', '#A855F7', '#F97316', '#6B7280', '#EF4444'];
 
+// Data: palettes a customer picks from. Literal colours by design.
 const SECONDARY_COLORS = [
   ['#DBEAFE', '#CFFAFE', '#FEF9C3', '#DCFCE7', '#F3E8FF', '#FFE4E6', '#F3F4F6', '#FCE7F3'],
   ['#93C5FD', '#67E8F9', '#FDE68A', '#86EFAC', '#D8B4FE', '#FDBA74', '#D1D5DB', '#FCA5A5'],
@@ -1014,7 +1020,7 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
   ];
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: sysVar('background-base') }}>
 
       {/* ── Reset confirm dialog ── */}
       {resetSection && (
@@ -1029,11 +1035,11 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
       )}
 
       {/* Sticky page header — title + tabs */}
-      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', padding: '28px 40px 0', borderBottom: '1px solid #E5E7EB', backgroundColor: '#FFFFFF' }}>
-        <h1 style={{ margin: '0 0 16px 0', fontSize: '22px', fontWeight: 700, color: '#0F172A', fontFamily: font, letterSpacing: '-0.3px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', padding: '28px 40px 0', borderBottom: `1px solid ${sysVar('border-subtle')}`, backgroundColor: sysVar('background-base') }}>
+        <h1 style={{ margin: '0 0 16px 0', fontSize: '22px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, letterSpacing: '-0.3px', whiteSpace: 'nowrap', flexShrink: 0 }}>
           Customisations
         </h1>
-        <div style={{ width: '1px', height: '24px', backgroundColor: '#D1D5DB', margin: '0 24px 16px', flexShrink: 0 }} />
+        <div style={{ width: '1px', height: '24px', backgroundColor: sysVar('border-bold'), margin: '0 24px 16px', flexShrink: 0 }} />
         <div style={{ display: 'flex', alignItems: 'flex-end', flex: 1 }}>
           {pageTabs.map((tab) => (
             <button
@@ -1042,8 +1048,8 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
               style={{
                 padding: '0 14px 16px', border: 'none', background: 'none', cursor: 'pointer',
                 fontFamily: font, fontSize: '13.5px',
-                fontWeight: activeTab === tab.id ? 600 : 400,
-                color: activeTab === tab.id ? brand : '#6B7280',
+                fontWeight: activeTab === tab.id ? 'var(--font-weight-emphasis)' : 'var(--font-weight-regular)',
+                color: activeTab === tab.id ? brand : sysVar('content-secondary'),
                 borderBottom: activeTab === tab.id ? `2px solid ${brand}` : '2px solid transparent',
                 marginBottom: '-1px', transition: 'color 0.15s', whiteSpace: 'nowrap',
               }}
@@ -1084,10 +1090,10 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
 
         {/* ── Chart tab ── */}
         {activeTab === 'chart' && (
-          <div style={{ backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '12px', overflow: 'hidden' }}>
+          <div style={{ backgroundColor: sysVar('background-secondary-action'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '12px', overflow: 'hidden' }}>
 
             {/* Inner sub-tabs */}
-            <div style={{ display: 'flex', borderBottom: '1px solid #E5E7EB', padding: '0 24px' }}>
+            <div style={{ display: 'flex', borderBottom: `1px solid ${sysVar('border-subtle')}`, padding: '0 24px' }}>
               {([
                 { id: 'palettes',       label: 'Chart Colour Palettes' },
                 { id: 'custom-charts',  label: 'Custom Charts' },
@@ -1100,8 +1106,8 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
                     background: 'none', border: 'none', cursor: 'pointer',
                     padding: '16px 20px 14px', marginBottom: '-1px',
                     fontFamily: font, fontSize: '14px',
-                    fontWeight: chartInnerTab === tab.id ? 600 : 400,
-                    color: chartInnerTab === tab.id ? brand : '#6B7280',
+                    fontWeight: chartInnerTab === tab.id ? 'var(--font-weight-emphasis)' : 'var(--font-weight-regular)',
+                    color: chartInnerTab === tab.id ? brand : sysVar('content-secondary'),
                     borderBottom: chartInnerTab === tab.id ? `2px solid ${brand}` : '2px solid transparent',
                   }}
                 >
@@ -1115,7 +1121,7 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
               <div style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {/* Subtitle + Reset */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '13.5px', color: '#6B7280', fontFamily: font }}>
+                  <span style={{ fontSize: '13.5px', color: sysVar('content-secondary'), fontFamily: font }}>
                     For optimal display, choose your custom chart colour palettes.
                   </span>
                   <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: font, fontSize: '13.5px', fontWeight: 500, color: brand, padding: 0 }}>
@@ -1124,8 +1130,8 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
                 </div>
 
                 {/* Primary colours */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '24px', padding: '16px 20px', backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#111827', fontFamily: font, width: '160px', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '24px', padding: '16px 20px', backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, width: '160px', flexShrink: 0 }}>
                     Primary colours
                   </span>
                   <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
@@ -1134,9 +1140,9 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
                 </div>
 
                 {/* Secondary Colors */}
-                <div style={{ padding: '16px 20px', backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px' }}>
+                <div style={{ padding: '16px 20px', backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px' }}>
                   <div style={{ display: 'flex', gap: '24px' }}>
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#111827', fontFamily: font, width: '160px', flexShrink: 0, paddingTop: '6px' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, width: '160px', flexShrink: 0, paddingTop: '6px' }}>
                       Secondary Colors
                     </span>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
@@ -1159,20 +1165,20 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
               <div style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {/* Description + Add button on same row */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '13.5px', color: '#6B7280', fontFamily: font }}>
+                  <span style={{ fontSize: '13.5px', color: sysVar('content-secondary'), fontFamily: font }}>
                     Add and manage custom chart types available to your users.
                   </span>
-                  <button style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 600, color: brand, padding: 0, flexShrink: 0, marginLeft: '16px' }}>
+                  <button style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: brand, padding: 0, flexShrink: 0, marginLeft: '16px' }}>
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke={brand} strokeWidth="1.6" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke={brand} strokeWidth="1.6" strokeLinecap="round"/></svg>
                     Add chart
                   </button>
                 </div>
                 {/* Table */}
-                <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
+                <div style={{ backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px', overflow: 'hidden' }}>
                   {/* Header */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 2fr 70px 80px', padding: '12px 20px', borderBottom: '1px solid #E5E7EB' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 2fr 70px 80px', padding: '12px 20px', borderBottom: `1px solid ${sysVar('border-subtle')}` }}>
                     {['Chart Name', 'Created by', 'Last Modified', '', ''].map((h, idx) => (
-                      <span key={idx} style={{ fontSize: '12.5px', fontWeight: 500, color: '#9CA3AF', fontFamily: font }}>{h}</span>
+                      <span key={idx} style={{ fontSize: '12.5px', fontWeight: 500, color: sysVar('content-tertiary'), fontFamily: font }}>{h}</span>
                     ))}
                   </div>
                   {/* Rows */}
@@ -1180,15 +1186,15 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
                     { name: 'Muze studio', author: 'Anje Keizer', date: '2 days ago' },
                     { name: 'Gauge',       author: 'Anje Keizer', date: '2 days ago' },
                   ].map((row, i, arr) => (
-                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 2fr 70px 80px', alignItems: 'center', borderBottom: i < arr.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
-                      <span style={{ fontSize: '13.5px', color: '#111827', fontFamily: font, padding: '14px 20px' }}>{row.name}</span>
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 2fr 70px 80px', alignItems: 'center', borderBottom: i < arr.length - 1 ? `1px solid ${sysVar('border-subtle')}` : 'none' }}>
+                      <span style={{ fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font, padding: '14px 20px' }}>{row.name}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 20px 14px 0' }}>
                         <ChartAvatar />
-                        <span style={{ fontSize: '13.5px', color: '#374151', fontFamily: font }}>{row.author}</span>
+                        <span style={{ fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font }}>{row.author}</span>
                       </div>
-                      <span style={{ fontSize: '13.5px', color: '#6B7280', fontFamily: font, padding: '14px 20px 14px 0' }}>{row.date}</span>
-                      <button style={{ border: 'none', borderLeft: '1px solid #F3F4F6', background: 'none', fontSize: '13px', fontWeight: 500, color: brand, fontFamily: font, cursor: 'pointer', padding: '14px 0', textAlign: 'center' }}>Edit</button>
-                      <button style={{ border: 'none', borderLeft: '1px solid #F3F4F6', background: 'none', fontSize: '13px', fontWeight: 500, color: brand, fontFamily: font, cursor: 'pointer', padding: '14px 20px 14px 0', textAlign: 'center' }}>Delete</button>
+                      <span style={{ fontSize: '13.5px', color: sysVar('content-secondary'), fontFamily: font, padding: '14px 20px 14px 0' }}>{row.date}</span>
+                      <button style={{ border: 'none', borderLeft: `1px solid ${sysVar('border-subtle')}`, background: 'none', fontSize: '13px', fontWeight: 500, color: brand, fontFamily: font, cursor: 'pointer', padding: '14px 0', textAlign: 'center' }}>Edit</button>
+                      <button style={{ border: 'none', borderLeft: `1px solid ${sysVar('border-subtle')}`, background: 'none', fontSize: '13px', fontWeight: 500, color: brand, fontFamily: font, cursor: 'pointer', padding: '14px 20px 14px 0', textAlign: 'center' }}>Delete</button>
                     </div>
                   ))}
                 </div>
@@ -1200,33 +1206,33 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
               <div style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {/* Description + Add button on same row */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '13.5px', color: '#6B7280', fontFamily: font }}>
+                  <span style={{ fontSize: '13.5px', color: sysVar('content-secondary'), fontFamily: font }}>
                     For optimal display, choose your custom chart colour palettes.
                   </span>
-                  <button style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 600, color: brand, padding: 0, flexShrink: 0, marginLeft: '16px' }}>
+                  <button style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: brand, padding: 0, flexShrink: 0, marginLeft: '16px' }}>
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke={brand} strokeWidth="1.6" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke={brand} strokeWidth="1.6" strokeLinecap="round"/></svg>
                     Add maps
                   </button>
                 </div>
                 {/* Table */}
-                <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
+                <div style={{ backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px', overflow: 'hidden' }}>
                   {/* Header */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 2fr 70px 80px', padding: '12px 20px', borderBottom: '1px solid #E5E7EB' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 2fr 70px 80px', padding: '12px 20px', borderBottom: `1px solid ${sysVar('border-subtle')}` }}>
                     {['Map Name', 'Created by', 'Last Modified', '', ''].map((h, idx) => (
-                      <span key={idx} style={{ fontSize: '12.5px', fontWeight: 500, color: '#9CA3AF', fontFamily: font }}>{h}</span>
+                      <span key={idx} style={{ fontSize: '12.5px', fontWeight: 500, color: sysVar('content-tertiary'), fontFamily: font }}>{h}</span>
                     ))}
                   </div>
                   {/* Rows */}
                   {Array(8).fill({ name: 'Germany', author: 'Anje Keizer', date: '2 days ago' }).map((row, i) => (
-                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 2fr 70px 80px', alignItems: 'center', borderBottom: i < 7 ? '1px solid #F3F4F6' : 'none' }}>
-                      <span style={{ fontSize: '13.5px', color: '#111827', fontFamily: font, padding: '14px 20px' }}>{row.name}</span>
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 2fr 70px 80px', alignItems: 'center', borderBottom: i < 7 ? `1px solid ${sysVar('border-subtle')}` : 'none' }}>
+                      <span style={{ fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font, padding: '14px 20px' }}>{row.name}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 20px 14px 0' }}>
                         <ChartAvatar />
-                        <span style={{ fontSize: '13.5px', color: '#374151', fontFamily: font }}>{row.author}</span>
+                        <span style={{ fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font }}>{row.author}</span>
                       </div>
-                      <span style={{ fontSize: '13.5px', color: '#6B7280', fontFamily: font, padding: '14px 20px 14px 0' }}>{row.date}</span>
-                      <button style={{ border: 'none', borderLeft: '1px solid #F3F4F6', background: 'none', fontSize: '13px', fontWeight: 500, color: brand, fontFamily: font, cursor: 'pointer', padding: '14px 0', textAlign: 'center' }}>Edit</button>
-                      <button style={{ border: 'none', borderLeft: '1px solid #F3F4F6', background: 'none', fontSize: '13px', fontWeight: 500, color: brand, fontFamily: font, cursor: 'pointer', padding: '14px 20px 14px 0', textAlign: 'center' }}>Delete</button>
+                      <span style={{ fontSize: '13.5px', color: sysVar('content-secondary'), fontFamily: font, padding: '14px 20px 14px 0' }}>{row.date}</span>
+                      <button style={{ border: 'none', borderLeft: `1px solid ${sysVar('border-subtle')}`, background: 'none', fontSize: '13px', fontWeight: 500, color: brand, fontFamily: font, cursor: 'pointer', padding: '14px 0', textAlign: 'center' }}>Edit</button>
+                      <button style={{ border: 'none', borderLeft: `1px solid ${sysVar('border-subtle')}`, background: 'none', fontSize: '13px', fontWeight: 500, color: brand, fontFamily: font, cursor: 'pointer', padding: '14px 20px 14px 0', textAlign: 'center' }}>Delete</button>
                     </div>
                   ))}
                 </div>
@@ -1320,12 +1326,13 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
               rightAction={<span onClick={() => {}}><TextLink label="Edit" /></span>}
             >
               {/* Logo */}
-              <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px' }}>
+              <div style={{ backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 500, color: '#111827', fontFamily: font }}>Logo</span>
+                  <span style={{ fontSize: '14px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font }}>Logo</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                    <span style={{ fontSize: '13px', color: '#9CA3AF', fontFamily: font }}>Same as styling</span>
+                    <span style={{ fontSize: '13px', color: sysVar('content-tertiary'), fontFamily: font }}>Same as styling</span>
                     {/* Coca-Cola logo */}
+                    {/* Data: the customer's logo, shown in its own colour. */}
                     <div style={{ fontFamily: '"Georgia", "Times New Roman", serif', fontStyle: 'italic', fontWeight: 900, fontSize: '22px', color: '#E61D2B', letterSpacing: '-0.5px', lineHeight: 1 }}>
                       Coca-Cola
                     </div>
@@ -1334,54 +1341,58 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
               </div>
 
               {/* Button color + Button text color + View KPI preview */}
-              <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #F3F4F6' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 500, color: '#111827', fontFamily: font }}>Button color</span>
+              <div style={{ backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid ${sysVar('border-subtle')}` }}>
+                  <span style={{ fontSize: '14px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font }}>Button color</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '16px', height: '16px', backgroundColor: '#1F2937', borderRadius: '3px', border: '1px solid #D1D5DB', flexShrink: 0 }} />
-                    <span style={{ fontSize: '13px', color: '#374151', fontFamily: font }}>#E61D2B (Default)</span>
+                    {/* Data: swatch shows the customer's chosen colour. */}
+                    <div style={{ width: '16px', height: '16px', backgroundColor: '#1F2937', borderRadius: '3px', border: `1px solid ${sysVar('border-bold')}`, flexShrink: 0 }} />
+                    <span style={{ fontSize: '13px', color: sysVar('content-primary'), fontFamily: font }}>#E61D2B (Default)</span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #F3F4F6' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 500, color: '#111827', fontFamily: font }}>Button text color</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid ${sysVar('border-subtle')}` }}>
+                  <span style={{ fontSize: '14px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font }}>Button text color</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '16px', height: '16px', backgroundColor: '#FFFFFF', borderRadius: '3px', border: '1.5px solid #D1D5DB', flexShrink: 0 }} />
-                    <span style={{ fontSize: '13px', color: '#374151', fontFamily: font }}>#E61D2B (Default)</span>
+                    {/* Data: swatch shows the customer's chosen colour. */}
+                    <div style={{ width: '16px', height: '16px', backgroundColor: '#FFFFFF', borderRadius: '3px', border: `1.5px solid ${sysVar('border-bold')}`, flexShrink: 0 }} />
+                    <span style={{ fontSize: '13px', color: sysVar('content-primary'), fontFamily: font }}>#E61D2B (Default)</span>
                   </div>
                 </div>
                 <div style={{ padding: '14px 20px' }}>
-                  <button style={{ height: '36px', padding: '0 28px', borderRadius: '20px', border: 'none', backgroundColor: '#1F2937', color: '#FFFFFF', fontSize: '13.5px', fontWeight: 600, fontFamily: font, cursor: 'default', letterSpacing: '0.01em' }}>
+                  {/* Data: preview button uses the customer's chosen button colours. */}
+                  <button style={{ height: '36px', padding: '0 28px', borderRadius: '20px', border: 'none', backgroundColor: '#1F2937', color: '#FFFFFF', fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', fontFamily: font, cursor: 'default', letterSpacing: '0.01em' }}>
                     View KPI
                   </button>
                 </div>
               </div>
 
               {/* Primary content background color + KPI tile */}
-              <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E9EAEC', borderRadius: '8px', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #F3F4F6' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 500, color: '#111827', fontFamily: font }}>Primary content background color</span>
+              <div style={{ backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: `1px solid ${sysVar('border-subtle')}` }}>
+                  <span style={{ fontSize: '14px', fontWeight: 500, color: sysVar('content-primary'), fontFamily: font }}>Primary content background color</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '16px', height: '16px', backgroundColor: '#FFFFFF', borderRadius: '3px', border: '1.5px solid #D1D5DB', flexShrink: 0 }} />
-                    <span style={{ fontSize: '13px', color: '#374151', fontFamily: font }}>#E61D2B (Default)</span>
+                    {/* Data: swatch shows the customer's chosen colour. */}
+                    <div style={{ width: '16px', height: '16px', backgroundColor: '#FFFFFF', borderRadius: '3px', border: `1.5px solid ${sysVar('border-bold')}`, flexShrink: 0 }} />
+                    <span style={{ fontSize: '13px', color: sysVar('content-primary'), fontFamily: font }}>#E61D2B (Default)</span>
                   </div>
                 </div>
                 <div style={{ padding: '14px 20px' }}>
-                  <div style={{ backgroundColor: '#DCFCE7', border: '1px solid #BBF7D0', borderRadius: '8px', padding: '16px 24px', display: 'flex', alignItems: 'stretch', gap: '24px', maxWidth: '420px' }}>
+                  <div style={{ backgroundColor: sysVar('background-success'), border: `1px solid ${sysVar('border-accent-green')}`, borderRadius: '8px', padding: '16px 24px', display: 'flex', alignItems: 'stretch', gap: '24px', maxWidth: '420px' }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '10px', fontWeight: 600, color: '#166534', fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>CURRENT (1/12/23)</div>
-                      <div style={{ fontSize: '44px', fontWeight: 800, color: '#14532D', fontFamily: font, lineHeight: 1 }}>88.2M</div>
+                      <div style={{ fontSize: '10px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-success'), fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>CURRENT (1/12/23)</div>
+                      <div style={{ fontSize: '44px', fontWeight: 800, color: sysVar('content-success'), fontFamily: font, lineHeight: 1 }}>88.2M</div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '10px' }}>
                       <div>
-                        <div style={{ fontSize: '10px', fontWeight: 600, color: '#166534', fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em' }}>% CHANGE</div>
-                        <div style={{ fontSize: '15px', fontWeight: 700, color: '#166534', fontFamily: font, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-success'), fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em' }}>% CHANGE</div>
+                        <div style={{ fontSize: '15px', fontWeight: 700, color: sysVar('content-success'), fontFamily: font, display: 'flex', alignItems: 'center', gap: '3px' }}>
                           20.74%
-                          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 10V3M3.5 6L6.5 3l3 3" stroke="#166534" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 10V3M3.5 6L6.5 3l3 3" stroke={sysVar('content-success')} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: '10px', fontWeight: 600, color: '#166534', fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em' }}>LAST (12/29/22)</div>
-                        <div style={{ fontSize: '15px', fontWeight: 700, color: '#166534', fontFamily: font }}>79.9M</div>
+                        <div style={{ fontSize: '10px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-success'), fontFamily: font, textTransform: 'uppercase', letterSpacing: '0.06em' }}>LAST (12/29/22)</div>
+                        <div style={{ fontSize: '15px', fontWeight: 700, color: sysVar('content-success'), fontFamily: font }}>79.9M</div>
                       </div>
                     </div>
                   </div>
@@ -1390,43 +1401,45 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
 
               {/* Product name */}
               <EmailShownRow label="Product name">
-                <div style={{ display: 'inline-flex', alignItems: 'center', height: '28px', padding: '0 14px', backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '20px' }}>
-                  <span style={{ fontSize: '12.5px', color: '#6B7280', fontFamily: font }}>&lt;Product name&gt;</span>
+                <div style={{ display: 'inline-flex', alignItems: 'center', height: '28px', padding: '0 14px', backgroundColor: sysVar('background-secondary-action'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '20px' }}>
+                  <span style={{ fontSize: '12.5px', color: sysVar('content-secondary'), fontFamily: font }}>&lt;Product name&gt;</span>
                 </div>
               </EmailShownRow>
 
               {/* Phone number */}
               <EmailShownRow label="Phone number">
-                <div style={{ display: 'inline-flex', alignItems: 'center', height: '28px', padding: '0 14px', backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '20px' }}>
-                  <span style={{ fontSize: '12.5px', color: '#6B7280', fontFamily: font }}>&lt;8795867721&gt;</span>
+                <div style={{ display: 'inline-flex', alignItems: 'center', height: '28px', padding: '0 14px', backgroundColor: sysVar('background-secondary-action'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '20px' }}>
+                  <span style={{ fontSize: '12.5px', color: sysVar('content-secondary'), fontFamily: font }}>&lt;8795867721&gt;</span>
                 </div>
               </EmailShownRow>
 
               {/* Address */}
               <EmailShownRow label="Address">
-                <div style={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151', fontFamily: font }}>Thoughtspot</span>
-                  <span style={{ fontSize: '12.5px', color: '#6B7280', fontFamily: font }}>(800) 508-7008</span>
-                  <span style={{ fontSize: '12.5px', color: '#6B7280', fontFamily: font }}>444 Castro St, Suite 1000 Mountain View, CA 94041</span>
+                <div style={{ backgroundColor: sysVar('background-sunken'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>Thoughtspot</span>
+                  <span style={{ fontSize: '12.5px', color: sysVar('content-secondary'), fontFamily: font }}>(800) 508-7008</span>
+                  <span style={{ fontSize: '12.5px', color: sysVar('content-secondary'), fontFamily: font }}>444 Castro St, Suite 1000 Mountain View, CA 94041</span>
                 </div>
               </EmailShownRow>
 
               {/* Mobile app nudge */}
               <EmailShownRow label="Mobile app nudge">
-                <div style={{ border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '20px', backgroundColor: '#F9FAFB' }}>
+                <div style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '20px', backgroundColor: sysVar('background-sunken') }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', fontFamily: font, marginBottom: '6px' }}>Want data at your fingertips?</div>
-                    <div style={{ fontSize: '12.5px', color: '#6B7280', fontFamily: font, lineHeight: 1.5, marginBottom: '10px' }}>Scan the QR code to download the latest ThoughtSpot mobile app on your phone.</div>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, marginBottom: '6px' }}>Want data at your fingertips?</div>
+                    <div style={{ fontSize: '12.5px', color: sysVar('content-secondary'), fontFamily: font, lineHeight: 1.5, marginBottom: '10px' }}>Scan the QR code to download the latest ThoughtSpot mobile app on your phone.</div>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <div style={{ backgroundColor: '#111827', color: '#fff', borderRadius: '6px', padding: '6px 12px', fontSize: '10px', fontWeight: 600, display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3, fontFamily: font }}>
+                      {/* Data: App Store and Google Play badges keep their own brand colours. */}
+                      <div style={{ backgroundColor: '#111827', color: '#fff', borderRadius: '6px', padding: '6px 12px', fontSize: '10px', fontWeight: 'var(--font-weight-emphasis)', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3, fontFamily: font }}>
                         <span style={{ fontSize: '8px' }}>Download on the</span><span>App Store</span>
                       </div>
-                      <div style={{ backgroundColor: '#111827', color: '#fff', borderRadius: '6px', padding: '6px 12px', fontSize: '10px', fontWeight: 600, display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3, fontFamily: font }}>
+                      <div style={{ backgroundColor: '#111827', color: '#fff', borderRadius: '6px', padding: '6px 12px', fontSize: '10px', fontWeight: 'var(--font-weight-emphasis)', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3, fontFamily: font }}>
                         <span style={{ fontSize: '8px' }}>GET IT ON</span><span>Google Play</span>
                       </div>
                     </div>
                   </div>
                   {/* Phone illustration */}
+                  {/* Data: decorative phone illustration, fixed colours in both themes. */}
                   <div style={{ width: '68px', height: '90px', background: 'linear-gradient(160deg, #6366F1 0%, #8B5CF6 100%)', borderRadius: '14px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <svg width="28" height="44" viewBox="0 0 28 44" fill="none"><rect x="2" y="2" width="24" height="40" rx="5" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5"/><line x1="9" y1="6" x2="19" y2="6" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round"/><circle cx="14" cy="38" r="2" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2"/><rect x="6" y="12" width="16" height="18" rx="2" fill="rgba(255,255,255,0.15)"/></svg>
                   </div>
@@ -1435,8 +1448,8 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
 
               {/* Error message */}
               <EmailShownRow label="Error message">
-                <div style={{ display: 'inline-flex', alignItems: 'center', height: '28px', padding: '0 14px', backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '20px' }}>
-                  <span style={{ fontSize: '12.5px', color: '#6B7280', fontFamily: font }}>&lt;Error message&gt;</span>
+                <div style={{ display: 'inline-flex', alignItems: 'center', height: '28px', padding: '0 14px', backgroundColor: sysVar('background-secondary-action'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '20px' }}>
+                  <span style={{ fontSize: '12.5px', color: sysVar('content-secondary'), fontFamily: font }}>&lt;Error message&gt;</span>
                 </div>
               </EmailShownRow>
 
@@ -1456,29 +1469,29 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
 
         {/* ── Help tab ── */}
         {activeTab === 'help' && (
-          <div style={{ backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB', borderRadius: '12px', overflow: 'hidden' }}>
+          <div style={{ backgroundColor: sysVar('background-secondary-action'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '12px', overflow: 'hidden' }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: '1px solid #E5E7EB' }}>
-              <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>List of help menu items</span>
-              <button onClick={() => { setHelpMenuMode('add'); setHelpMenuEditItem(null); setHelpMenuItemModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 600, color: brand, padding: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: `1px solid ${sysVar('border-subtle')}` }}>
+              <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>List of help menu items</span>
+              <button onClick={() => { setHelpMenuMode('add'); setHelpMenuEditItem(null); setHelpMenuItemModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: font, fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: brand, padding: 0 }}>
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke={brand} strokeWidth="1.6" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke={brand} strokeWidth="1.6" strokeLinecap="round"/></svg>
                 Add menu item
               </button>
             </div>
             {/* Table */}
             <div style={{ padding: '16px' }}>
-              <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden' }}>
+              <div style={{ backgroundColor: sysVar('background-base'), border: `1px solid ${sysVar('border-subtle')}`, borderRadius: '8px', overflow: 'hidden' }}>
                 {/* Header row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '80px 2fr 1.5fr 3fr 140px', padding: '12px 20px', borderBottom: '1px solid #E5E7EB' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '80px 2fr 1.5fr 3fr 140px', padding: '12px 20px', borderBottom: `1px solid ${sysVar('border-subtle')}` }}>
                   {['Status', 'Menu item label', 'Custom icon', 'Item URL', 'Action'].map((h) => (
-                    <span key={h} style={{ fontSize: '12.5px', fontWeight: 400, color: '#9CA3AF', fontFamily: font }}>{h}</span>
+                    <span key={h} style={{ fontSize: '12.5px', fontWeight: 400, color: sysVar('content-tertiary'), fontFamily: font }}>{h}</span>
                   ))}
                 </div>
                 {/* Rows */}
                 {HELP_ITEMS.map((item, i) => (
-                  <div key={item.label} style={{ display: 'grid', gridTemplateColumns: '80px 2fr 1.5fr 3fr 140px', padding: '20px 20px', alignItems: 'center', borderBottom: i < HELP_ITEMS.length - 1 ? '1px solid #E5E7EB' : 'none' }}>
+                  <div key={item.label} style={{ display: 'grid', gridTemplateColumns: '80px 2fr 1.5fr 3fr 140px', padding: '20px 20px', alignItems: 'center', borderBottom: i < HELP_ITEMS.length - 1 ? `1px solid ${sysVar('border-subtle')}` : 'none' }}>
                     <Toggle checked={helpToggles[item.label]} onChange={() => { setHelpToggles({ ...helpToggles, [item.label]: !helpToggles[item.label] }); showSettingsToast(); }} />
-                    <span style={{ fontSize: '13.5px', color: '#111827', fontFamily: font }}>{item.label}</span>
+                    <span style={{ fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font }}>{item.label}</span>
                     <HelpMenuIcon type={item.icon} />
                     <span style={{ fontSize: '13px', color: brand, fontFamily: font, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.url}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -1520,7 +1533,7 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
           }
         >
           <div style={{ padding: '16px 0' }}>
-            <p style={{ margin: 0, fontSize: 14, color: '#6B7280', fontFamily: font }}>Configure your custom alert banner message and appearance.</p>
+            <p style={{ margin: 0, fontSize: 14, color: sysVar('content-secondary'), fontFamily: font }}>Configure your custom alert banner message and appearance.</p>
           </div>
         </Modal>
       )}
@@ -1533,7 +1546,7 @@ export const CustomisationPageContent: React.FC<{ scope?: 'all-orgs' | 'primary-
       )}
 
       {settingsToastVisible && (
-        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: '#111827', color: '#fff', padding: '10px 20px', borderRadius: 8, fontSize: 14, fontFamily: font, zIndex: 9999, boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: sysVar('background-inverse'), color: sysVar('content-inverse'), padding: '10px 20px', borderRadius: 8, fontSize: 14, fontFamily: font, zIndex: 9999, boxShadow: shadowVar('menu') }}>
           Settings saved
         </div>
       )}
@@ -1581,7 +1594,7 @@ export const Customisation: React.FC = () => {
   };
 
   return (
-    <AppShell headerProps={headerProps} sidebarProps={sidebarProps} contentBackground="#FFFFFF" style={{ height: '100vh' }}>
+    <AppShell headerProps={headerProps} sidebarProps={sidebarProps} contentBackground={sysVar('background-base')} style={{ height: '100vh' }}>
       <CustomisationPageContent />
     </AppShell>
   );

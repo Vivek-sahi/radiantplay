@@ -2,6 +2,7 @@ import React, { forwardRef } from 'react';
 import styles from './NoteTile.module.css';
 import type { NoteContent, NoteBlock, InlineNode } from './noteContent';
 import type { TileMode } from './AnswerTile';
+import { useChartTheme } from './chartTheme';
 
 // ─── Props ─────────────────────────────────────────────────────────────────
 
@@ -26,6 +27,15 @@ export interface NoteTileProps {
 
 // ─── Inline renderer ───────────────────────────────────────────────────────
 
+/**
+ * Text with a user-picked colour. The colour is content, so it stays literal;
+ * in dark mode it goes through the chart palette remap so it reads on a dark tile.
+ */
+const ColoredText: React.FC<{ color: string; className?: string; children: React.ReactNode }> = ({ color, className, children }) => {
+  const { seriesColor } = useChartTheme();
+  return <span className={className} style={{ color: seriesColor(color) }}>{children}</span>;
+};
+
 function renderInline(nodes: InlineNode[]): React.ReactNode {
   return nodes.map((node, i) => {
     if (node.type === 'link') {
@@ -41,11 +51,10 @@ function renderInline(nodes: InlineNode[]): React.ReactNode {
       node.italic ? styles.inlineItalic : '',
     ].filter(Boolean).join(' ') || undefined;
 
-    return (
-      <span key={i} className={cls} style={node.color ? { color: node.color } : undefined}>
-        {node.text}
-      </span>
-    );
+    if (node.color) {
+      return <ColoredText key={i} color={node.color} className={cls}>{node.text}</ColoredText>;
+    }
+    return <span key={i} className={cls}>{node.text}</span>;
   });
 }
 

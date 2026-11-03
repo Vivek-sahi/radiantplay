@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, ModalFooter } from '@components/Modal';
 import { Button } from '@components/Button';
+import { sysVar } from '@tokens/colors';
 
 // ─── ConfirmDialog ─────────────────────────────────────────────────────────────
 // Simple yes/no confirmation modal built on top of RdModal.
@@ -34,8 +35,8 @@ export const ConfirmDialog: React.FC<{
     }
   >
     <div style={{
-      fontSize: '14px', color: '#374151', lineHeight: 1.65,
-      fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontSize: '14px', color: sysVar('content-primary'), lineHeight: 1.65,
+      fontFamily: 'var(--font-family-primary)',
     }}>
       {message}
     </div>

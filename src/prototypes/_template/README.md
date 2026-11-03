@@ -4,13 +4,13 @@ This is your starting point for creating a new prototype using the Radiant desig
 
 ## Quick Start
 
-1. **Copy this folder** to create your prototype:
+1. **Create your prototype** by typing this in Claude's Code tab:
    ```
-   src/prototypes/YourPrototypeName/
+   /rp-new-prototype YourPrototypeName
    ```
 
-2. **Describe your UI** to Cursor AI:
-   - Paste a screenshot from Figma
+2. **Describe your UI** to Claude in the same chat:
+   - Drag in a screenshot from Figma
    - Describe the layout and interactions
    - Reference ThoughtSpot UI patterns
 
@@ -92,17 +92,20 @@ export const MyPrototype: React.FC = () => {
 
 ## Design Tokens
 
-All components use the Radiant design token system. For custom styling:
+All components use the Radiant design token system. For custom styling, read colours through `sysVar()` (system tokens) or `compVar()` (component tokens). Each returns a CSS variable, so the colour follows light and dark mode:
 
 ```tsx
-import { systemColors } from '../../tokens/colors';
-import { spacing } from '../../tokens/spacing';
+import { sysVar } from '@tokens/colors';
+import { spacing } from '@tokens/spacing';
 
 const style = {
-  backgroundColor: systemColors.light['content-brand'],
+  backgroundColor: sysVar('background-brand'),
+  color: sysVar('content-primary-inverse'),
   padding: `${spacing.D}px`,
 };
 ```
+
+Do not read the `systemColors.light` object in a style, and do not hard-code hex or rgb colours. Both stay light when the theme switches to dark. For a translucent colour, mix the variable: `color-mix(in srgb, ${sysVar('content-brand')} 10%, transparent)`.
 
 ## Need Help?
 

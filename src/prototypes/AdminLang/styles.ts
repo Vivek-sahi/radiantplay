@@ -1,8 +1,8 @@
 import { CSSProperties } from 'react';
-import { systemColors, referenceColors } from '../../tokens/colors';
+import { sysVar, shadowVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 
-const FONT_FAMILY = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const FONT_FAMILY = 'var(--font-family-primary)';
 
 /** Main content area styles */
 export const contentStyles = {
@@ -17,7 +17,7 @@ export const contentStyles = {
 export const sectionStyles = {
   container: {
     padding: `${spacing.F}px 0`,
-    borderBottom: `1px solid ${referenceColors.gray['20']}`,
+    borderBottom: `1px solid ${sysVar('border-subtle')}`,
   } as CSSProperties,
 
   header: {
@@ -36,22 +36,22 @@ export const sectionStyles = {
 
   title: {
     fontSize: '18px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     margin: 0,
     lineHeight: 1.4,
   } as CSSProperties,
 
   description: {
     fontSize: '14px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: 1.6,
     margin: 0,
     maxWidth: '640px',
   } as CSSProperties,
 
   learnMore: {
-    color: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
     textDecoration: 'none',
     fontWeight: 500,
     cursor: 'pointer',
@@ -66,19 +66,19 @@ export const sectionStyles = {
 
   statusLabel: {
     fontSize: '14px',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     minWidth: '80px',
   } as CSSProperties,
 
   statusValue: {
     fontSize: '14px',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     fontWeight: 500,
   } as CSSProperties,
 
   disabledMessage: {
     fontSize: '13px',
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
     fontStyle: 'italic',
     marginTop: `${spacing.B}px`,
   } as CSSProperties,
@@ -98,13 +98,13 @@ export const sectionStyles = {
 
   fieldLabel: {
     fontSize: '14px',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     minWidth: '180px',
   } as CSSProperties,
 
   fieldValue: {
     fontSize: '14px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
   } as CSSProperties,
 
   buttonGroup: {
@@ -118,7 +118,7 @@ export const sectionStyles = {
 export const moduleTableStyles = {
   container: {
     padding: `${spacing.F}px 0`,
-    borderBottom: `1px solid ${referenceColors.gray['20']}`,
+    borderBottom: `1px solid ${sysVar('border-subtle')}`,
   } as CSSProperties,
 
   row: {
@@ -126,49 +126,49 @@ export const moduleTableStyles = {
     alignItems: 'center',
     padding: `${spacing.C}px 0`,
     fontSize: '14px',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
   } as CSSProperties,
 
   order: {
     width: '40px',
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
   } as CSSProperties,
 
   name: {
     flex: 1,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
   } as CSSProperties,
 
   status: {
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
   } as CSSProperties,
 };
 
 /** CSV upload modal */
 export const uploadModalStyles = {
   dropzone: {
-    border: `2px dashed ${referenceColors.gray['30']}`,
+    border: `2px dashed ${sysVar('border-bold')}`,
     borderRadius: '8px',
     padding: `${spacing.J}px`,
     textAlign: 'center' as const,
     cursor: 'pointer',
     transition: 'border-color 0.2s ease, background-color 0.2s ease',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
   } as CSSProperties,
 
   dropzoneActive: {
-    borderColor: systemColors.light['content-brand'],
-    backgroundColor: `${systemColors.light['content-brand']}08`,
+    borderColor: sysVar('content-brand'),
+    backgroundColor: `color-mix(in srgb, ${sysVar('content-brand')} 3%, transparent)`,
   } as CSSProperties,
 
   dropzoneLabel: {
     fontSize: '14px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     margin: 0,
   } as CSSProperties,
 
   dropzoneBrowse: {
-    color: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
     fontWeight: 500,
     cursor: 'pointer',
   } as CSSProperties,
@@ -178,7 +178,7 @@ export const uploadModalStyles = {
     alignItems: 'center',
     gap: `${spacing.C}px`,
     padding: `${spacing.C}px ${spacing.D}px`,
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: '6px',
     marginTop: `${spacing.D}px`,
   } as CSSProperties,
@@ -186,13 +186,13 @@ export const uploadModalStyles = {
   fileName: {
     flex: 1,
     fontSize: '14px',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     fontWeight: 500,
   } as CSSProperties,
 
   fileSize: {
     fontSize: '13px',
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
   } as CSSProperties,
 
   validationStatus: {
@@ -205,24 +205,24 @@ export const uploadModalStyles = {
   } as CSSProperties,
 
   validationSuccess: {
-    backgroundColor: '#E8F5E9',
-    border: '1px solid #A5D6A7',
+    backgroundColor: sysVar('background-success'),
+    border: `1px solid ${sysVar('border-accent-green')}`,
   } as CSSProperties,
 
   validationError: {
-    backgroundColor: '#FFF3F0',
-    border: `1px solid ${referenceColors.red?.['30'] ?? '#FFCDD2'}`,
+    backgroundColor: sysVar('background-failure'),
+    border: `1px solid ${sysVar('border-failure')}`,
   } as CSSProperties,
 
   validationTitle: {
     fontSize: '14px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     margin: 0,
   } as CSSProperties,
 
   validationMessage: {
     fontSize: '13px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     margin: 0,
     lineHeight: 1.5,
   } as CSSProperties,
@@ -231,7 +231,7 @@ export const uploadModalStyles = {
     margin: `${spacing.B}px 0 0 ${spacing.D}px`,
     padding: 0,
     fontSize: '13px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: 1.6,
   } as CSSProperties,
 };
@@ -247,7 +247,7 @@ export const pickerStyles = {
   } as CSSProperties,
 
   listContainer: {
-    border: `1px solid ${referenceColors.gray['20']}`,
+    border: `1px solid ${sysVar('border-subtle')}`,
     borderRadius: '6px',
     overflow: 'hidden',
     maxHeight: '380px',
@@ -258,11 +258,11 @@ export const pickerStyles = {
     display: 'flex',
     alignItems: 'center',
     padding: `${spacing.C}px ${spacing.D}px`,
-    backgroundColor: systemColors.light['background-sunken'],
-    borderBottom: `1px solid ${referenceColors.gray['20']}`,
+    backgroundColor: sysVar('background-sunken'),
+    borderBottom: `1px solid ${sysVar('border-subtle')}`,
     fontSize: '12px',
-    fontWeight: 600,
-    color: systemColors.light['content-secondary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-secondary'),
     textTransform: 'uppercase' as const,
     letterSpacing: '0.3px',
     gap: `${spacing.C}px`,
@@ -272,15 +272,15 @@ export const pickerStyles = {
     display: 'flex',
     alignItems: 'center',
     padding: `${spacing.C}px ${spacing.D}px`,
-    borderBottom: `1px solid ${referenceColors.gray['20']}`,
+    borderBottom: `1px solid ${sysVar('border-subtle')}`,
     gap: `${spacing.C}px`,
     fontSize: '14px',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     transition: 'background-color 0.1s ease',
   } as CSSProperties,
 
   listRowHover: {
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
   } as CSSProperties,
 
   colName: {
@@ -294,20 +294,20 @@ export const pickerStyles = {
   colOwner: {
     width: '140px',
     flexShrink: 0,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     fontSize: '13px',
   } as CSSProperties,
 
   colType: {
     width: '100px',
     flexShrink: 0,
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
     fontSize: '13px',
   } as CSSProperties,
 
   selectionCount: {
     fontSize: '13px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
   } as CSSProperties,
 };
 
@@ -319,15 +319,15 @@ export const adminSidebarStyles = {
 
   title: {
     fontSize: '16px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     marginBottom: `${spacing.C}px`,
     fontFamily: FONT_FAMILY,
   } as CSSProperties,
 
   scopeToggle: {
     display: 'flex',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: '6px',
     padding: '2px',
     gap: '2px',
@@ -338,7 +338,7 @@ export const adminSidebarStyles = {
     padding: `${spacing.B}px ${spacing.C}px`,
     fontSize: '13px',
     fontWeight: 500,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     backgroundColor: 'transparent',
     border: 'none',
     borderRadius: '4px',
@@ -348,15 +348,15 @@ export const adminSidebarStyles = {
   } as CSSProperties,
 
   scopeBtnActive: {
-    backgroundColor: systemColors.light['content-brand'],
-    color: '#FFFFFF',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+    backgroundColor: sysVar('content-brand'),
+    color: sysVar('content-inverse'),
+    boxShadow: shadowVar('surface'),
   } as CSSProperties,
 
   sectionLabel: {
     fontSize: '11px',
-    fontWeight: 600,
-    color: systemColors.light['content-tertiary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-tertiary'),
     textTransform: 'uppercase' as const,
     letterSpacing: '0.6px',
     padding: `${spacing.D}px ${spacing.D}px ${spacing.B}px`,
@@ -368,7 +368,7 @@ export const adminSidebarStyles = {
     display: 'block',
     padding: `${spacing.B}px ${spacing.D}px`,
     fontSize: '13px',
-    color: referenceColors.gray['70'],
+    color: sysVar('content-secondary'),
     cursor: 'pointer',
     borderLeft: '3px solid transparent',
     transition: 'all 0.15s ease',
@@ -378,9 +378,9 @@ export const adminSidebarStyles = {
   } as CSSProperties,
 
   navItemActive: {
-    color: systemColors.light['content-brand'],
-    backgroundColor: `${systemColors.light['content-brand']}08`,
-    borderLeftColor: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
+    backgroundColor: `color-mix(in srgb, ${sysVar('content-brand')} 3%, transparent)`,
+    borderLeftColor: sysVar('content-brand'),
     fontWeight: 500,
   } as CSSProperties,
 };

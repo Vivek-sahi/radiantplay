@@ -7,6 +7,7 @@ import {
   NOTE_VARIATIONS, NoteVariant,
 } from '../_shared/tiles';
 import { SpotterVizPanel } from './components/SpotterVizPanel';
+import styles from './index.module.css';
 import { tabsData, filterData, liveboardName } from './data/mockData';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -447,9 +448,9 @@ export const LiveboardTemplate: React.FC = () => {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div style={s.page}>
+    <div className={styles.page}>
       {/* Sticky header */}
-      <div style={s.stickyNav}>
+      <div className={styles.stickyNav}>
         <LiveboardHeader
           mode={mode}
           title={liveboardName}
@@ -466,10 +467,11 @@ export const LiveboardTemplate: React.FC = () => {
       </div>
 
       {/* Body + optional SpotterViz panel */}
-      <div style={s.bodyWrapper}>
+      <div className={styles.bodyWrapper}>
         <div
           ref={containerRef}
-          style={{ ...s.canvas, height: canvasHeight }}
+          className={styles.canvas}
+          style={{ height: canvasHeight }}
           onClick={e => {
             const t = e.target as HTMLElement;
             if (!t.closest('[data-tile-id]')) {
@@ -479,13 +481,10 @@ export const LiveboardTemplate: React.FC = () => {
             if (!t.closest('[data-inner-tile-id]')) setSelectedInnerTile(null);
           }}
         >
-          {/* CSS for resize suppression */}
-          <style>{`.tile-is-resizing { transition: none !important; }`}</style>
-
           {/* Drag shadow */}
-          <div ref={dragShadowRef}   style={shadowStyle} />
+          <div ref={dragShadowRef}   className={styles.dropShadow} />
           {/* Resize shadow */}
-          <div ref={resizeShadowRef} style={shadowStyle} />
+          <div ref={resizeShadowRef} className={styles.dropShadow} />
 
           {/* Tiles */}
           {layout.map(item => {
@@ -493,9 +492,7 @@ export const LiveboardTemplate: React.FC = () => {
             const def = tileDefMap[item.i];
             if (!def) return null;
 
-            const multiSelectedStyle: React.CSSProperties = isMultiSelect && selectedTiles.includes(item.i)
-              ? { outline: '2px dashed #7B61FF', outlineOffset: '1px', borderRadius: 16, background: 'rgba(123,97,255,0.04)' }
-              : {};
+            const multiSelected = isMultiSelect && selectedTiles.includes(item.i);
 
             const commonProps = buildCommonTileProps(item);
 
@@ -503,14 +500,8 @@ export const LiveboardTemplate: React.FC = () => {
               <div
                 key={item.i}
                 data-tile-id={item.i}
-                style={{
-                  position: 'absolute',
-                  left: p.left, top: p.top,
-                  width: p.width, height: p.height,
-                  boxSizing: 'border-box',
-                  overflow: 'visible',
-                  ...multiSelectedStyle,
-                }}
+                className={`${styles.tile} ${multiSelected ? styles.tileMultiSelected : ''}`}
+                style={{ left: p.left, top: p.top, width: p.width, height: p.height }}
                 onMouseEnter={!isEdit ? () => setHoveredTile(item.i) : undefined}
                 onMouseLeave={!isEdit ? () => setHoveredTile(null) : undefined}
                 onMouseDown={e => {
@@ -523,22 +514,18 @@ export const LiveboardTemplate: React.FC = () => {
               >
                 {/* ── View mode: hover action palette ── */}
                 {!isEdit && (
-                  <div style={{
-                    ...s.viewPalette,
-                    opacity: hoveredTile === item.i ? 1 : 0,
-                    pointerEvents: hoveredTile === item.i ? 'auto' : 'none',
-                  }}>
+                  <div className={`${styles.viewPalette} ${hoveredTile === item.i ? styles.viewPaletteVisible : ''}`}>
                     {def.tileType !== 'note' && (
                       <>
-                        <button style={s.viewActionBtn} title="Ask Spotter" onClick={() => {}}>
+                        <button className={styles.viewActionBtn} title="Ask Spotter" onClick={() => {}}>
                           <IconSpotter />
                         </button>
-                        <button style={s.viewActionBtn} title="Expand" onClick={() => {}}>
+                        <button className={styles.viewActionBtn} title="Expand" onClick={() => {}}>
                           <IconExpand />
                         </button>
                       </>
                     )}
-                    <button style={s.viewActionBtn} title="More actions" onClick={() => {}}>
+                    <button className={styles.viewActionBtn} title="More actions" onClick={() => {}}>
                       <IconMore />
                     </button>
                   </div>
@@ -642,18 +629,12 @@ export const LiveboardTemplate: React.FC = () => {
             const anchor = layout.find(l => l.i === lastShiftTileRef.current);
             if (!anchor) return null;
             return (
-              <div style={{
-                position: 'absolute',
-                left: PAD + anchor.x * (cu + GUTTER),
-                top:  PAD + anchor.y * ROW_UNIT - 48,
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '4px 8px',
-                background: '#212326', border: '1px solid #303136',
-                borderRadius: 4, boxShadow: '0 0 4px rgba(0,0,0,0.24), 0 2px 8px rgba(0,0,0,0.2)',
-                zIndex: 200,
-              }}>
+              <div
+                className={styles.multiToolbar}
+                style={{ left: PAD + anchor.x * (cu + GUTTER), top: PAD + anchor.y * ROW_UNIT - 48 }}
+              >
                 <button
-                  style={s.multiToolbarBtn}
+                  className={styles.multiToolbarBtn}
                   title={`Group ${selectedTiles.length} tiles`}
                   onClick={() => {
                     const sel = layout.filter(l => selectedTiles.includes(l.i));
@@ -685,9 +666,9 @@ export const LiveboardTemplate: React.FC = () => {
                     <rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/>
                   </svg>
                 </button>
-                <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)' }} />
+                <div className={styles.multiToolbarDivider} />
                 <button
-                  style={s.multiToolbarBtn}
+                  className={styles.multiToolbarBtn}
                   title="Delete selected"
                   onClick={() => {
                     setLayout(prev => compactLayout(prev.filter(l => !selectedTiles.includes(l.i))));
@@ -717,77 +698,3 @@ export const LiveboardTemplate: React.FC = () => {
 };
 
 export default LiveboardTemplate;
-
-// ─── Shadow style (drag + resize) ─────────────────────────────────────────────
-
-const shadowStyle: React.CSSProperties = {
-  display: 'none', position: 'absolute',
-  background: 'rgba(39,112,239,0.08)', border: '1.5px solid rgba(39,112,239,0.35)',
-  borderRadius: 16, pointerEvents: 'none', zIndex: 4, boxSizing: 'border-box', transition: 'none',
-};
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const s: Record<string, React.CSSProperties> = {
-  page: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    background: '#F6F8FA',
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  stickyNav: {
-    position: 'sticky',
-    top: 0,
-    zIndex: 100,
-    flexShrink: 0,
-  },
-  bodyWrapper: {
-    flex: 1,
-    display: 'flex',
-    overflow: 'hidden',
-  },
-  canvas: {
-    flex: 1,
-    position: 'relative',
-    overflowY: 'auto',
-    background: '#F6F8FA',
-  },
-  viewPalette: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-    zIndex: 5,
-    transition: 'opacity 0.12s',
-  },
-  viewActionBtn: {
-    width: 28,
-    height: 28,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: '#ffffff',
-    border: '1px solid #EAEDF2',
-    borderRadius: 6,
-    cursor: 'pointer',
-    color: '#1D232F',
-    padding: 0,
-    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-  },
-  multiToolbarBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 24,
-    height: 24,
-    background: 'transparent',
-    border: 'none',
-    borderRadius: 2,
-    cursor: 'pointer',
-    color: '#ffffff',
-    padding: 0,
-  },
-};

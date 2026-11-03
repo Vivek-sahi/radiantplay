@@ -52,7 +52,7 @@ When the designer pastes a screenshot (no Figma URL), apply these rules:
 
 1. **Identify layout pattern** — Match the screenshot to a layout template from `layout-patterns.md` (dashboard, admin, form, table, wizard)
 2. **Map components visually** — For each UI element, find the closest Radiant component from `component-inventory.md`. Prefer semantic matches over pixel-perfect recreation.
-3. **Approximate colors** — Use `figma-component-mapping.md` hex → token tables. When a color doesn't match exactly, choose the semantically closest token (e.g. "this looks like secondary text" → `systemColors.light['content-secondary']`).
+3. **Approximate colors** — Use `figma-component-mapping.md` hex → token tables. When a color doesn't match exactly, choose the semantically closest token (e.g. "this looks like secondary text" → `sysVar('content-secondary')`).
 4. **Approximate spacing** — Round to the nearest spacing scale value (`spacing.A` through `spacing.H`). Don't try to match 13px or 17px exactly.
 5. **Flag unknowns** — If a UI element doesn't map to any Radiant component, add a TODO comment: `{/* TODO: No Radiant component for [description] — using placeholder */}`
 
@@ -184,17 +184,15 @@ When `get_design_context` returns "design was too large," you MUST:
 
 ## Code Structure Template
 
-Every prototype MUST follow this structure:
+Every prototype MUST follow this structure. Styles go in a CSS Module next to the component, never in an inline styles object: engineering's codebase uses SCSS with the same Radiant tokens, and `npm run handoff <Prototype>` converts CSS Modules to it automatically. Inline styles have to be rewritten by hand.
 
 ```tsx
 import React, { useState } from 'react';
 // 1. Import Radiant components (never use raw <button>, <input>, <table> — check component-inventory.md)
 import { Button, TextInput } from '../../components/Button';
 import { Table } from '../../components/Table';
-// 2. Import tokens — NEVER hard-code colors, fonts, or spacing
-import { systemColors, referenceColors } from '../../tokens/colors';
-import { spacing } from '../../tokens/spacing';
-import { fontFamily } from '../../tokens/typography';
+// 2. Import the CSS Module
+import styles from './PrototypeName.module.css';
 // 3. Import mock data if needed
 // import { users } from '../../mocks';
 
@@ -214,23 +212,29 @@ export const PrototypeName: React.FC = () => {
 
   // 6. Render
   return (
-    <div style={styles.container}>
+    <div className={styles.container}>
       {/* Content */}
     </div>
   );
 };
 
-// 7. Styles object — ONLY use design tokens; never hard-code hex values or font strings
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    backgroundColor: systemColors.light['background-sunken'],
-    padding: `${spacing.F}px`,
-    minHeight: '100vh',
-    fontFamily: fontFamily.primary,
-  },
-};
-
 export default PrototypeName;
+```
+
+```css
+/* PrototypeName.module.css — ONLY design tokens; never hex, raw px spacing or font strings */
+.container {
+  background-color: var(--rd-sys-color-background-sunken);
+  padding: var(--spacing-6);
+  min-height: 100vh;
+  font-family: var(--font-family-primary);
+}
+```
+
+**Inline `style={{ }}` is only for values computed at runtime:** positions, measured sizes, drag offsets, a colour that comes from data. Pass those alone and keep everything static in the CSS Module:
+
+```tsx
+<div className={styles.tile} style={{ left: pos.x, top: pos.y }} />
 ```
 
 ---
@@ -252,36 +256,22 @@ const countries = forms.countries;    // Dropdown options
 
 ## Common Styling Patterns
 
-Use these token-based patterns for consistent styling:
+Use these token-based patterns in the CSS Module. Rows and grids use `Horizontal`, `Vertical` and `Grid` instead of flex or grid CSS.
 
-```tsx
-// Card container
-container: {
-  backgroundColor: systemColors.light['background-base'],
-  border: `1px solid ${systemColors.light['border-subtle']}`,
-  borderRadius: '8px',
-  padding: `${spacing.F}px`,  // 24px
+```css
+/* Card container */
+.card {
+  background-color: var(--rd-sys-color-background-base);
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6); /* 24px */
 }
 
-// Section with border
-section: {
-  borderBottom: `1px solid ${systemColors.light['border-subtle']}`,
-  paddingBottom: `${spacing.F}px`,
-  marginBottom: `${spacing.F}px`,
-}
-
-// Flex row with gap
-row: {
-  display: 'flex',
-  alignItems: 'center',
-  gap: `${spacing.C}px`,  // 12px
-}
-
-// Grid layout
-grid: {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-  gap: `${spacing.D}px`,  // 16px
+/* Section with border */
+.section {
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+  padding-bottom: var(--spacing-6);
+  margin-bottom: var(--spacing-6);
 }
 ```
 

@@ -4,7 +4,7 @@
 <      "Bash(awk *)",
       "Bash(bash *)",
       "Bash(bash .claude/hooks/post-compact-inject.sh)",
-      "Bash(bash scripts/generate-changelog.sh 2026-04-01)",
+      "Bash(bash internal/scripts/generate-changelog.sh 2026-04-01)",
       "Bash(brew upgrade:*)",
       "Bash(cat \"src/prototypes/Cmdk/Cmd\\(figmamake\\)/package.json\")",
       "Bash(chmod:*)",

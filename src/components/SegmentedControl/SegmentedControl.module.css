@@ -6,8 +6,8 @@
 .container {
   display: inline-flex;
   padding: 2px;
-  background-color: var(--rd-sys-color-background-sunken);
-  border-radius: 8px;
+  background-color: var(--rd-sys-color-background-subtle);
+  border-radius: var(--radius-full);
   gap: 2px;
 }
 
@@ -23,12 +23,13 @@
 
 /* Size variants */
 .container.small .segment {
-  padding: 4px 10px;
-  font-size: 12px;
+  padding: var(--spacing-1) 10px;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-sm);
 }
 
 .container.small .segment.iconOnly {
-  padding: 4px 8px;
+  padding: var(--spacing-1) var(--spacing-2);
 }
 
 .container.small .icon {
@@ -38,7 +39,8 @@
 
 .container.default .segment {
   padding: 6px 14px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
 }
 
 .container.default .segment.iconOnly {
@@ -51,12 +53,13 @@
 }
 
 .container.large .segment {
-  padding: 8px 18px;
-  font-size: 14px;
+  padding: var(--spacing-2) 18px;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
 }
 
 .container.large .segment.iconOnly {
-  padding: 8px 12px;
+  padding: var(--spacing-2) var(--spacing-3);
 }
 
 .container.large .icon {
@@ -73,10 +76,10 @@
   border: none;
   background: transparent;
   font-family: inherit;
-  font-weight: 500;
-  color: var(--rd-sys-color-content-secondary, #777E8B);
+  font-weight: var(--font-weight-regular);
+  color: var(--rd-sys-color-content-primary);
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: var(--radius-full);
   white-space: nowrap;
   transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
   flex: 0 0 auto;
@@ -87,23 +90,23 @@
 }
 
 .segment:hover:not(.selected):not(.segmentDisabled) {
-  color: var(--rd-sys-color-content-primary, #484D56);
-  background-color: rgba(0, 0, 0, 0.04);
+  color: var(--rd-sys-color-content-primary);
+  background-color: color-mix(in srgb, var(--rd-sys-color-content-primary) 4%, transparent);
 }
 
 .segment:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--rd-sys-color-content-brand, #2770EF);
+  box-shadow: 0 0 0 2px var(--rd-sys-color-content-brand);
 }
 
 .segment.selected {
-  background-color: var(--rd-sys-color-background-base, #ffffff);
-  color: var(--rd-sys-color-content-primary, #1D1F26);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  background-color: var(--rd-sys-color-background-base);
+  color: var(--rd-comp-color-segmented-control-content-active);
+  box-shadow: var(--shadow-surface);
 }
 
 .segment.segmentDisabled {
-  opacity: 0.4;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -123,4 +126,21 @@
 /* Label */
 .label {
   line-height: 1;
+}
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   Segments 4/16 with no gap, Ghost Hover
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .container {
+  gap: 0;
+}
+
+:global([data-rd-look="radiant-3"]) .container.default .segment:not(.iconOnly) {
+  padding: var(--spacing-1) var(--spacing-4);
+}
+
+:global([data-rd-look="radiant-3"]) .segment:hover:not(.selected):not(.segmentDisabled) {
+  background-color: var(--rd-sys-color-background-ghost-hover);
 }

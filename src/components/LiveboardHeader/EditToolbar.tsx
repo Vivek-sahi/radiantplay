@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@components/Button';
 import { Icon } from '@components/icons';
 import { BrandMark } from '@components/BrandMark';
+import { sysVar } from '@tokens/colors';
 import { colors, typography, layout } from './styles';
 
 interface EditToolbarProps {
@@ -32,7 +33,7 @@ export const EditToolbar: React.FC<EditToolbarProps> = ({ onSave, onCancel, onTo
         aria-label="Go to playground"
         style={s.logoBtn}
       >
-        <BrandMark pixelSize={24} color={colors.textOnDark} aria-hidden />
+        <BrandMark pixelSize={24} aria-hidden />
       </button>
     </div>
 
@@ -42,7 +43,7 @@ export const EditToolbar: React.FC<EditToolbarProps> = ({ onSave, onCancel, onTo
           <path d="M7 1V13M1 7H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
         <span style={s.toolLabel}>Add</span>
-        <Icon name="chevron-down" size="xs" color={colors.textOnDarkMuted} />
+        <Icon name="chevron-down" size="xs" />
       </button>
       <button
         type="button"
@@ -65,7 +66,7 @@ export const EditToolbar: React.FC<EditToolbarProps> = ({ onSave, onCancel, onTo
     </div>
 
     <div style={s.right}>
-      <Button variant="secondary" size="basic" colorway="white" onClick={onCancel}>
+      <Button variant="secondary" size="basic" onClick={onCancel}>
         Cancel
       </Button>
       <Button variant="primary" size="basic" onClick={onSave}>
@@ -81,8 +82,11 @@ const s: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    background: colors.editHeaderBg,
-    color: colors.textOnDarkMuted,
+    // Same surface as the primary nav, like the product's edit toolbar
+    background: colors.primaryNavBg,
+    color: colors.primaryNavText,
+    borderBottom: `1px solid ${colors.primaryNavBorder}`,
+    boxSizing: 'border-box',
     height: layout.headerHeight,
     padding: '0 24px',
     flexShrink: 0,
@@ -100,11 +104,12 @@ const s: Record<string, React.CSSProperties> = {
     padding: 0,
     cursor: 'pointer',
     borderRadius: 4,
+    color: colors.primaryNavText,
   },
   center: {
     display: 'flex',
     alignItems: 'center',
-    border: `1px solid ${colors.borderDark}`,
+    border: `1px solid ${sysVar('border-bold')}`,
     borderRadius: 8,
     overflow: 'hidden',
   },
@@ -124,16 +129,16 @@ const s: Record<string, React.CSSProperties> = {
     background: 'transparent',
     border: 'none',
     cursor: 'pointer',
-    color: colors.textOnDarkMuted,
+    color: colors.primaryNavText,
     fontFamily: typography.fontFamily,
   },
   toolBtnActive: {
-    background: 'rgba(255,255,255,0.1)',
+    background: sysVar('background-secondary-action'),
   },
   toolLabel: {
     fontSize: 14,
-    fontWeight: 375,
-    color: colors.textOnDarkMuted,
+    fontWeight: 'var(--font-weight-regular)',
+    color: colors.primaryNavText,
     lineHeight: '20px',
     whiteSpace: 'nowrap' as const,
   },

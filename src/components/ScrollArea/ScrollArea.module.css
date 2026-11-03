@@ -1,0 +1,61 @@
+/* ScrollArea: Figma Scroll bar (17817:16155)
+   Track: 8px, background-secondary-action. Thumb: content-tertiary, rounded.
+   Vertical track inset 8px top and bottom; horizontal has no inset. */
+
+.root {
+  min-width: 0;
+  min-height: 0;
+  outline: none;
+}
+
+.root:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 2px;
+}
+
+.vertical {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.horizontal {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.both {
+  overflow: auto;
+}
+
+/* Chromium and Safari: exact Figma bar */
+.root::-webkit-scrollbar {
+  width: var(--spacing-2);
+  height: var(--spacing-2);
+}
+
+.root::-webkit-scrollbar-track {
+  background-color: var(--rd-sys-color-background-secondary-action);
+}
+
+.vertical::-webkit-scrollbar-track:vertical,
+.both::-webkit-scrollbar-track:vertical {
+  margin-block: var(--spacing-2);
+}
+
+.root::-webkit-scrollbar-thumb {
+  background-color: var(--rd-sys-color-content-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.root::-webkit-scrollbar-corner {
+  background-color: transparent;
+}
+
+/* Firefox and other engines without ::-webkit-scrollbar. Kept out of
+   Chromium on purpose: there scrollbar-color would switch off the rules above. */
+@supports not selector(::-webkit-scrollbar) {
+  .root {
+    scrollbar-width: thin;
+    scrollbar-color: var(--rd-sys-color-content-tertiary) var(--rd-sys-color-background-secondary-action);
+  }
+}

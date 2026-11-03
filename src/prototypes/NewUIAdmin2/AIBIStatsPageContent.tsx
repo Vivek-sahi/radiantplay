@@ -1,55 +1,56 @@
 import React, { useState } from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '@tokens/colors';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-const brand = systemColors.light['content-brand'];
+const font = 'var(--font-family-primary)';
+const brand = sysVar('content-brand');
+const brandFill = sysVar('background-brand');
 
 // ─── Shared icons ──────────────────────────────────────────────────────────────
 
 const InfoIcon = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <circle cx="7" cy="7" r="6" stroke="#9CA3AF" strokeWidth="1.3" />
-    <path d="M7 6.5v4M7 5h.01" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round" />
+    <circle cx="7" cy="7" r="6" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.3" />
+    <path d="M7 6.5v4M7 5h.01" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.3" strokeLinecap="round" />
   </svg>
 );
 
 const StarIcon = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <path d="M7 1.5l1.5 3.2 3.5.5-2.5 2.4.6 3.5L7 9.3l-3.1 1.8.6-3.5L2 5.2l3.5-.5z" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M7 1.5l1.5 3.2 3.5.5-2.5 2.4.6 3.5L7 9.3l-3.1 1.8.6-3.5L2 5.2l3.5-.5z" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 const LockIcon = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <rect x="3" y="6" width="8" height="6" rx="1.5" stroke="#9CA3AF" strokeWidth="1.3" />
-    <path d="M4.5 6V4.5a2.5 2.5 0 015 0V6" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round" />
+    <rect x="3" y="6" width="8" height="6" rx="1.5" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.3" />
+    <path d="M4.5 6V4.5a2.5 2.5 0 015 0V6" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.3" strokeLinecap="round" />
   </svg>
 );
 
 const RefreshIcon = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <path d="M12 7A5 5 0 112 7" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round" />
-    <path d="M12 3.5V7h-3.5" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M12 7A5 5 0 112 7" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.3" strokeLinecap="round" />
+    <path d="M12 3.5V7h-3.5" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 const ShareIcon = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <path d="M7 1v9M4 4l3-3 3 3M2 11h10" stroke="#6B7280" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M7 1v9M4 4l3-3 3 3M2 11h10" stroke="var(--rd-sys-color-content-secondary)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 const DotsIcon = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <circle cx="3" cy="7" r="1.2" fill="#6B7280" />
-    <circle cx="7" cy="7" r="1.2" fill="#6B7280" />
-    <circle cx="11" cy="7" r="1.2" fill="#6B7280" />
+    <circle cx="3" cy="7" r="1.2" fill="var(--rd-sys-color-content-secondary)" />
+    <circle cx="7" cy="7" r="1.2" fill="var(--rd-sys-color-content-secondary)" />
+    <circle cx="11" cy="7" r="1.2" fill="var(--rd-sys-color-content-secondary)" />
   </svg>
 );
 
 const SparkleIcon = () => (
   <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-    <path d="M6.5 1L7.8 4.7l3.7 1.3-3.7 1.3L6.5 11l-1.3-3.7L1.5 6l3.7-1.3z" fill="white" />
+    <path d="M6.5 1L7.8 4.7l3.7 1.3-3.7 1.3L6.5 11l-1.3-3.7L1.5 6l3.7-1.3z" fill="var(--rd-sys-color-content-inverse)" />
   </svg>
 );
 
@@ -64,10 +65,10 @@ const KpiCard: React.FC<{
   subtitle?: string;
   value: string;
 }> = ({ title, subtitle, value }) => (
-  <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '20px 20px 24px', display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, minWidth: 0 }}>
-    <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</div>
-    {subtitle && <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: font, lineHeight: 1.4 }}>{subtitle}</div>}
-    <div style={{ fontSize: '30px', fontWeight: 700, color: '#111827', fontFamily: font, marginTop: '10px', letterSpacing: '-0.8px' }}>{value}</div>
+  <div style={{ backgroundColor: sysVar('background-base'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '12px', padding: '20px 20px 24px', display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, minWidth: 0 }}>
+    <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>{title}</div>
+    {subtitle && <div style={{ fontSize: '12px', color: sysVar('content-secondary'), fontFamily: font, lineHeight: 1.4 }}>{subtitle}</div>}
+    <div style={{ fontSize: '30px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, marginTop: '10px', letterSpacing: '-0.8px' }}>{value}</div>
   </div>
 );
 
@@ -114,28 +115,28 @@ const SparklineCard: React.FC<{
   const endY = H - 6 - ((lastPt[1] - minY) / rangeY) * (H - 10);
 
   return (
-    <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '20px', flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
-      <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#111827', fontFamily: font }}>{title}</div>
-      <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: font }}>{subtitle}</div>
-      <div style={{ fontSize: '11.5px', color: '#9CA3AF', fontFamily: font, marginTop: '1px' }}>{date}</div>
-      <div style={{ fontSize: '28px', fontWeight: 700, color: '#111827', fontFamily: font, marginTop: '8px', letterSpacing: '-0.6px' }}>{value}</div>
+    <div style={{ backgroundColor: sysVar('background-base'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '12px', padding: '20px', flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+      <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>{title}</div>
+      <div style={{ fontSize: '12px', color: sysVar('content-secondary'), fontFamily: font }}>{subtitle}</div>
+      <div style={{ fontSize: '11.5px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '1px' }}>{date}</div>
+      <div style={{ fontSize: '28px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, marginTop: '8px', letterSpacing: '-0.6px' }}>{value}</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', backgroundColor: isPositive ? '#D1FAE5' : '#FEE2E2', color: isPositive ? '#065F46' : '#991B1B', borderRadius: '4px', padding: '2px 6px', fontFamily: font, fontSize: '11.5px', fontWeight: 600 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', backgroundColor: isPositive ? sysVar('background-success') : sysVar('background-failure'), color: isPositive ? sysVar('content-success') : sysVar('content-failure'), borderRadius: '4px', padding: '2px 6px', fontFamily: font, fontSize: '11.5px', fontWeight: 'var(--font-weight-emphasis)' }}>
           {isPositive ? '↑' : '↓'} {Math.abs(change).toFixed(2)}%
         </span>
-        <span style={{ fontFamily: font, fontSize: '11.5px', color: '#6B7280' }}>{comparison}</span>
+        <span style={{ fontFamily: font, fontSize: '11.5px', color: sysVar('content-secondary') }}>{comparison}</span>
       </div>
       <div style={{ position: 'relative', marginTop: '12px', height: '72px' }}>
         <svg width="100%" height="72" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
           <defs>
             <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.18" />
-              <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.02" />
+              <stop offset="0%" stopColor="var(--rd-sys-color-content-brand)" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="var(--rd-sys-color-content-brand)" stopOpacity="0.02" />
             </linearGradient>
           </defs>
           <path d={`${linePath} L${W},${H} L0,${H} Z`} fill={`url(#${fillId})`} />
-          <path d={linePath} fill="none" stroke="#3B82F6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx={endX} cy={endY} r="3.5" fill="#3B82F6" />
+          <path d={linePath} fill="none" stroke="var(--rd-sys-color-content-brand)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx={endX} cy={endY} r="3.5" fill="var(--rd-sys-color-content-brand)" />
         </svg>
       </div>
       <button style={{ alignSelf: 'flex-start', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: font, fontSize: '12.5px', fontWeight: 500, color: brand, marginTop: '4px' }}>
@@ -147,6 +148,7 @@ const SparklineCard: React.FC<{
 
 // ─── Hourly Active Users — stacked area chart ─────────────────────────────────
 
+// Chart series colours: data, left as literals.
 const DAYS = [
   { label: 'Monday',    color: '#22C55E' },
   { label: 'Tuesday',   color: '#EAB308' },
@@ -207,34 +209,34 @@ const HourlyUsersCard: React.FC = () => {
   const xTickHours = [0,3,6,9,12,15,18,21,23];
 
   return (
-    <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '20px', flex: 2, minWidth: 0 }}>
-      <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#111827', fontFamily: font }}>Hourly Active Query Users</div>
-      <div style={{ fontSize: '12px', color: '#6B7280', fontFamily: font, marginBottom: '12px' }}>Per Day of Week in Filtered Range</div>
+    <div style={{ backgroundColor: sysVar('background-base'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '12px', padding: '20px', flex: 2, minWidth: 0 }}>
+      <div style={{ fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>Hourly Active Query Users</div>
+      <div style={{ fontSize: '12px', color: sysVar('content-secondary'), fontFamily: font, marginBottom: '12px' }}>Per Day of Week in Filtered Range</div>
       {/* Legend */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', marginBottom: '12px' }}>
         {DAYS.map(d => (
           <div key={d.label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: d.color }} />
-            <span style={{ fontSize: '11px', color: '#6B7280', fontFamily: font }}>{d.label}</span>
+            <span style={{ fontSize: '11px', color: sysVar('content-secondary'), fontFamily: font }}>{d.label}</span>
           </div>
         ))}
       </div>
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
         {/* Y labels */}
-        <text x={padL - 6} y={padT + 4} textAnchor="end" fontFamily={font} fontSize="9" fill="#9CA3AF">1.6K</text>
-        <text x={padL - 6} y={padT + chartH + 4} textAnchor="end" fontFamily={font} fontSize="9" fill="#9CA3AF">0</text>
+        <text x={padL - 6} y={padT + 4} textAnchor="end" fontFamily={font} fontSize="9" fill="var(--rd-sys-color-content-tertiary)">1.6K</text>
+        <text x={padL - 6} y={padT + chartH + 4} textAnchor="end" fontFamily={font} fontSize="9" fill="var(--rd-sys-color-content-tertiary)">0</text>
         {/* Y-axis title */}
-        <text transform={`rotate(-90, 8, ${padT + chartH / 2})`} x="8" y={padT + chartH / 2} textAnchor="middle" fontFamily={font} fontSize="9" fill="#6B7280">Unique Cou...</text>
+        <text transform={`rotate(-90, 8, ${padT + chartH / 2})`} x="8" y={padT + chartH / 2} textAnchor="middle" fontFamily={font} fontSize="9" fill="var(--rd-sys-color-content-secondary)">Unique Cou...</text>
         {/* Stacked areas */}
         {paths.map((d, i) => (
           <path key={i} d={d} fill={DAYS[i].color} fillOpacity="0.75" />
         ))}
         {/* X ticks */}
         {xTickHours.map(h => (
-          <text key={h} x={toX(h)} y={H - 6} textAnchor="middle" fontFamily={font} fontSize="8.5" fill="#9CA3AF">{h}</text>
+          <text key={h} x={toX(h)} y={H - 6} textAnchor="middle" fontFamily={font} fontSize="8.5" fill="var(--rd-sys-color-content-tertiary)">{h}</text>
         ))}
         {/* X-axis title */}
-        <text x={padL + chartW / 2} y={H - 26} textAnchor="middle" fontFamily={font} fontSize="9" fill="#6B7280">Hour of day TS Query Start Time - Fiscal</text>
+        <text x={padL + chartW / 2} y={H - 26} textAnchor="middle" fontFamily={font} fontSize="9" fill="var(--rd-sys-color-content-secondary)">Hour of day TS Query Start Time - Fiscal</text>
       </svg>
     </div>
   );
@@ -420,18 +422,18 @@ export const AIBIStatsPageContent: React.FC = () => {
   ];
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#F3F4F6' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: sysVar('background-sunken') }}>
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
 
         {/* Liveboard container */}
-        <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ backgroundColor: sysVar('background-base'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '12px', overflow: 'hidden' }}>
 
           {/* Liveboard header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 0', borderBottom: '1px solid #E5E7EB' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 0', borderBottom: '1px solid var(--rd-sys-color-border-subtle)' }}>
             {/* Left: title + icons + divider + tabs */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', flexShrink: 0 }}>
-                <span style={{ fontSize: '17px', fontWeight: 700, color: '#111827', fontFamily: font, letterSpacing: '-0.3px' }}>
+                <span style={{ fontSize: '17px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, letterSpacing: '-0.3px' }}>
                   AI and BI System Liveboard
                 </span>
                 <InfoIcon />
@@ -441,12 +443,12 @@ export const AIBIStatsPageContent: React.FC = () => {
               </div>
 
               {/* Vertical divider */}
-              <div style={{ width: '1px', height: '20px', backgroundColor: '#E5E7EB', margin: '0 16px 16px', flexShrink: 0 }} />
+              <div style={{ width: '1px', height: '20px', backgroundColor: sysVar('border-subtle'), margin: '0 16px 16px', flexShrink: 0 }} />
 
               {/* Tabs */}
               <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                 {tabs.map(tab => (
-                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ padding: '0 14px 16px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: font, fontSize: '13.5px', fontWeight: activeTab === tab.id ? 600 : 400, color: activeTab === tab.id ? brand : '#6B7280', borderBottom: activeTab === tab.id ? `2px solid ${brand}` : '2px solid transparent', marginBottom: '-1px', transition: 'color 0.15s', whiteSpace: 'nowrap' }}>
+                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ padding: '0 14px 16px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: font, fontSize: '13.5px', fontWeight: activeTab === tab.id ? 'var(--font-weight-emphasis)' : 'var(--font-weight-regular)', color: activeTab === tab.id ? brand : sysVar('content-secondary'), borderBottom: activeTab === tab.id ? `2px solid ${brand}` : '2px solid transparent', marginBottom: '-1px', transition: 'color 0.15s', whiteSpace: 'nowrap' }}>
                     {tab.label}
                   </button>
                 ))}
@@ -455,23 +457,23 @@ export const AIBIStatsPageContent: React.FC = () => {
 
             {/* Right: AI Highlights + share + dots */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', flexShrink: 0 }}>
-              <button style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', padding: '0 14px', border: 'none', borderRadius: '999px', backgroundColor: brand, cursor: 'pointer', fontFamily: font, fontSize: '12.5px', fontWeight: 600, color: '#FFFFFF' }}>
+              <button style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', padding: '0 14px', border: 'none', borderRadius: '999px', backgroundColor: brandFill, cursor: 'pointer', fontFamily: font, fontSize: '12.5px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-inverse') }}>
                 <SparkleIcon />
                 AI Highlights
               </button>
-              <button style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E5E7EB', backgroundColor: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--rd-sys-color-border-subtle)', backgroundColor: sysVar('background-base'), cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <ShareIcon />
               </button>
-              <button style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E5E7EB', backgroundColor: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid var(--rd-sys-color-border-subtle)', backgroundColor: sysVar('background-base'), cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <DotsIcon />
               </button>
             </div>
           </div>
 
           {/* Filter chips */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px 20px', borderBottom: '1px solid #F3F4F6' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px 20px', borderBottom: '1px solid var(--rd-sys-color-border-subtle)' }}>
             {filterChips.map(chip => (
-              <button key={chip} style={{ height: '28px', padding: '0 12px', border: '1px solid #E5E7EB', borderRadius: '999px', backgroundColor: '#FFFFFF', cursor: 'pointer', fontFamily: font, fontSize: '12px', color: '#374151', display: 'flex', alignItems: 'center', gap: '4px', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <button key={chip} style={{ height: '28px', padding: '0 12px', border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '999px', backgroundColor: sysVar('background-base'), cursor: 'pointer', fontFamily: font, fontSize: '12px', color: sysVar('content-primary'), display: 'flex', alignItems: 'center', gap: '4px', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {chip}
               </button>
             ))}

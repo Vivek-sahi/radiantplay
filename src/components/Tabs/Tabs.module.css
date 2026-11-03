@@ -21,14 +21,18 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-md);
-  color: var(--rd-sys-color-content-secondary);
+  color: var(--rd-sys-color-content-primary);
   transition: all var(--duration-fast) var(--easing-standard);
   margin-bottom: -1px;
 }
 
-.tab:hover {
-  color: var(--rd-sys-color-content-primary);
-  background-color: var(--rd-sys-color-background-sunken);
+.tab:hover:not(:disabled) {
+  color: var(--rd-sys-color-content-brand);
+}
+
+.tab:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .tab:focus-visible {
@@ -39,8 +43,8 @@
 
 .tab.active {
   color: var(--rd-sys-color-content-brand);
-  border-bottom-color: var(--rd-sys-color-content-brand);
-  font-weight: var(--font-weight-semibold);
+  border-bottom-color: var(--rd-sys-color-border-brand);
+  font-weight: var(--font-weight-emphasis);
 }
 
 .icon {
@@ -51,4 +55,35 @@
 
 .label {
   white-space: nowrap;
+}
+
+/* Sizes (both looks): medium 48px, small 32px */
+.medium .tab,
+.small .tab {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.medium .tab {
+  height: var(--spacing-12);
+}
+
+.small .tab {
+  height: var(--spacing-8);
+}
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   48px by default, 12px sides, weight 400 in every state
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .tab,
+:global([data-rd-look="radiant-3"]) .tab.active {
+  height: var(--spacing-12);
+  padding: 0 var(--spacing-3);
+  font-weight: var(--font-weight-regular);
+}
+
+:global([data-rd-look="radiant-3"]) .small .tab {
+  height: var(--spacing-8);
 }

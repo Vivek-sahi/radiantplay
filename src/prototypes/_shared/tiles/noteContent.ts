@@ -8,13 +8,13 @@
 // ┌────────────────┬───────┬────────┬──────────────────┬────────────────────┐
 // │ Style          │ Size  │ Weight │ Color            │ Line-height        │
 // ├────────────────┼───────┼────────┼──────────────────┼────────────────────┤
-// │ title          │ 16px  │ 600    │ #1D232F          │ 24px / -0.4px ls   │
-// │ heading        │ 14px  │ 600    │ #1D232F          │ 20px               │
-// │ body           │ 14px  │ 375    │ #4A515E          │ 20px               │
+// │ title          │ 16px  │ 600    │ content-primary  │ 24px / -0.4px ls   │
+// │ heading        │ 14px  │ 600    │ content-primary  │ 20px               │
+// │ body           │ 14px  │ 375    │ content-primary  │ 20px               │
 // │ inline bold    │ —     │ 600    │ (inherits)       │ —                  │
 // │ inline italic  │ —     │ —      │ (inherits)       │ —                  │
 // │ inline color   │ —     │ —      │ custom override  │ —                  │
-// │ link           │ 14px  │ 375    │ #2770EF          │ 20px / underline   │
+// │ link           │ 14px  │ 375    │ content-brand    │ 20px / underline   │
 // └────────────────┴───────┴────────┴──────────────────┴────────────────────┘
 
 // ─── Inline nodes ─────────────────────────────────────────────────────────

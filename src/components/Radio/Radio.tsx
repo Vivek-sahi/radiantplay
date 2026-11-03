@@ -1,5 +1,5 @@
 import React, { useCallback, useId } from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import styles from './Radio.module.css';
 
 export interface RadioProps {
@@ -61,16 +61,9 @@ export const Radio: React.FC<RadioProps> = ({
     }
   }, [handleChange]);
 
-  // Determine border color - using semantic tokens
-  const getBorderColor = () => {
-    if (error) return systemColors.light['content-failure'];
-    if (checked) return systemColors.light['content-brand'];
-    return systemColors.light['border-default'];
-  };
-
   const getDotColor = () => {
-    if (error) return systemColors.light['content-failure'];
-    return systemColors.light['content-brand'];
+    if (error) return sysVar('content-failure');
+    return sysVar('content-brand');
   };
 
   const containerClasses = [
@@ -95,9 +88,11 @@ export const Radio: React.FC<RadioProps> = ({
         onKeyDown={handleKeyDown}
         className={styles.input}
       />
-      <span 
-        className={styles.circle}
-        style={{ borderColor: getBorderColor() }}
+      <span
+        className={[
+          styles.circle,
+          error ? styles.circleError : checked && styles.circleSelected,
+        ].filter(Boolean).join(' ')}
       >
         {checked && (
           <span 

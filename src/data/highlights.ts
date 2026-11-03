@@ -1,9 +1,8 @@
 /**
  * Curated highlights — cherry-picked across releases. Newest first within each group.
  *
- * Visibility rule: items from the last 60 days, OR the most recent 6 items
- * if fewer than 6 fall inside that window. Maintainer prunes the bottom of
- * each group occasionally if entries get stale before the window drops them.
+ * Visibility rule: the first 6 items in this list show, so keep the current
+ * six at the top. Older items stay below as a record.
  *
  * Groups:
  *   - 'prototypes'  — new sample prototypes and contexts designers can build with
@@ -25,7 +24,95 @@ export const HIGHLIGHT_GROUPS: { id: HighlightGroup; label: string }[] = [
 ];
 
 export const HIGHLIGHTS: Highlight[] = [
+  // ── 26.11.1f ────────────────────────────────────────────────────────────────
+  {
+    title: 'Icons that Claude picks right',
+    description: 'Icons sync from the Radiant 3.0 Figma file again, with 18 new ones including Apps, Model, Globe and AI star, plus outline versions of the object icons. Claude now picks icons by what they mean and never draws its own.',
+    version: '26.11.1c',
+    date: '2026-11-02',
+    group: 'enhancements',
+  },
+  {
+    title: 'Connector logos',
+    description: 'One shared set of connector logos for Spotter, Apps and anything else: <ConnectorLogo id="salesforce" /> shows the real logo, or the brand-colour disc until one is added.',
+    version: '26.11.1d',
+    date: '2026-11-02',
+    group: 'enhancements',
+  },
+  // ── 26.10.4q ────────────────────────────────────────────────────────────────
+  {
+    title: 'Groups in the gallery',
+    description: 'Sort prototypes into groups, switch to a list view, and move, rename or archive them right in the gallery while npm run dev runs. It suggests groups for prototypes that look like one project.',
+    version: '26.10.4g',
+    date: '2026-10-27',
+    group: 'enhancements',
+  },
+  {
+    title: 'Usage rules from Figma in the docs',
+    description: 'Component pages show Figma\'s Do and Don\'t rules, and Claude follows them when it builds. Table, Menu, Select and more match Radiant 3.0 under look: radiant-3.',
+    version: '26.10.4j',
+    date: '2026-10-28',
+    group: 'enhancements',
+  },
+  {
+    title: 'Share your work with /rp-contribute',
+    description: 'Asks what you are sharing, works out where each piece belongs, and opens PRs against staging or a teammate\'s branch.',
+    version: '26.10.4i',
+    date: '2026-10-27',
+    group: 'enhancements',
+  },
+  // ── v26.10 big updates ─────────────────────────────────────────────────────
+  {
+    title: 'Dark mode, everywhere',
+    description: 'Every page, component and prototype works in light and dark. Press Ctrl+D.',
+    version: '26.10.1a',
+    date: '2026-10-09',
+    group: 'enhancements',
+  },
+  {
+    title: 'New type: Geist',
+    description: "Geist and Geist Mono replace the old fonts, with Figma's weights.",
+    version: '26.10.1a',
+    date: '2026-10-09',
+    group: 'enhancements',
+  },
+  {
+    title: 'Components updated to Radiant 3.0',
+    description: 'Figma colours, new variants and 17 new components, including Toggle, Toast, Stepper and PageHeader.',
+    version: '26.10.3b',
+    date: '2026-10-13',
+    group: 'enhancements',
+  },
+  {
+    title: 'A new look for Radiant Play',
+    description: 'One frame for the playground and the design system, with a new logo and a Help menu.',
+    version: '26.10.3g',
+    date: '2026-10-14',
+    group: 'enhancements',
+  },
+  {
+    title: 'Design system updates',
+    description: '400 tokens from Figma, the Spotter DS and Radiance guides, and On this page navigation.',
+    version: '26.10.3b',
+    date: '2026-10-13',
+    group: 'enhancements',
+  },
+  {
+    title: 'And more',
+    description: "Radiance, ThoughtSpot's AI identity. /rp- skills in Claude. Guides for the Claude desktop app. Coolify deploys and the project canvas.",
+    version: '26.10.3h',
+    date: '2026-10-14',
+    group: 'enhancements',
+  },
+
   // ── Sample prototypes & contexts ───────────────────────────────────────────
+  {
+    title: 'Spotter Refresh blocks in the shared Spotter DS',
+    description: "Devanshi's Reasoning timeline, UserMessage bubble, PromptBar composer and ToolIcon now live in src/spotter/chat/. ReasoningBlock and UserBubble stay as adapters, so existing prototypes pick up the new look without changes. Front door on /radiant/spotter.",
+    version: '26.9.1a',
+    date: '2026-09-03',
+    group: 'prototypes',
+  },
   {
     title: 'Spotter prototype',
     description: 'AnalystLandingPage, AnalystListPage, and the right-pane state machine landed. Prompt bar rebuilt with a mode toggle, hideable data-model picker, and a new PromptSuggestionsPanel. 12 IA polish corrections across analyst selection, recency-sorted chats, panel restructure, and chat naming. The Liveboard template SpotterViz side panel was also rebuilt to match the Figma design.',
@@ -93,12 +180,9 @@ export const HIGHLIGHTS: Highlight[] = [
   },
 ];
 
-const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
-
-export function getVisibleHighlights(now: number = Date.now()): Highlight[] {
-  const recent = HIGHLIGHTS.filter((h) => now - new Date(h.date).getTime() <= SIXTY_DAYS_MS);
-  if (recent.length >= 6) return recent;
-  return HIGHLIGHTS.slice(0, Math.max(6, recent.length));
+// `now` is kept so existing callers still compile; the list order decides what shows.
+export function getVisibleHighlights(_now: number = Date.now()): Highlight[] {
+  return HIGHLIGHTS.slice(0, 6);
 }
 
 /**

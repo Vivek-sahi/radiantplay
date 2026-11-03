@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
-import { systemColors, referenceColors } from '../tokens/colors';
+import { referenceColors, sysVar, shadowVar, systemColors, rdComponentColors } from '../tokens/colors';
+import { figmaNameAliases } from '../tokens/colors/system';
+import { componentNameAliases } from '../tokens/colors/component';
 import { LastUpdated } from '../components/LastUpdated';
 
 type ActiveLayer = 'reference' | 'system' | 'component' | null;
+
+// Token counts, without the alias names
+const systemTokenCount = Object.keys(systemColors.light).length - Object.keys(figmaNameAliases).length;
+const componentTokenCount = Object.keys(rdComponentColors.light).length - Object.keys(componentNameAliases).length;
 
 export const ArchitectureShowcase: React.FC = () => {
   const [activeLayer, setActiveLayer] = useState<ActiveLayer>(null);
@@ -11,19 +17,19 @@ export const ArchitectureShowcase: React.FC = () => {
     <div style={styles.container}>
       {/* Header */}
       <section style={styles.headerSection}>
-        <LastUpdated date="2026-04-27" />
-        <h2 style={styles.pageTitle}>Token Architecture</h2>
+        <LastUpdated date="2026-10-07" />
+        <h1 style={styles.pageTitle}>Token architecture</h1>
         <p style={styles.pageDescription}>
-          The Radiant Design System uses a 3-tier token architecture that provides flexibility, 
-          consistency, and maintainability across all components.
+          The Radiant design system uses three layers of tokens. Every system and component token has a
+          light and a dark value, so every component follows the theme.
         </p>
       </section>
 
       {/* Architecture Diagram */}
       <section style={styles.diagramSection}>
-        <h3 style={styles.sectionTitle}>Token Flow Diagram</h3>
+        <h3 style={styles.sectionTitle}>Token flow diagram</h3>
         <p style={styles.sectionDescription}>
-          Click on each layer to see details. Tokens flow from Reference → System → Component.
+          Select a layer to see details. Tokens flow from reference to system to component.
         </p>
         
         <div style={styles.flowChart}>
@@ -38,9 +44,9 @@ export const ArchitectureShowcase: React.FC = () => {
           >
             <div style={styles.layerHeader}>
               <span style={styles.layerNumber}>1</span>
-              <span style={styles.layerTitle}>Reference Tokens</span>
+              <span style={styles.layerTitle}>Reference tokens</span>
             </div>
-            <p style={styles.layerSubtitle}>Primitive Values (rd-ref-color-*)</p>
+            <p style={styles.layerSubtitle}>Primitive values (rd-ref-color-*)</p>
             <div style={styles.layerContent}>
               <code style={styles.tokenExample}>brand.'60' = #2770EF</code>
               <code style={styles.tokenExample}>gray.'90' = #1D232F</code>
@@ -55,7 +61,7 @@ export const ArchitectureShowcase: React.FC = () => {
           {/* Arrow 1 */}
           <div style={styles.arrowContainer}>
             <svg width="40" height="60" viewBox="0 0 40 60" style={styles.arrow}>
-              <path d="M20 0 L20 45 M10 35 L20 50 L30 35" stroke={systemColors.light['border-default']} strokeWidth="2" fill="none" />
+              <path d="M20 0 L20 45 M10 35 L20 50 L30 35" stroke={sysVar('border-default')} strokeWidth="2" fill="none" />
             </svg>
             <span style={styles.arrowLabel}>maps to</span>
           </div>
@@ -71,9 +77,9 @@ export const ArchitectureShowcase: React.FC = () => {
           >
             <div style={styles.layerHeader}>
               <span style={styles.layerNumber}>2</span>
-              <span style={styles.layerTitle}>System Tokens</span>
+              <span style={styles.layerTitle}>System tokens</span>
             </div>
-            <p style={styles.layerSubtitle}>Semantic, Mode-Aware (rd-sys-color-*)</p>
+            <p style={styles.layerSubtitle}>Semantic, follows the theme (rd-sys-color-*)</p>
             <div style={styles.layerContent}>
               <code style={styles.tokenExample}>--rd-sys-color-background-base</code>
               <code style={styles.tokenExample}>--rd-sys-color-content-primary</code>
@@ -88,7 +94,7 @@ export const ArchitectureShowcase: React.FC = () => {
           {/* Arrow 2 */}
           <div style={styles.arrowContainer}>
             <svg width="40" height="60" viewBox="0 0 40 60" style={styles.arrow}>
-              <path d="M20 0 L20 45 M10 35 L20 50 L30 35" stroke={systemColors.light['border-default']} strokeWidth="2" fill="none" />
+              <path d="M20 0 L20 45 M10 35 L20 50 L30 35" stroke={sysVar('border-default')} strokeWidth="2" fill="none" />
             </svg>
             <span style={styles.arrowLabel}>used by</span>
           </div>
@@ -104,9 +110,9 @@ export const ArchitectureShowcase: React.FC = () => {
           >
             <div style={styles.layerHeader}>
               <span style={styles.layerNumber}>3</span>
-              <span style={styles.layerTitle}>Component Tokens</span>
+              <span style={styles.layerTitle}>Component tokens</span>
             </div>
-            <p style={styles.layerSubtitle}>Per-Component (rd-comp-color-*)</p>
+            <p style={styles.layerSubtitle}>Per component (rd-comp-color-*)</p>
             <div style={styles.layerContent}>
               <code style={styles.tokenExample}>--rd-comp-color-button-primary-default</code>
               <code style={styles.tokenExample}>--rd-comp-color-chip-attribute-default</code>
@@ -123,7 +129,7 @@ export const ArchitectureShowcase: React.FC = () => {
           <div style={styles.detailsPanel}>
             {activeLayer === 'reference' && (
               <>
-                <h4 style={styles.detailsTitle}>🎨 Reference / Primitive Tokens</h4>
+                <h4 style={styles.detailsTitle}>🎨 Reference / primitive tokens</h4>
                 <p style={styles.detailsDescription}>
                   The foundation of the color system. Mode-agnostic tonal scales for 9 color families
                   (gray, brand, red, purple, blue, teal, yellow, green, orange) plus black/white.
@@ -155,11 +161,14 @@ export const ArchitectureShowcase: React.FC = () => {
             )}
             {activeLayer === 'system' && (
               <>
-                <h4 style={styles.detailsTitle}>💡 System Tokens (Light + Dark)</h4>
+                <h4 style={styles.detailsTitle}>💡 System tokens (light and dark)</h4>
                 <p style={styles.detailsDescription}>
-                  Mode-aware semantic tokens organized into 3 groups: background (15), content (15),
-                  and border (12) — 42 tokens per mode. They automatically switch between light and dark
-                  values via CSS custom properties and <code>data-theme</code>.
+                  {systemTokenCount} semantic tokens in three groups (background, content and border), plus
+                  three shadows: <code>shadow-surface</code>, <code>shadow-menu</code> and <code>shadow-modal</code>.
+                  Each has a light and a dark value in <code>tokens.css</code>. ThemeProvider sets{' '}
+                  <code>data-theme</code> on <code>&lt;html&gt;</code>, and every{' '}
+                  <code>var(--rd-sys-color-*)</code> switches with it. The names follow the product; older
+                  names such as <code>background-subtle</code> and <code>border-default</code> still work as aliases.
                 </p>
                 <div style={styles.codeBlock}>
                   <div style={styles.codeHeader}>styles/tokens.css</div>
@@ -172,28 +181,33 @@ export const ArchitectureShowcase: React.FC = () => {
   /* Content */
   --rd-sys-color-content-primary: #1D232F;
   --rd-sys-color-content-brand: #2770EF;
-  --rd-sys-color-content-success: #06BF7F;
 
   /* Border */
   --rd-sys-color-border-default: #C0C6CF;
-  --rd-sys-color-border-brand: #2770EF;
-  --rd-sys-color-border-focus: #2770EF;
+  --rd-sys-color-border-focus: #71A1F4;
+
+  /* Shadow */
+  --rd-sys-color-shadow-menu: 0 0 4px #19233114, 0 12px 24px #1923311f;
 }
 
 [data-theme="dark"] {
-  --rd-sys-color-background-base: #1D232F;
-  --rd-sys-color-content-primary: #FFFFFF;
-  /* ... all tokens swap */
+  --rd-sys-color-background-base: #1F2024;
+  --rd-sys-color-content-primary: #DFE0E2;
+  --rd-sys-color-shadow-menu: 0 0 6px rgba(0,0,0,0.16), 0 12px 28px rgba(0,0,0,0.32);
+  /* every token has a dark value */
 }`}</pre>
                 </div>
               </>
             )}
             {activeLayer === 'component' && (
               <>
-                <h4 style={styles.detailsTitle}>🧩 Component Tokens</h4>
+                <h4 style={styles.detailsTitle}>🧩 Component tokens</h4>
                 <p style={styles.detailsDescription}>
-                  46 per-component tokens for button (11), chip (30), and toggle (5). CSS modules
-                  consume system and component tokens via CSS custom properties.
+                  {componentTokenCount} tokens for buttons, chips, progress, charts, toggles and the segmented
+                  control, each with a light and a dark value. The 13 chart tokens
+                  (<code>--rd-comp-color-chart-*</code>) take their names and dark values from the product;
+                  their light values are proposed. CSS modules read system and component tokens as CSS
+                  custom properties.
                 </p>
                 <div style={styles.codeBlock}>
                   <div style={styles.codeHeader}>components/Button/Button.module.css</div>
@@ -225,7 +239,7 @@ export const ArchitectureShowcase: React.FC = () => {
 
       {/* Real Example */}
       <section style={styles.exampleSection}>
-        <h3 style={styles.sectionTitle}>Real Example: Button Component</h3>
+        <h3 style={styles.sectionTitle}>Real example: button component</h3>
         <p style={styles.sectionDescription}>
           See how tokens flow through the 3-layer system to create a Primary Button.
         </p>
@@ -235,13 +249,13 @@ export const ArchitectureShowcase: React.FC = () => {
           <div style={styles.exampleStep}>
             <div style={styles.stepHeader}>
               <span style={styles.stepNumber}>1</span>
-              <span style={styles.stepTitle}>Reference Token</span>
+              <span style={styles.stepTitle}>Reference token</span>
             </div>
             <div style={styles.stepContent}>
               <code style={styles.stepCode}>referenceColors.brand['60']</code>
               <div style={styles.colorPreview}>
-                <div style={{ ...styles.colorSwatch, backgroundColor: '#2770EF' }} />
-                <span>#2770EF</span>
+                <div style={{ ...styles.colorSwatch, backgroundColor: referenceColors.brand['60'] }} />
+                <span>{referenceColors.brand['60']}</span>
               </div>
             </div>
           </div>
@@ -252,7 +266,7 @@ export const ArchitectureShowcase: React.FC = () => {
           <div style={styles.exampleStep}>
             <div style={styles.stepHeader}>
               <span style={styles.stepNumber}>2</span>
-              <span style={styles.stepTitle}>System Token</span>
+              <span style={styles.stepTitle}>System token</span>
             </div>
             <div style={styles.stepContent}>
               <code style={styles.stepCode}>--rd-sys-color-background-brand: #2770EF</code>
@@ -265,7 +279,7 @@ export const ArchitectureShowcase: React.FC = () => {
           <div style={styles.exampleStep}>
             <div style={styles.stepHeader}>
               <span style={styles.stepNumber}>3</span>
-              <span style={styles.stepTitle}>CSS Module Applies</span>
+              <span style={styles.stepTitle}>CSS module applies</span>
             </div>
             <div style={styles.stepContent}>
               <code style={styles.stepCode}>background: var(--rd-sys-color-background-brand)</code>
@@ -278,7 +292,7 @@ export const ArchitectureShowcase: React.FC = () => {
           <div style={styles.exampleStep}>
             <div style={styles.stepHeader}>
               <span style={styles.stepNumber}>4</span>
-              <span style={styles.stepTitle}>Rendered Button</span>
+              <span style={styles.stepTitle}>Rendered button</span>
             </div>
             <div style={styles.stepContent}>
               <button style={styles.previewButton}>Add</button>
@@ -289,22 +303,22 @@ export const ArchitectureShowcase: React.FC = () => {
 
       {/* Consumption Patterns */}
       <section style={styles.consumptionSection}>
-        <h3 style={styles.sectionTitle}>How Tokens Are Consumed</h3>
+        <h3 style={styles.sectionTitle}>How tokens are consumed</h3>
         <p style={styles.sectionDescription}>
-          Tokens are available through two paths. Components use CSS custom properties for theme-aware styling.
-          Pages and prototypes use TypeScript objects for inline styles.
+          Tokens reach the UI two ways: CSS custom properties in CSS modules, and helper functions for
+          inline styles. Both follow the theme.
         </p>
 
         <div style={styles.consumptionGrid}>
           {/* Path 1: CSS Custom Properties */}
           <div style={styles.consumptionCard}>
             <div style={styles.consumptionHeader}>
-              <span style={styles.consumptionBadge}>CSS Modules</span>
-              <span style={styles.consumptionTag}>Theme-aware</span>
+              <span style={styles.consumptionBadge}>CSS modules</span>
+              <span style={styles.consumptionTag}>Follows the theme</span>
             </div>
             <p style={styles.consumptionDesc}>
               Component <code>.module.css</code> files use <code>var(--rd-sys-color-*)</code> and <code>var(--rd-comp-color-*)</code>.
-              These automatically switch values when <code>data-theme</code> changes — no JS needed.
+              The values switch when <code>data-theme</code> changes, with no extra code.
             </p>
             <div style={styles.codeBlock}>
               <div style={styles.codeHeader}>Button.module.css</div>
@@ -318,48 +332,56 @@ export const ArchitectureShowcase: React.FC = () => {
             </div>
             <div style={styles.consumptionUsage}>
               <span style={styles.consumptionUsageLabel}>Used by</span>
-              <span style={styles.consumptionUsageValue}>35 component CSS modules</span>
+              <span style={styles.consumptionUsageValue}>Radiant and Spotter component styles</span>
             </div>
           </div>
 
           {/* Path 2: TypeScript Objects */}
           <div style={styles.consumptionCard}>
             <div style={styles.consumptionHeader}>
-              <span style={{ ...styles.consumptionBadge, backgroundColor: referenceColors.green['10'], color: systemColors.light['content-success'] }}>TypeScript</span>
+              <span style={{ ...styles.consumptionBadge, backgroundColor: sysVar('background-success'), color: sysVar('content-success') }}>TypeScript</span>
               <span style={styles.consumptionTag}>Inline styles</span>
             </div>
             <p style={styles.consumptionDesc}>
-              Pages and prototypes import <code>systemColors</code> and <code>referenceColors</code> directly
-              for inline styles. Access light/dark maps via <code>.light[...]</code> or <code>.dark[...]</code>.
+              Pages and prototypes use <code>sysVar()</code>, <code>compVar()</code> and <code>shadowVar()</code> for
+              inline styles. Each returns the CSS variable, so the style follows the theme.{' '}
+              <code>systemColors.light[...]</code> returns a fixed hex value and stays light; use it only
+              when you need the raw value, such as a swatch.
             </p>
             <div style={styles.codeBlock}>
               <div style={styles.codeHeader}>MyPage.tsx</div>
-              <pre style={styles.code}>{`import { systemColors, referenceColors }
-  from '../tokens/colors';
+              <pre style={styles.code}>{`import { sysVar, compVar, shadowVar }
+  from '@tokens/colors';
 
 <div style={{
-  background: systemColors.light['background-base'],
-  color: systemColors.light['content-primary'],
-  borderColor: referenceColors.gray['20'],
+  background: sysVar('background-base'),
+  color: sysVar('content-primary'),
+  borderColor: sysVar('border-divider'),
+  boxShadow: shadowVar('surface'),
+}} />
+
+<span style={{
+  background: compVar('chip-filter-default'),
 }} />`}</pre>
             </div>
             <div style={styles.consumptionUsage}>
               <span style={styles.consumptionUsageLabel}>Used by</span>
-              <span style={styles.consumptionUsageValue}>46+ page and prototype files</span>
+              <span style={styles.consumptionUsageValue}>Pages and prototypes</span>
             </div>
           </div>
         </div>
 
         <div style={styles.consumptionNote}>
           <strong>When to use which?</strong>{' '}
-          Use CSS custom properties in reusable components (they respond to theme changes automatically).
-          Use TypeScript imports in pages, prototypes, and one-off layouts where inline styles are more convenient.
+          Use CSS custom properties in component CSS modules. Use <code>sysVar()</code>,{' '}
+          <code>compVar()</code> and <code>shadowVar()</code> for inline styles in pages and prototypes.
+          Either way, the UI switches with the theme.
         </div>
       </section>
 
       {/* File Structure */}
       <section style={styles.structureSection}>
-        <h3 style={styles.sectionTitle}>File Structure</h3>
+        <h3 style={styles.sectionTitle}>File structure</h3>
         <div style={styles.fileTree}>
           <div style={styles.treeItem}>
             <span style={styles.folderIcon}>📁</span>
@@ -387,7 +409,7 @@ export const ArchitectureShowcase: React.FC = () => {
           <div style={{ ...styles.treeItem, marginLeft: 60 }}>
             <span style={styles.fileIcon}>📄</span>
             <span style={styles.fileName}>component.ts</span>
-            <span style={styles.treeDesc}>46 per-component tokens (button, chip, toggle)</span>
+            <span style={styles.treeDesc}>Component tokens, light and dark (button, chip, progress, chart, toggle, segmented control)</span>
           </div>
           <div style={{ ...styles.treeItem, marginLeft: 60 }}>
             <span style={styles.fileIcon}>📄</span>
@@ -402,12 +424,21 @@ export const ArchitectureShowcase: React.FC = () => {
           <div style={{ ...styles.treeItem, marginLeft: 40 }}>
             <span style={styles.fileIcon}>📄</span>
             <span style={styles.fileName}>tokens.css</span>
-            <span style={styles.treeDesc}>rd-sys-color-* and rd-comp-color-* variables</span>
+            <span style={styles.treeDesc}>rd-sys-color-* and rd-comp-color-* variables, with a light and a dark block</span>
           </div>
           <div style={{ ...styles.treeItem, marginLeft: 40 }}>
             <span style={styles.fileIcon}>📄</span>
             <span style={styles.fileName}>global.css</span>
             <span style={styles.treeDesc}>Base styles</span>
+          </div>
+          <div style={{ ...styles.treeItem, marginLeft: 20 }}>
+            <span style={styles.folderIcon}>📁</span>
+            <span style={styles.folderName}>context/</span>
+          </div>
+          <div style={{ ...styles.treeItem, marginLeft: 40 }}>
+            <span style={styles.fileIcon}>📄</span>
+            <span style={styles.fileName}>ThemeContext.tsx</span>
+            <span style={styles.treeDesc}>Theme controller: light, dark or system, saved in the browser</span>
           </div>
           <div style={{ ...styles.treeItem, marginLeft: 20 }}>
             <span style={styles.folderIcon}>📁</span>
@@ -433,20 +464,20 @@ export const ArchitectureShowcase: React.FC = () => {
 
       {/* Token Categories */}
       <section style={styles.categoriesSection}>
-        <h3 style={styles.sectionTitle}>Token Categories</h3>
+        <h3 style={styles.sectionTitle}>Token categories</h3>
         <div style={styles.categoryGrid}>
           <div style={styles.categoryCard}>
-            <div style={{ ...styles.categoryIcon, backgroundColor: referenceColors.blue['10'] }}>🎨</div>
+            <div style={{ ...styles.categoryIcon, backgroundColor: sysVar('background-ghost-highlight') }}>🎨</div>
             <h4 style={styles.categoryTitle}>Colors</h4>
             <ul style={styles.categoryList}>
               <li>9 reference scales (00-100)</li>
-              <li>42 system tokens × 2 modes</li>
-              <li>46 component tokens × 2 modes</li>
+              <li>{systemTokenCount} system tokens, light and dark</li>
+              <li>{componentTokenCount} component tokens, light and dark</li>
               <li>rd-ref / rd-sys / rd-comp prefix</li>
             </ul>
           </div>
           <div style={styles.categoryCard}>
-            <div style={{ ...styles.categoryIcon, backgroundColor: referenceColors.green['10'] }}>📏</div>
+            <div style={{ ...styles.categoryIcon, backgroundColor: sysVar('background-success') }}>📏</div>
             <h4 style={styles.categoryTitle}>Spacing</h4>
             <ul style={styles.categoryList}>
               <li>4px increments</li>
@@ -456,21 +487,21 @@ export const ArchitectureShowcase: React.FC = () => {
             </ul>
           </div>
           <div style={styles.categoryCard}>
-            <div style={{ ...styles.categoryIcon, backgroundColor: referenceColors.purple['10'] }}>🔤</div>
+            <div style={{ ...styles.categoryIcon, backgroundColor: sysVar('background-accent-purple-subtle') }}>🔤</div>
             <h4 style={styles.categoryTitle}>Typography</h4>
             <ul style={styles.categoryList}>
-              <li>Font family: Plain</li>
+              <li>Font family: Geist</li>
               <li>Sizes: 12-40px</li>
               <li>Weights: 375-600</li>
               <li>Line heights</li>
             </ul>
           </div>
           <div style={styles.categoryCard}>
-            <div style={{ ...styles.categoryIcon, backgroundColor: referenceColors.yellow['10'] }}>⬜</div>
+            <div style={{ ...styles.categoryIcon, backgroundColor: sysVar('background-warning') }}>⬜</div>
             <h4 style={styles.categoryTitle}>Radius & Shadow</h4>
             <ul style={styles.categoryList}>
               <li>Radius: 2-24px, full</li>
-              <li>Shadows: xs-2xl</li>
+              <li>Shadows: surface, menu, modal</li>
               <li>Focus rings</li>
               <li>Elevation levels</li>
             </ul>
@@ -480,17 +511,17 @@ export const ArchitectureShowcase: React.FC = () => {
 
       {/* Benefits */}
       <section style={styles.benefitsSection}>
-        <h3 style={styles.sectionTitle}>Why This Architecture?</h3>
+        <h3 style={styles.sectionTitle}>Why this architecture?</h3>
         <div style={styles.benefitsGrid}>
           <div style={styles.benefitCard}>
             <span style={styles.benefitIcon}>🔄</span>
-            <h4 style={styles.benefitTitle}>Single Source of Truth</h4>
+            <h4 style={styles.benefitTitle}>Single source of truth</h4>
             <p style={styles.benefitDesc}>Change a color once in reference.ts, and it cascades through system and component tokens automatically.</p>
           </div>
           <div style={styles.benefitCard}>
             <span style={styles.benefitIcon}>🌙</span>
-            <h4 style={styles.benefitTitle}>Built-in Light/Dark Mode</h4>
-            <p style={styles.benefitDesc}>System tokens have light and dark maps. Set data-theme on the HTML element and all components adapt.</p>
+            <h4 style={styles.benefitTitle}>Light, dark and system themes</h4>
+            <p style={styles.benefitDesc}>ThemeProvider owns the theme and is the only code that sets data-theme on the html element. Pick light, dark or system with the theme switch in the gallery header or the docs sidebar, or press Ctrl+D. The browser saves the choice; light is the default.</p>
           </div>
           <div style={styles.benefitCard}>
             <span style={styles.benefitIcon}>🧩</span>
@@ -517,49 +548,49 @@ const styles: Record<string, React.CSSProperties> = {
 
   // Header
   headerSection: {
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '12px',
     padding: '32px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    boxShadow: shadowVar('surface'),
   },
   pageTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '28px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     marginBottom: '12px',
   },
   pageDescription: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
-    fontWeight: 375,
-    color: systemColors.light['content-secondary'],
+    fontWeight: 'var(--font-weight-regular)',
+    color: sysVar('content-secondary'),
     lineHeight: '24px',
     maxWidth: '800px',
   },
 
   // Section styles
   sectionTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '20px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     marginBottom: '8px',
   },
   sectionDescription: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
-    fontWeight: 375,
-    color: systemColors.light['content-secondary'],
+    fontWeight: 'var(--font-weight-regular)',
+    color: sysVar('content-secondary'),
     marginBottom: '24px',
   },
 
   // Diagram Section
   diagramSection: {
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '12px',
     padding: '32px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    boxShadow: shadowVar('surface'),
   },
   flowChart: {
     display: 'flex',
@@ -579,19 +610,19 @@ const styles: Record<string, React.CSSProperties> = {
   },
   layerActive: {
     transform: 'scale(1.02)',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+    boxShadow: shadowVar('menu'),
   },
   brandLayer: {
-    backgroundColor: referenceColors.blue['10'],
-    borderColor: systemColors.light['background-information'],
+    backgroundColor: sysVar('background-ghost-highlight'),
+    borderColor: sysVar('background-information'),
   },
   semanticLayer: {
-    backgroundColor: referenceColors.green['10'],
-    borderColor: systemColors.light['background-success'],
+    backgroundColor: sysVar('background-success'),
+    borderColor: sysVar('background-success'),
   },
   componentLayer: {
-    backgroundColor: referenceColors.purple['10'],
-    borderColor: referenceColors.purple['20'],
+    backgroundColor: sysVar('background-accent-purple-subtle'),
+    borderColor: sysVar('background-accent-purple-subtle'),
   },
   layerHeader: {
     display: 'flex',
@@ -603,24 +634,24 @@ const styles: Record<string, React.CSSProperties> = {
     width: '28px',
     height: '28px',
     borderRadius: '50%',
-    backgroundColor: systemColors.light['content-primary'],
-    color: systemColors.light['background-base'],
+    backgroundColor: sysVar('content-primary'),
+    color: sysVar('content-primary-inverse'),
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: '14px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
   },
   layerTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '18px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
   },
   layerSubtitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     marginLeft: '40px',
     marginBottom: '12px',
   },
@@ -632,10 +663,10 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '12px',
   },
   tokenExample: {
-    fontFamily: '"SF Mono", "Monaco", "Inconsolata", monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
-    color: referenceColors.gray['70'],
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    color: sysVar('content-primary'),
+    backgroundColor: sysVar('background-base'),
     padding: '4px 8px',
     borderRadius: '4px',
     width: 'fit-content',
@@ -646,7 +677,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '6px',
     marginLeft: '40px',
     fontSize: '12px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
   },
   fileIcon: {
     fontSize: '14px',
@@ -661,9 +692,9 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'block',
   },
   arrowLabel: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '11px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     marginTop: '-8px',
   },
 
@@ -671,52 +702,52 @@ const styles: Record<string, React.CSSProperties> = {
   detailsPanel: {
     marginTop: '24px',
     padding: '24px',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: '8px',
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    border: `1px solid ${sysVar('background-subtle')}`,
   },
   detailsTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     marginBottom: '8px',
   },
   detailsDescription: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '20px',
     marginBottom: '16px',
   },
   codeBlock: {
     borderRadius: '8px',
     overflow: 'hidden',
-    backgroundColor: systemColors.light['content-primary'],
+    backgroundColor: 'var(--rd-ref-color-dark-gray-00)', // code blocks stay dark in both themes
   },
   codeHeader: {
     padding: '8px 16px',
-    backgroundColor: systemColors.light['background-raised-inverse'],
-    fontFamily: '"SF Mono", "Monaco", "Inconsolata", monospace',
+    backgroundColor: 'var(--rd-ref-color-dark-gray-10)',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
-    color: systemColors.light['border-default'],
+    color: 'var(--rd-ref-color-dark-gray-60)',
   },
   code: {
     padding: '16px',
     margin: 0,
-    fontFamily: '"SF Mono", "Monaco", "Inconsolata", monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '13px',
-    color: referenceColors.gray['30'],
+    color: 'var(--rd-ref-color-dark-gray-90)',
     lineHeight: '20px',
     overflow: 'auto',
   },
 
   // Example Section
   exampleSection: {
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '12px',
     padding: '32px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    boxShadow: shadowVar('surface'),
   },
   exampleFlow: {
     display: 'flex',
@@ -729,9 +760,9 @@ const styles: Record<string, React.CSSProperties> = {
     flex: '1 1 200px',
     minWidth: '180px',
     padding: '16px',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: '8px',
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    border: `1px solid ${sysVar('background-subtle')}`,
   },
   stepHeader: {
     display: 'flex',
@@ -743,19 +774,19 @@ const styles: Record<string, React.CSSProperties> = {
     width: '24px',
     height: '24px',
     borderRadius: '50%',
-    backgroundColor: systemColors.light['content-brand'],
-    color: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-brand'),
+    color: sysVar('content-alternate'),
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: '12px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
   },
   stepTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
   },
   stepContent: {
     display: 'flex',
@@ -763,10 +794,10 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '8px',
   },
   stepCode: {
-    fontFamily: '"SF Mono", "Monaco", "Inconsolata", monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '11px',
-    color: referenceColors.gray['70'],
-    backgroundColor: systemColors.light['background-base'],
+    color: sysVar('content-primary'),
+    backgroundColor: sysVar('background-base'),
     padding: '6px 8px',
     borderRadius: '4px',
     wordBreak: 'break-all',
@@ -775,7 +806,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     fontSize: '24px',
-    color: systemColors.light['border-default'],
+    color: sysVar('content-tertiary'),
     flexShrink: 0,
   },
   colorPreview: {
@@ -783,32 +814,32 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '8px',
     fontSize: '12px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
   },
   colorSwatch: {
     width: '20px',
     height: '20px',
     borderRadius: '4px',
-    border: `1px solid ${referenceColors.gray['30']}`,
+    border: `1px solid ${sysVar('border-subtle-hover')}`,
   },
   previewButton: {
     padding: '6px 16px',
-    backgroundColor: systemColors.light['content-brand'],
-    color: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-brand'),
+    color: sysVar('content-alternate'),
     border: 'none',
     borderRadius: '16px',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
-    fontWeight: 375,
+    fontWeight: 'var(--font-weight-regular)',
     cursor: 'pointer',
   },
 
   // Consumption Patterns
   consumptionSection: {
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '12px',
     padding: '32px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    boxShadow: shadowVar('surface'),
   },
   consumptionGrid: {
     display: 'grid',
@@ -817,10 +848,10 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '20px',
   },
   consumptionCard: {
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: '10px',
     padding: '24px',
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    border: `1px solid ${sysVar('background-subtle')}`,
   },
   consumptionHeader: {
     display: 'flex',
@@ -830,25 +861,25 @@ const styles: Record<string, React.CSSProperties> = {
   },
   consumptionBadge: {
     fontSize: '12px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     padding: '3px 10px',
     borderRadius: '6px',
-    backgroundColor: referenceColors.blue['10'],
-    color: systemColors.light['content-brand'],
+    backgroundColor: sysVar('background-ghost-highlight'),
+    color: sysVar('content-brand'),
   },
   consumptionTag: {
     fontSize: '11px',
     fontWeight: 500,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     padding: '2px 8px',
     borderRadius: '4px',
-    backgroundColor: systemColors.light['background-subtle'],
+    backgroundColor: sysVar('background-subtle'),
   },
   consumptionDesc: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '20px',
     marginBottom: '16px',
   },
@@ -858,40 +889,40 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '8px',
     marginTop: '12px',
     paddingTop: '12px',
-    borderTop: `1px solid ${systemColors.light['background-subtle']}`,
+    borderTop: `1px solid ${sysVar('background-subtle')}`,
   },
   consumptionUsageLabel: {
     fontSize: '11px',
-    fontWeight: 600,
-    color: systemColors.light['content-secondary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-secondary'),
     textTransform: 'uppercase' as const,
     letterSpacing: '0.5px',
   },
   consumptionUsageValue: {
     fontSize: '12px',
     fontWeight: 500,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
   },
   consumptionNote: {
     fontSize: '13px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '20px',
-    backgroundColor: referenceColors.blue['10'],
-    border: `1px solid ${systemColors.light['background-information']}`,
+    backgroundColor: sysVar('background-ghost-highlight'),
+    border: `1px solid ${sysVar('background-information')}`,
     borderRadius: '8px',
     padding: '12px 16px',
   },
 
   // File Structure
   structureSection: {
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '12px',
     padding: '32px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    boxShadow: shadowVar('surface'),
   },
   fileTree: {
-    fontFamily: '"SF Mono", "Monaco", "Inconsolata", monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '13px',
     lineHeight: '28px',
   },
@@ -904,29 +935,29 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '16px',
   },
   folderName: {
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     fontWeight: 500,
   },
   fileName: {
-    color: referenceColors.gray['70'],
+    color: sysVar('content-primary'),
   },
   treeLabel: {
-    color: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
     fontSize: '11px',
     marginLeft: '8px',
   },
   treeDesc: {
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     fontSize: '11px',
     marginLeft: '8px',
   },
 
   // Categories
   categoriesSection: {
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '12px',
     padding: '32px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    boxShadow: shadowVar('surface'),
   },
   categoryGrid: {
     display: 'grid',
@@ -935,7 +966,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   categoryCard: {
     padding: '20px',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: '8px',
     textAlign: 'center',
   },
@@ -950,26 +981,26 @@ const styles: Record<string, React.CSSProperties> = {
     margin: '0 auto 12px',
   },
   categoryTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     marginBottom: '8px',
   },
   categoryList: {
     listStyle: 'none',
     padding: 0,
     margin: 0,
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '22px',
     textAlign: 'left',
   },
 
   // Benefits
   benefitsSection: {
-    backgroundColor: systemColors.light['content-primary'],
+    backgroundColor: sysVar('content-primary'),
     borderRadius: '12px',
     padding: '32px',
   },
@@ -980,7 +1011,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   benefitCard: {
     padding: '20px',
-    backgroundColor: systemColors.light['background-raised-inverse'],
+    backgroundColor: sysVar('background-raised-inverse'),
     borderRadius: '8px',
   },
   benefitIcon: {
@@ -989,16 +1020,16 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '12px',
   },
   benefitTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
-    fontWeight: 600,
-    color: systemColors.light['background-base'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary-inverse'),
     marginBottom: '8px',
   },
   benefitDesc: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
-    color: systemColors.light['border-default'],
+    color: sysVar('content-tertiary'),
     lineHeight: '18px',
   },
 };

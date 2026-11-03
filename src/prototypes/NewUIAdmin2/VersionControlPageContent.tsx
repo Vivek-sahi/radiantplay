@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar, shadowVar } from '@tokens/colors';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Modal, ModalFooter } from '@components/Modal';
 import { Button } from '@components/Button';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-const brand = systemColors.light['content-brand'];
+const font = 'var(--font-family-primary)';
+const brand = sysVar('content-brand');
+const brandFill = sysVar('background-brand');
 
 // ─── Mock data ─────────────────────────────────────────────────────────────────
 
@@ -57,37 +58,37 @@ const Dropdown: React.FC<{ value: string; options: string[]; width?: number; lab
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           width: '100%', height: '40px', padding: '0 14px',
-          border: `1px solid ${open ? brand : '#D1D5DB'}`, borderRadius: '8px',
-          backgroundColor: '#FFFFFF', cursor: 'pointer', fontFamily: font,
-          fontSize: '13.5px', color: isPlaceholder ? '#9CA3AF' : '#111827',
+          border: `1px solid ${open ? brand : sysVar('border-bold')}`, borderRadius: '8px',
+          backgroundColor: sysVar('background-base'), cursor: 'pointer', fontFamily: font,
+          fontSize: '13.5px', color: isPlaceholder ? sysVar('content-tertiary') : sysVar('content-primary'),
           outline: 'none', textAlign: 'left',
-          boxShadow: open ? `0 0 0 2px ${brand}22` : 'none',
+          boxShadow: open ? `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)` : 'none',
           transition: 'border-color 0.15s, box-shadow 0.15s',
         }}
       >
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{selected}</span>
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
           style={{ flexShrink: 0, marginLeft: '8px', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.15s ease' }}>
-          <path d="M2.5 4.5l3.5 3.5 3.5-3.5" stroke="#9CA3AF" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M2.5 4.5l3.5 3.5 3.5-3.5" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
       {open && (
         <div style={{
           position: 'fixed', top: menuPos.top, left: menuPos.left, width: menuPos.width,
-          backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '8px',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.10)', zIndex: 9999, overflow: 'hidden',
+          backgroundColor: sysVar('background-raised'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '8px',
+          boxShadow: shadowVar('menu'), zIndex: 9999, overflow: 'hidden',
         }}>
           {options.map((opt) => (
             <button key={opt} onClick={() => { setSelected(opt); setOpen(false); }}
               style={{
                 display: 'block', width: '100%', padding: '10px 16px',
                 border: 'none', textAlign: 'left', fontFamily: font, fontSize: '13.5px',
-                fontWeight: opt === selected ? 500 : 400,
-                color: opt === selected ? brand : '#111827',
-                backgroundColor: opt === selected ? `${brand}10` : 'transparent',
+                fontWeight: opt === selected ? 'var(--font-weight-medium)' : 'var(--font-weight-regular)',
+                color: opt === selected ? brand : sysVar('content-primary'),
+                backgroundColor: opt === selected ? `color-mix(in srgb, ${brand} 6%, transparent)` : 'transparent',
                 cursor: 'pointer', transition: 'background-color 0.1s',
               }}
-              onMouseEnter={(e) => { if (opt !== selected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F9FAFB'; }}
+              onMouseEnter={(e) => { if (opt !== selected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = sysVar('background-sunken'); }}
               onMouseLeave={(e) => { if (opt !== selected) (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
             >
               {opt}
@@ -123,17 +124,17 @@ const VCDotsMenu: React.FC<{
         onClick={() => setOpen(!open)}
         style={{
           width: '32px', height: '32px', borderRadius: '50%', border: 'none',
-          backgroundColor: '#F3F4F6',
+          backgroundColor: sysVar('background-secondary-action'),
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'background-color 0.1s',
         }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#E5E7EB'; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F3F4F6'; }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = sysVar('background-secondary-action'); }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = sysVar('background-secondary-action'); }}
       >
         <svg width="16" height="4" viewBox="0 0 16 4" fill="none">
-          <circle cx="2" cy="2" r="1.5" fill="#6B7280" />
-          <circle cx="8" cy="2" r="1.5" fill="#6B7280" />
-          <circle cx="14" cy="2" r="1.5" fill="#6B7280" />
+          <circle cx="2" cy="2" r="1.5" fill="var(--rd-sys-color-content-secondary)" />
+          <circle cx="8" cy="2" r="1.5" fill="var(--rd-sys-color-content-secondary)" />
+          <circle cx="14" cy="2" r="1.5" fill="var(--rd-sys-color-content-secondary)" />
         </svg>
       </button>
       {open && (
@@ -141,18 +142,18 @@ const VCDotsMenu: React.FC<{
           <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setOpen(false)} />
           <div style={{
             position: 'absolute', top: 'calc(100% + 4px)', right: 0,
-            backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '8px',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 100, overflow: 'hidden', minWidth: '180px',
+            backgroundColor: sysVar('background-raised'), border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '8px',
+            boxShadow: shadowVar('menu'), zIndex: 100, overflow: 'hidden', minWidth: '180px',
           }}>
             {items.map((item) => (
               <button key={item.label} onClick={item.action}
                 style={{
                   display: 'block', width: '100%', padding: '10px 16px',
                   border: 'none', textAlign: 'left', fontFamily: font, fontSize: '13px',
-                  fontWeight: 400, color: '#111827',
+                  fontWeight: 400, color: sysVar('content-primary'),
                   backgroundColor: 'transparent', cursor: 'pointer',
                 }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F9FAFB'; }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = sysVar('background-sunken'); }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
               >
                 {item.label}
@@ -170,15 +171,15 @@ const VCDotsMenu: React.FC<{
 const InfoBanner = () => (
   <div style={{
     display: 'flex', alignItems: 'flex-start', gap: '12px',
-    backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE',
+    backgroundColor: sysVar('background-information'), border: '1px solid var(--rd-sys-color-border-brand)',
     borderRadius: '8px', padding: '14px 20px', marginBottom: '24px',
   }}>
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginTop: '1px' }}>
-      <circle cx="9" cy="9" r="8.5" fill="#3B82F6" />
-      <path d="M9 8v4" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
-      <circle cx="9" cy="5.5" r="0.9" fill="#fff" />
+      <circle cx="9" cy="9" r="8.5" fill="var(--rd-sys-color-content-brand)" />
+      <path d="M9 8v4" stroke="var(--rd-sys-color-content-inverse)" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="9" cy="5.5" r="0.9" fill="var(--rd-sys-color-content-inverse)" />
     </svg>
-    <div style={{ fontSize: '13.5px', color: '#1E40AF', fontFamily: font, lineHeight: 1.55 }}>
+    <div style={{ fontSize: '13.5px', color: sysVar('content-brand'), fontFamily: font, lineHeight: 1.55 }}>
       Changing these settings will result in a service interruption for all users for a few minutes. Consider making your changes during a scheduled maintenance window.
     </div>
   </div>
@@ -188,18 +189,18 @@ const InfoBanner = () => (
 
 const VCIllustration = () => (
   <svg width="110" height="110" viewBox="0 0 110 110" fill="none">
-    <rect x="18" y="12" width="58" height="72" rx="4" fill="#E5E7EB" stroke="#D1D5DB" strokeWidth="1.5" />
-    <rect x="28" y="26" width="38" height="5" rx="2" fill="#9CA3AF" />
-    <rect x="28" y="37" width="30" height="5" rx="2" fill="#9CA3AF" />
-    <rect x="28" y="48" width="34" height="5" rx="2" fill="#9CA3AF" />
-    <rect x="28" y="59" width="24" height="5" rx="2" fill="#9CA3AF" />
-    <path d="M47 72v18" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" />
-    <path d="M39 80l8-8 8 8" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="30" cy="97" r="2" fill="#D1D5DB" />
-    <circle cx="38" cy="97" r="2" fill="#D1D5DB" />
-    <circle cx="46" cy="97" r="2" fill="#D1D5DB" />
-    <circle cx="54" cy="97" r="2" fill="#D1D5DB" />
-    <circle cx="62" cy="97" r="2" fill="#D1D5DB" />
+    <rect x="18" y="12" width="58" height="72" rx="4" fill="var(--rd-sys-color-border-subtle)" stroke="var(--rd-sys-color-border-bold)" strokeWidth="1.5" />
+    <rect x="28" y="26" width="38" height="5" rx="2" fill="var(--rd-sys-color-content-tertiary)" />
+    <rect x="28" y="37" width="30" height="5" rx="2" fill="var(--rd-sys-color-content-tertiary)" />
+    <rect x="28" y="48" width="34" height="5" rx="2" fill="var(--rd-sys-color-content-tertiary)" />
+    <rect x="28" y="59" width="24" height="5" rx="2" fill="var(--rd-sys-color-content-tertiary)" />
+    <path d="M47 72v18" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="2.5" strokeLinecap="round" />
+    <path d="M39 80l8-8 8 8" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="30" cy="97" r="2" fill="var(--rd-sys-color-content-tertiary)" />
+    <circle cx="38" cy="97" r="2" fill="var(--rd-sys-color-content-tertiary)" />
+    <circle cx="46" cy="97" r="2" fill="var(--rd-sys-color-content-tertiary)" />
+    <circle cx="54" cy="97" r="2" fill="var(--rd-sys-color-content-tertiary)" />
+    <circle cx="62" cy="97" r="2" fill="var(--rd-sys-color-content-tertiary)" />
   </svg>
 );
 
@@ -214,19 +215,19 @@ const OrgBranchForm: React.FC<{ org: typeof VC_ORGS[number] }> = ({ org }) => {
   return (
     <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
-        <div style={{ fontSize: '15px', fontWeight: 600, color: '#111827', fontFamily: font }}>{org.name}</div>
-        <div style={{ fontSize: '12px', color: '#9CA3AF', fontFamily: font, marginTop: '2px' }}>
+        <div style={{ fontSize: '15px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>{org.name}</div>
+        <div style={{ fontSize: '12px', color: sysVar('content-tertiary'), fontFamily: font, marginTop: '2px' }}>
           {org.isPrimary ? 'Primary org' : 'Org'}
         </div>
       </div>
       <div>
-        <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#111827', marginBottom: '6px', fontFamily: font }}>
-          Branch <span style={{ color: '#EF4444' }}>*</span>
+        <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: sysVar('content-primary'), marginBottom: '6px', fontFamily: font }}>
+          Branch <span style={{ color: sysVar('content-failure') }}>*</span>
         </label>
         <Dropdown value="Select" options={['main', 'develop', 'staging', 'production']} width={311} />
       </div>
       <div>
-        <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#111827', marginBottom: '6px', fontFamily: font }}>
+        <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: sysVar('content-primary'), marginBottom: '6px', fontFamily: font }}>
           GUID mapping
         </label>
         <Dropdown value="Select GUId branch" options={['guid-main', 'guid-develop', 'guid-staging']} width={311} />
@@ -237,19 +238,19 @@ const OrgBranchForm: React.FC<{ org: typeof VC_ORGS[number] }> = ({ org }) => {
           role="checkbox" aria-checked={saveHistory}
           style={{
             width: '16px', height: '16px', borderRadius: '3px', flexShrink: 0,
-            border: `1.5px solid ${saveHistory ? brand : '#D1D5DB'}`,
-            backgroundColor: saveHistory ? brand : '#FFFFFF',
+            border: `1.5px solid ${saveHistory ? brand : sysVar('border-bold')}`,
+            backgroundColor: saveHistory ? brandFill : sysVar('background-base'),
             cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'border-color 0.15s, background-color 0.15s',
           }}
         >
           {saveHistory && (
             <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-              <path d="M1 3.5l2.5 2.5L8 1" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M1 3.5l2.5 2.5L8 1" stroke="var(--rd-sys-color-content-inverse)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
         </button>
-        <span style={{ fontSize: '13.5px', color: '#111827', fontFamily: font }}>Save version history</span>
+        <span style={{ fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font }}>Save version history</span>
       </div>
     </div>
   );
@@ -284,14 +285,14 @@ const SetupWizardModal: React.FC<{
 
   const labelStyle = (hasError: boolean): React.CSSProperties => ({
     display: 'block', fontSize: '13.5px', fontWeight: 500,
-    color: hasError ? '#EF4444' : '#111827', marginBottom: '8px', fontFamily: font,
+    color: hasError ? sysVar('content-failure') : sysVar('content-primary'), marginBottom: '8px', fontFamily: font,
   });
 
   const inputStyle = (hasError: boolean): React.CSSProperties => ({
     width: '100%', height: '40px', padding: '0 14px',
-    border: `1px solid ${hasError ? '#EF4444' : '#D1D5DB'}`, borderRadius: '8px',
-    fontFamily: font, fontSize: '13.5px', color: '#111827',
-    outline: 'none', backgroundColor: hasError ? '#FEF2F2' : '#FFFFFF', boxSizing: 'border-box',
+    border: `1px solid ${hasError ? sysVar('border-failure') : sysVar('border-bold')}`, borderRadius: '8px',
+    fontFamily: font, fontSize: '13.5px', color: sysVar('content-primary'),
+    outline: 'none', backgroundColor: hasError ? sysVar('background-failure') : sysVar('background-base'), boxSizing: 'border-box',
   });
 
   return (
@@ -320,14 +321,14 @@ const SetupWizardModal: React.FC<{
             {credError && (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '12px 16px', backgroundColor: '#FEF2F2',
-                border: '1px solid #FECACA', borderRadius: '8px',
+                padding: '12px 16px', backgroundColor: sysVar('background-failure'),
+                border: '1px solid var(--rd-sys-color-border-failure)', borderRadius: '8px',
               }}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-                  <circle cx="8" cy="8" r="7.25" fill="#EF4444" />
-                  <path d="M8 5v3.5M8 10.5h.01" stroke="#FFFFFF" strokeWidth="1.4" strokeLinecap="round" />
+                  <circle cx="8" cy="8" r="7.25" fill="var(--rd-sys-color-content-failure)" />
+                  <path d="M8 5v3.5M8 10.5h.01" stroke="var(--rd-sys-color-content-inverse)" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
-                <span style={{ fontSize: '13.5px', color: '#B91C1C', fontFamily: font }}>
+                <span style={{ fontSize: '13.5px', color: sysVar('content-failure'), fontFamily: font }}>
                   These fields cannot be empty
                 </span>
               </div>
@@ -338,8 +339,8 @@ const SetupWizardModal: React.FC<{
               <input type="text" placeholder="https://github.com/simranpandit-thoughtspot" value={repo}
                 onChange={(e) => { setRepo(e.target.value); dismissError(); }}
                 style={inputStyle(credError)}
-                onFocus={(e) => { if (!credError) { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; } }}
-                onBlur={(e) => { if (!credError) { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; } }}
+                onFocus={(e) => { if (!credError) { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)`; } }}
+                onBlur={(e) => { if (!credError) { e.currentTarget.style.borderColor = sysVar('border-bold'); e.currentTarget.style.boxShadow = 'none'; } }}
               />
             </div>
             <div>
@@ -347,8 +348,8 @@ const SetupWizardModal: React.FC<{
               <input type="text" placeholder="Enter Username" value={username}
                 onChange={(e) => { setUsername(e.target.value); dismissError(); }}
                 style={inputStyle(credError)}
-                onFocus={(e) => { if (!credError) { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; } }}
-                onBlur={(e) => { if (!credError) { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; } }}
+                onFocus={(e) => { if (!credError) { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)`; } }}
+                onBlur={(e) => { if (!credError) { e.currentTarget.style.borderColor = sysVar('border-bold'); e.currentTarget.style.boxShadow = 'none'; } }}
               />
             </div>
             <div>
@@ -356,8 +357,8 @@ const SetupWizardModal: React.FC<{
               <input type="text" placeholder="Enter Access Token" value={token}
                 onChange={(e) => { setToken(e.target.value); dismissError(); }}
                 style={inputStyle(credError)}
-                onFocus={(e) => { if (!credError) { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; } }}
-                onBlur={(e) => { if (!credError) { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; } }}
+                onFocus={(e) => { if (!credError) { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)`; } }}
+                onBlur={(e) => { if (!credError) { e.currentTarget.style.borderColor = sysVar('border-bold'); e.currentTarget.style.boxShadow = 'none'; } }}
               />
             </div>
           </div>
@@ -379,19 +380,19 @@ const SetupWizardModal: React.FC<{
                 role="checkbox" aria-checked={saveHistory}
                 style={{
                   width: '16px', height: '16px', borderRadius: '3px', flexShrink: 0,
-                  border: `1.5px solid ${saveHistory ? brand : '#D1D5DB'}`,
-                  backgroundColor: saveHistory ? brand : '#FFFFFF',
+                  border: `1.5px solid ${saveHistory ? brand : sysVar('border-bold')}`,
+                  backgroundColor: saveHistory ? brandFill : sysVar('background-base'),
                   cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'border-color 0.15s, background-color 0.15s',
                 }}
               >
                 {saveHistory && (
                   <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-                    <path d="M1 3.5l2.5 2.5L8 1" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M1 3.5l2.5 2.5L8 1" stroke="var(--rd-sys-color-content-inverse)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
               </button>
-              <span style={{ fontSize: '13.5px', color: '#111827', fontFamily: font }}>Save version history</span>
+              <span style={{ fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font }}>Save version history</span>
             </div>
           </div>
         )}
@@ -399,7 +400,7 @@ const SetupWizardModal: React.FC<{
         {step === 2 && scope === 'all-orgs' && (
           <div style={{ display: 'flex', minHeight: '260px', margin: '0 -32px' }}>
             {/* Left: org list */}
-            <div style={{ width: '220px', flexShrink: 0, borderRight: '1px solid #E5E7EB', overflowY: 'auto' }}>
+            <div style={{ width: '220px', flexShrink: 0, borderRight: '1px solid var(--rd-sys-color-border-subtle)', overflowY: 'auto' }}>
               {VC_ORGS.map((org) => (
                 <button
                   key={org.id}
@@ -407,17 +408,17 @@ const SetupWizardModal: React.FC<{
                   style={{
                     display: 'block', width: '100%', padding: '14px 20px',
                     border: 'none', textAlign: 'left', fontFamily: font, fontSize: '13.5px',
-                    fontWeight: org.id === selectedOrgId ? 600 : 400, color: '#111827',
-                    backgroundColor: org.id === selectedOrgId ? '#F5F8FF' : 'transparent',
+                    fontWeight: org.id === selectedOrgId ? 'var(--font-weight-emphasis)' : 'var(--font-weight-regular)', color: sysVar('content-primary'),
+                    backgroundColor: org.id === selectedOrgId ? sysVar('background-information') : 'transparent',
                     cursor: 'pointer',
                     borderLeft: org.id === selectedOrgId ? `3px solid ${brand}` : '3px solid transparent',
-                    borderBottom: '1px solid #F3F4F6', transition: 'background-color 0.1s',
+                    borderBottom: '1px solid var(--rd-sys-color-border-subtle)', transition: 'background-color 0.1s',
                   }}
-                  onMouseEnter={(e) => { if (org.id !== selectedOrgId) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F9FAFB'; }}
+                  onMouseEnter={(e) => { if (org.id !== selectedOrgId) (e.currentTarget as HTMLButtonElement).style.backgroundColor = sysVar('background-sunken'); }}
                   onMouseLeave={(e) => { if (org.id !== selectedOrgId) (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
                 >
                   <div>{org.name}</div>
-                  {org.isPrimary && <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px' }}>Primary Org</div>}
+                  {org.isPrimary && <div style={{ fontSize: '11px', color: sysVar('content-tertiary'), marginTop: '2px' }}>Primary Org</div>}
                 </button>
               ))}
             </div>
@@ -448,14 +449,14 @@ const EditCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
     onClose();
   };
 
-  const labelColor = (empty: boolean) => empty && credError ? '#EF4444' : '#374151';
-  const borderColor = (empty: boolean) => empty && credError ? '#EF4444' : '#D1D5DB';
-  const bgColor = (empty: boolean) => empty && credError ? '#FEF2F2' : '#FFFFFF';
+  const labelColor = (empty: boolean) => empty && credError ? sysVar('content-failure') : sysVar('content-primary');
+  const borderColor = (empty: boolean) => empty && credError ? sysVar('border-failure') : sysVar('border-bold');
+  const bgColor = (empty: boolean) => empty && credError ? sysVar('background-failure') : sysVar('background-base');
 
   const inputStyle = (value: string): React.CSSProperties => ({
     width: '100%', height: '40px', padding: '0 14px',
     border: `1px solid ${borderColor(!value.trim())}`, borderRadius: '6px',
-    fontSize: '13.5px', color: '#111827', fontFamily: font,
+    fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font,
     outline: 'none', boxSizing: 'border-box',
     backgroundColor: bgColor(!value.trim()),
   });
@@ -483,28 +484,28 @@ const EditCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
         {!credError ? (
           <div style={{
             display: 'flex', alignItems: 'center', gap: '10px',
-            padding: '12px 16px', backgroundColor: '#FFFBEB',
-            border: '1px solid #FDE68A', borderRadius: '8px',
+            padding: '12px 16px', backgroundColor: sysVar('background-warning'),
+            border: '1px solid var(--rd-sys-color-border-warning)', borderRadius: '8px',
           }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-              <circle cx="8" cy="8" r="7.25" fill="#F59E0B" />
-              <path d="M8 5v3.5M8 10.5h.01" stroke="#FFFFFF" strokeWidth="1.4" strokeLinecap="round" />
+              <circle cx="8" cy="8" r="7.25" fill="var(--rd-sys-color-content-warning)" />
+              <path d="M8 5v3.5M8 10.5h.01" stroke="var(--rd-sys-color-content-inverse)" strokeWidth="1.4" strokeLinecap="round" />
             </svg>
-            <span style={{ fontSize: '13.5px', color: '#92400E', fontFamily: font }}>
+            <span style={{ fontSize: '13.5px', color: sysVar('content-warning'), fontFamily: font }}>
               Updating details might lead to loss of version history
             </span>
           </div>
         ) : (
           <div style={{
             display: 'flex', alignItems: 'center', gap: '10px',
-            padding: '12px 16px', backgroundColor: '#FEF2F2',
-            border: '1px solid #FECACA', borderRadius: '8px',
+            padding: '12px 16px', backgroundColor: sysVar('background-failure'),
+            border: '1px solid var(--rd-sys-color-border-failure)', borderRadius: '8px',
           }}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-              <circle cx="8" cy="8" r="7.25" fill="#EF4444" />
-              <path d="M8 5v3.5M8 10.5h.01" stroke="#FFFFFF" strokeWidth="1.4" strokeLinecap="round" />
+              <circle cx="8" cy="8" r="7.25" fill="var(--rd-sys-color-content-failure)" />
+              <path d="M8 5v3.5M8 10.5h.01" stroke="var(--rd-sys-color-content-inverse)" strokeWidth="1.4" strokeLinecap="round" />
             </svg>
-            <span style={{ fontSize: '13.5px', color: '#B91C1C', fontFamily: font }}>
+            <span style={{ fontSize: '13.5px', color: sysVar('content-failure'), fontFamily: font }}>
               These fields cannot be empty
             </span>
           </div>
@@ -515,8 +516,8 @@ const EditCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
           <input type="text" placeholder="https://github.com/simranpandit-thoughtspot" value={repo}
             onChange={(e) => { setRepo(e.target.value); if (credError) setCredError(false); }}
             style={inputStyle(repo)}
-            onFocus={(e) => { if (repo.trim()) { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; } }}
-            onBlur={(e) => { if (repo.trim()) { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; } }}
+            onFocus={(e) => { if (repo.trim()) { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)`; } }}
+            onBlur={(e) => { if (repo.trim()) { e.currentTarget.style.borderColor = sysVar('border-bold'); e.currentTarget.style.boxShadow = 'none'; } }}
           />
         </div>
         <div>
@@ -524,8 +525,8 @@ const EditCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
           <input type="text" placeholder="Enter Username" value={username}
             onChange={(e) => { setUsername(e.target.value); if (credError) setCredError(false); }}
             style={inputStyle(username)}
-            onFocus={(e) => { if (username.trim()) { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; } }}
-            onBlur={(e) => { if (username.trim()) { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; } }}
+            onFocus={(e) => { if (username.trim()) { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)`; } }}
+            onBlur={(e) => { if (username.trim()) { e.currentTarget.style.borderColor = sysVar('border-bold'); e.currentTarget.style.boxShadow = 'none'; } }}
           />
         </div>
         <div>
@@ -533,8 +534,8 @@ const EditCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose }) =>
           <input type="text" placeholder="Enter Access Token" value={token}
             onChange={(e) => { setToken(e.target.value); if (credError) setCredError(false); }}
             style={inputStyle(token)}
-            onFocus={(e) => { if (token.trim()) { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; } }}
-            onBlur={(e) => { if (token.trim()) { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; } }}
+            onFocus={(e) => { if (token.trim()) { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)`; } }}
+            onBlur={(e) => { if (token.trim()) { e.currentTarget.style.borderColor = sysVar('border-bold'); e.currentTarget.style.boxShadow = 'none'; } }}
           />
         </div>
       </div>
@@ -580,16 +581,16 @@ export const VersionControlPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
   };
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: sysVar('background-base') }}>
 
       {/* ── Sticky header ── */}
       <div style={{
         flexShrink: 0, padding: '28px 40px 20px',
-        borderBottom: '1px solid #E5E7EB', backgroundColor: '#FFFFFF',
+        borderBottom: '1px solid var(--rd-sys-color-border-subtle)', backgroundColor: sysVar('background-base'),
       }}>
         <h1 style={{
           margin: 0, fontSize: '22px', fontWeight: 700,
-          color: '#0F172A', fontFamily: font, letterSpacing: '-0.3px',
+          color: sysVar('content-primary'), fontFamily: font, letterSpacing: '-0.3px',
         }}>
           Version control
         </h1>
@@ -610,18 +611,18 @@ export const VersionControlPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
                   <VCIllustration />
                 </div>
                 <div>
-                  <div style={{ fontSize: '20px', fontWeight: 700, color: '#111827', fontFamily: font, marginBottom: '12px' }}>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, marginBottom: '12px' }}>
                     Enable version control
                   </div>
-                  <div style={{ fontSize: '14px', color: '#6B7280', fontFamily: font, lineHeight: 1.7, marginBottom: '24px' }}>
+                  <div style={{ fontSize: '14px', color: sysVar('content-secondary'), fontFamily: font, lineHeight: 1.7, marginBottom: '24px' }}>
                     Your users will be able to track and maintain a history of changes to ThoughSpot objects. Once version control is enabled, you will find credentials and branch settings here.
                   </div>
                   <button
                     onClick={() => setShowSetupModal(true)}
                     style={{
                       height: '38px', padding: '0 24px', borderRadius: '20px',
-                      border: 'none', backgroundColor: brand,
-                      cursor: 'pointer', fontFamily: font, fontSize: '13.5px', fontWeight: 600, color: '#FFFFFF',
+                      border: 'none', backgroundColor: brandFill,
+                      cursor: 'pointer', fontFamily: font, fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-inverse'),
                       transition: 'opacity 0.15s',
                     }}
                     onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.9'; }}
@@ -639,13 +640,13 @@ export const VersionControlPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
             <div>
               <InfoBanner />
               <div style={{
-                backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB',
+                backgroundColor: sysVar('background-secondary-action'), border: '1px solid var(--rd-sys-color-border-subtle)',
                 borderRadius: '12px', overflow: 'hidden',
               }}>
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '16px 24px',
-                  borderBottom: credCardOpen ? '1px solid #E5E7EB' : 'none',
+                  borderBottom: credCardOpen ? '1px solid var(--rd-sys-color-border-subtle)' : 'none',
                 }}>
                   <button
                     onClick={() => setCredCardOpen(!credCardOpen)}
@@ -657,9 +658,9 @@ export const VersionControlPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
                   >
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
                       style={{ flexShrink: 0, transform: credCardOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.22s ease' }}>
-                      <path d="M3 5.5l4 4 4-4" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M3 5.5l4 4 4-4" stroke="var(--rd-sys-color-content-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font }}>
+                    <span style={{ fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font }}>
                       Manage credentials and branch settings
                     </span>
                   </button>
@@ -689,17 +690,17 @@ export const VersionControlPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
                       <div key={label} style={{
                         display: 'flex', alignItems: 'center',
                         justifyContent: 'space-between', gap: '32px',
-                        padding: '18px 24px', backgroundColor: '#FFFFFF',
-                        border: '1px solid #E9EAEC', borderRadius: '8px',
+                        padding: '18px 24px', backgroundColor: sysVar('background-base'),
+                        border: '1px solid var(--rd-sys-color-border-subtle)', borderRadius: '8px',
                       }}>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', fontFamily: font, minWidth: '140px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, minWidth: '140px' }}>
                           {label}
                         </div>
                         <div style={{
                           flex: 1, maxWidth: '400px', height: '38px',
                           borderRadius: '6px', padding: '0 14px',
-                          fontSize: '13.5px', color: '#374151', fontFamily: font,
-                          backgroundColor: '#F3F4F6', display: 'flex', alignItems: 'center',
+                          fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font,
+                          backgroundColor: sysVar('background-secondary-action'), display: 'flex', alignItems: 'center',
                         }}>
                           {value}
                         </div>
@@ -721,34 +722,34 @@ export const VersionControlPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
                 <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
                     style={{ position: 'absolute', left: '12px', flexShrink: 0 }}>
-                    <circle cx="6" cy="6" r="4.5" stroke="#9CA3AF" strokeWidth="1.4" />
-                    <line x1="9.5" y1="9.5" x2="12.5" y2="12.5" stroke="#9CA3AF" strokeWidth="1.4" strokeLinecap="round" />
+                    <circle cx="6" cy="6" r="4.5" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.4" />
+                    <line x1="9.5" y1="9.5" x2="12.5" y2="12.5" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.4" strokeLinecap="round" />
                   </svg>
                   <input
                     type="text" placeholder="Search"
                     value={searchValue} onChange={(e) => setSearchValue(e.target.value)}
                     style={{
                       width: '300px', height: '36px', paddingLeft: '36px', paddingRight: '12px',
-                      border: '1px solid #D1D5DB', borderRadius: '8px',
-                      fontFamily: font, fontSize: '13px', color: '#111827',
-                      outline: 'none', backgroundColor: '#FFFFFF',
+                      border: '1px solid var(--rd-sys-color-border-bold)', borderRadius: '8px',
+                      fontFamily: font, fontSize: '13px', color: sysVar('content-primary'),
+                      outline: 'none', backgroundColor: sysVar('background-base'),
                     }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)`; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = sysVar('border-bold'); e.currentTarget.style.boxShadow = 'none'; }}
                   />
                 </div>
               </div>
 
               {/* Table card — grey outer, white inner table */}
               <div style={{
-                backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB',
+                backgroundColor: sysVar('background-secondary-action'), border: '1px solid var(--rd-sys-color-border-subtle)',
                 borderRadius: '12px', overflow: 'hidden',
               }}>
                 {/* Card header */}
                 <div style={{
                   padding: '16px 24px',
-                  borderBottom: '1px solid #E5E7EB',
-                  fontSize: '14px', fontWeight: 600, color: '#111827', fontFamily: font,
+                  borderBottom: '1px solid var(--rd-sys-color-border-subtle)',
+                  fontSize: '14px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'), fontFamily: font,
                 }}>
                   Manage version control
                 </div>
@@ -756,26 +757,26 @@ export const VersionControlPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
                 {/* White table container inside grey card */}
                 <div style={{ padding: '16px' }}>
                   <div style={{
-                    backgroundColor: '#FFFFFF', borderRadius: '8px',
-                    border: '1px solid #E5E7EB', overflow: 'hidden',
+                    backgroundColor: sysVar('background-base'), borderRadius: '8px',
+                    border: '1px solid var(--rd-sys-color-border-subtle)', overflow: 'hidden',
                   }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: font }}>
                       <thead>
-                        <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
-                          <th style={{ padding: '12px 16px 12px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 400, color: '#9CA3AF' }}>Name</th>
-                          <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 400, color: '#9CA3AF' }}>Status</th>
-                          <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 400, color: '#9CA3AF' }}>Repository</th>
-                          <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 400, color: '#9CA3AF' }}>Branch</th>
+                        <tr style={{ borderBottom: '1px solid var(--rd-sys-color-border-subtle)' }}>
+                          <th style={{ padding: '12px 16px 12px 20px', textAlign: 'left', fontSize: '13px', fontWeight: 400, color: sysVar('content-tertiary') }}>Name</th>
+                          <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 400, color: sysVar('content-tertiary') }}>Status</th>
+                          <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 400, color: sysVar('content-tertiary') }}>Repository</th>
+                          <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 400, color: sysVar('content-tertiary') }}>Branch</th>
                           <th style={{ width: '52px', padding: '12px 20px 12px 0' }}></th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredOrgs.map((org, idx) => (
                           <tr key={org.id} style={{
-                            borderBottom: idx < filteredOrgs.length - 1 ? '1px solid #F3F4F6' : 'none',
+                            borderBottom: idx < filteredOrgs.length - 1 ? '1px solid var(--rd-sys-color-border-subtle)' : 'none',
                             transition: 'background-color 0.1s',
                           }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.backgroundColor = '#FAFAFA'; }}
+                            onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.backgroundColor = sysVar('background-sunken'); }}
                             onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.backgroundColor = 'transparent'; }}
                           >
                             <td style={{ padding: '18px 16px 18px 20px', verticalAlign: 'middle' }}>
@@ -787,17 +788,17 @@ export const VersionControlPageContent: React.FC<{ scope?: 'all-orgs' | 'primary
                               <span style={{
                                 display: 'inline-block', padding: '3px 10px', borderRadius: '4px',
                                 fontSize: '12.5px', fontWeight: 500, fontFamily: font,
-                                backgroundColor: org.status === 'mapped' ? '#DCFCE7' : '#FEE2E2',
-                                color: org.status === 'mapped' ? '#166534' : '#991B1B',
+                                backgroundColor: org.status === 'mapped' ? sysVar('background-success') : sysVar('background-failure'),
+                                color: org.status === 'mapped' ? sysVar('content-success') : sysVar('content-failure'),
                               }}>
                                 {org.status === 'mapped' ? 'Mapped' : 'Unmapped'}
                               </span>
                             </td>
                             <td style={{ padding: '18px 16px', verticalAlign: 'middle' }}>
-                              <span style={{ fontSize: '13.5px', color: '#374151', fontFamily: font }}>{org.repository}</span>
+                              <span style={{ fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font }}>{org.repository}</span>
                             </td>
                             <td style={{ padding: '18px 16px', verticalAlign: 'middle' }}>
-                              <span style={{ fontSize: '13.5px', color: '#374151', fontFamily: font }}>{org.branch}</span>
+                              <span style={{ fontSize: '13.5px', color: sysVar('content-primary'), fontFamily: font }}>{org.branch}</span>
                             </td>
                             <td style={{ padding: '18px 20px 18px 0', verticalAlign: 'middle', textAlign: 'right' }}>
                               <VCDotsMenu status={org.status} onEdit={() => setEditCredModal(true)} onReset={() => setResetDialog(true)} />

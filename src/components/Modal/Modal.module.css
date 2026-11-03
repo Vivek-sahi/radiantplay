@@ -88,19 +88,20 @@
   max-width: 1182px;
 }
 
-/* M4: Full Screen - Immersive experiences, editors */
+/* M4: Full Screen - Immersive experiences, editors.
+ * Fills the overlay's padded area, so it sits 24px (spacing F) from every
+ * edge of the window, per Figma. */
 .M4 {
-  width: calc(100vw - 16px);
-  max-width: 1440px;
-  height: calc(100vh - 16px);
+  width: 100%;
+  height: 100%;
   max-height: none;
-  margin: 8px;
 }
 
-@media (max-width: 1400px) {
-  .M4 {
-    max-width: 1366px;
-  }
+/* M4 header is 72px tall, border included, with the title and Close
+ * button 20px from the top. */
+.M4 .header {
+  height: 72px;
+  padding-bottom: 0;
 }
 
 /* Legacy size aliases for backward compatibility */
@@ -158,6 +159,7 @@
   gap: var(--spacing-4, 16px);
   padding: var(--spacing-5, 20px) var(--spacing-6, 24px);
   border-bottom: 1px solid var(--rd-sys-color-border-divider);
+  background-color: var(--rd-sys-color-background-raised);
   flex-shrink: 0;
 }
 
@@ -168,9 +170,9 @@
 }
 
 .eyebrow {
-  font-family: var(--font-family-primary, 'Plain', sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md, 20px);
   color: var(--rd-sys-color-content-secondary);
   margin: 0;
@@ -178,9 +180,9 @@
 
 .title {
   margin: 0;
-  font-family: var(--font-family-primary, 'Plain', sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-xl, 20px);
-  font-weight: var(--font-weight-medium, 500);
+  font-weight: var(--font-weight-emphasis, 550);
   line-height: var(--line-height-xl, 28px);
   letter-spacing: -0.4px;
   color: var(--rd-sys-color-content-primary);
@@ -223,9 +225,9 @@
   border: none;
   background-color: transparent;
   border-radius: var(--radius-md, 6px);
-  font-family: var(--font-family-primary, 'Plain', sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md, 20px);
   color: var(--rd-sys-color-content-brand);
   cursor: pointer;
@@ -270,8 +272,7 @@
   gap: var(--spacing-4, 16px);
   height: 72px;
   padding: 0 var(--spacing-6, 24px);
-  border-top: 1px solid var(--rd-sys-color-border-divider);
-  background-color: var(--rd-sys-color-background-sunken);
+  background-color: var(--rd-sys-color-background-on-base);
   border-radius: 0 0 var(--radius-md, 6px) var(--radius-md, 6px);
   flex-shrink: 0;
 }
@@ -373,9 +374,9 @@
   padding: 0 var(--spacing-4, 16px);
   border: none;
   background-color: transparent;
-  font-family: var(--font-family-primary, 'Plain', sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md, 20px);
   color: var(--rd-sys-color-content-primary);
   text-align: left;
@@ -440,7 +441,7 @@
 .splashTitle {
   flex: 1;
   margin: 0;
-  font-family: var(--font-family-primary, 'Plain', sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-2xl, 24px);
   font-weight: var(--font-weight-medium, 500);
   line-height: var(--line-height-2xl, 32px);
@@ -460,9 +461,9 @@
 }
 
 .splashBulletItem {
-  font-family: var(--font-family-primary, 'Plain', sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md, 20px);
   color: var(--rd-sys-color-content-primary);
   margin-bottom: var(--spacing-2, 8px);
@@ -475,9 +476,9 @@
 .splashDescription {
   flex: 1;
   margin: 0;
-  font-family: var(--font-family-primary, 'Plain', sans-serif);
+  font-family: var(--font-family-primary);
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-light, 375);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md, 20px);
   color: var(--rd-sys-color-content-primary);
   max-width: 294px;

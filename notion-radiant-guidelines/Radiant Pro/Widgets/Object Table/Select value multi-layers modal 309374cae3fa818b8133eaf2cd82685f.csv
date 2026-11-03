@@ -1,6 +1,0 @@
-﻿Ref,Name,Description,Dynamic Behaviour,Default State,Error State,Content Rules
-1,Modal title,"This title let users know they are editing which column property ",N/A,N/A,N/A,Edit + column’s name
-2,Options title,The name of this group of options,N/A,N/A,N/A,N/A
-3,Single object list picker,The options has sub-layer options,"Click on this row will go to the deeper layer Object%20Table%20309374cae3fa8113b439c8bb096e0478.mdObject%20Table%20309374cae3fa8113b439c8bb096e0478.mdObject%20Table%20309374cae3fa8113b439c8bb096e0478.md
-1. The title would be the sub-layer options group title
-2. Click on “back” will return to the previous layer.",N/A,N/A,N/A

@@ -1,5 +1,565 @@
 # Changelog
 
+## 26.11.1f — 2026-11-02
+
+Release tidy-up.
+
+- The Spotter components sample no longer carries an example draft spec, so nothing about `/rp-spec` shows until someone runs it
+- The icons page shows its real last-updated date
+- `/rp-spec`'s type declaration moved from `src/vite-env.d.ts` to its own `src/spec-env.d.ts`, so forks that added their own declarations to `vite-env.d.ts` sync without a conflict
+- `TrashCanIcon` still works for code that imports it directly; it now shows the Delete icon, like `trash-can`. `npm run sync-icons` keeps old names like this from now on
+
+## 26.11.1e — 2026-11-02
+
+The icon rule reaches every prompt, not only the bigger tasks.
+
+- The conventions reminder that runs on every message in Claude Code has a sixth line: icons come from `<Icon>`, picked by meaning from the rule files, never drawn as inline SVG, emoji or an icon library, and brand logos use `<ConnectorLogo>`
+
+## 26.11.1d — 2026-11-02
+
+Connector logos have one shared home, for Spotter, Apps and anything else.
+
+- `<ConnectorLogo id="salesforce" />` from `@components/ConnectorLogo` shows a connector's logo. ThoughtSpot, Salesforce, HubSpot, Slack, Gong and monday.com have logos (from the Apps film). The ThoughtSpot mark follows light and dark
+- Connectors without a logo yet (Google Workspace, OneDrive, Canva, Notion, Dropbox, Figma) show their brand-colour disc and initial, as before
+- One list, `connectors.ts`, holds each connector's name, brand colour and logo; files live in `src/assets/logos/connectors/`
+- Spotter's composer shows real logos in its Connectors menu where one exists
+- The rule files tell Claude to use ConnectorLogo for brand logos, never an icon or a drawn logo
+
+## 26.11.1c — 2026-11-02
+
+Icons sync from Figma again, with 18 new ones.
+
+- New: `ai-star`, `analyst`, `collapse`, `delete`, `globe`, `memory`, `model`, `new-chat`, `parameter`, `styling`, `tab` and `trash-folder`, plus `-stroke` outlines of `answer`, `delete`, `liveboard`, `model`, `table` and `trash-folder`. The other icons are refreshed from the current Figma file. 167 icons in all
+- Figma renamed Trash can to Delete; `trash-can` still works and shows the new icon
+- `npm run sync-icons` works again: it reads the new Iconography page, the whole page (icons sit deeper than before), Solid and Stroke styles, and misnamed layers. It retries slow downloads and drops white frame backgrounds that turned `analyst` into a black square
+
+## 26.11.1b — 2026-11-02
+
+Claude picks the right icon more often, and never draws its own.
+
+- The rule files list icons by meaning: close is `cross`, settings is `settings`, delete is `trash-can`, comment is `cord`, notifications is `monitor`, and about 40 more. They also list what has no icon (home, external link, mail and others): use the closest one or a text button, and never draw an icon as inline SVG, use emoji or add an icon library
+- `/rp-radiant-check` lists icons drawn by hand in a prototype, with the `<Icon>` to use instead
+- The component inventory no longer offers an `xl` icon size; the sizes are xs, s, m and l
+- `apps-stroke` drew faintly in light mode: its masks were recoloured. Masks now keep their white fill, in the icon and in `npm run sync-icons`
+
+## 26.11.1a — 2026-11-02
+
+The new Apps object icon from the Radiant 3.0 Figma file.
+
+- `apps` (solid) and `apps-stroke` (outline), each in all four sizes, exported from the Object Icons set in Figma. Use them like any other icon: `<Icon name="apps" />`. They sit in the Product group on the icons page, which now lists 153 icons
+- The icon lists in the rule files include both names, so Claude can find them
+
+## 26.10.4s — 2026-10-28
+
+Prototypes can carry an engineering spec that the designer approves, learned from Sneharsh's SpotterRefresh spec.
+
+- `/rp-spec <Prototype>`: when a prototype is ready to hand off, Claude checks it (build, dark scan, hardcoded values, raw HTML), drafts `spec.tsx` from the code (parts, live states, props, sizes, tokens, files, source), then goes through anatomy, states, behaviour, motion, scope and usage with the designer. It's marked Ready for build only when the designer approves
+- A prototype with a spec gets a floating Prototype / Spec switch. A draft shows only under `npm run dev`. An approved spec shows to everyone with who approved it and when, and reads Changed since approval as soon as the prototype's code changes (`npm run spec:hash` fingerprints it)
+- The spec page reads the prototype's tokens from its CSS Modules and lists hardcoded values left, with the `npm run handoff` command. Prototypes without a spec look the same as before
+- The Spotter components sample has an example spec (User message), as a draft
+
+## 26.10.4r — 2026-10-28
+
+The gallery introduces groups once, with a short splash screen.
+
+- The first time someone opens the gallery after syncing, a one-page splash shows a picture of grouped prototypes and three lines: groups and collapsing; Move to group, drag and rename; and how to keep the old view (All in one grid in the Sort menu, sorted by recent or name). Got it closes it for good in that browser
+- It uses the Modal splash screen type, with light and dark pictures in `public/announcements/`
+
+## 26.10.4q — 2026-10-28
+
+Fewer merge conflicts for designers syncing their forks.
+
+- `vite.config.ts` wires the gallery's save plugin in at the top of the imports and the end of the plugin list, where forks rarely edit, so forks that added their own imports or settings merge cleanly
+- `/rp-sync-upstream` knows two more conflicts: keep both sides of `vite.config.ts` (and keep the gallery plugin), and keep the fork's own `_liveboard-template/index.tsx` when the designer built on it
+- Vite 7.3.7 fixes the dev server's security alerts (cross-origin requests to custom middleware, and its editor launcher). Only `npm run dev` was affected; the deployed sites serve built files. Run `npm install` after syncing
+
+## 26.10.4p — 2026-10-28
+
+New FontFormatter component from Figma, and RichTextEditor draws its format buttons with Radiant icons.
+
+- `FontFormatter`: bold, italic, strikethrough and underline toggles in one bordered 32px group (Figma 73:9046). A format that's on uses Ghost Highlight. It has its own doc page and Component Registry row
+- RichTextEditor's bold, italic and underline buttons use the Radiant icons instead of letters drawn in Georgia, and a `strikethrough` toolbar item is available. The default toolbar is unchanged
+- `component-inventory.md` lists FontFormatter, ColorPicker's menu mode and the Accordion list
+
+## 26.10.4o — 2026-10-28
+
+Accordion gets the Figma basic list. The existing variants look the same.
+
+- `variant="list"`: 48px parent rows with a leading chevron and lines between them. A `list` nested inside an item gives 32px child rows
+- `Accordion.ListItem`: a 32px selectable row. Single select uses Ghost Highlight with brand text; `selectMode="multi"` shows a checkmark. `actions` (like Ghost icon buttons) show on hover and focus
+- For everyone: an open item follows its content's height, so an accordion inside another one no longer gets cut off when it opens
+
+## 26.10.4n — 2026-10-28
+
+ColorPicker gets the Figma picker as a new mode. The existing modes don't change.
+
+- `selectorType="menu"`: a 32px trigger showing the current colour opens a panel with a Hex color field and 56 Radiant swatches (seven tones of gray, red, orange, purple, green, yellow, teal and blue), as in Figma 116:9059. A custom `palette` still works
+- `RADIANT_PALETTE` is exported, for prototypes that need the same swatches
+- For everyone: a Popover near the bottom or top of the screen flips to the other side of its trigger instead of being pushed on top of it
+
+## 26.10.4m — 2026-10-28
+
+Table follows the Figma Object table, the most-used component and the biggest gap in the re-audit. Existing tables look the same.
+
+- New cell types in `TableCellRenderers`, for everyone:
+  - `title`: a brand title with an optional icon, description line and error line
+  - `tokens`: read-only Tokens with a +N count
+  - `button` and `iconButton`: their clicks don't select or open the row
+- Under `look: 'radiant-3'`:
+  - A 32px header on On Base, in sentence case and regular weight
+  - 72px rows (`compact` still makes them shorter)
+  - Radiant checkboxes, with the select-all box showing a partial selection
+  - The sort icon shows when you hover a sortable header, which gets a fill
+- The Table doc page lists the cell types and shows an Object table example
+
+## 26.10.4l — 2026-10-28
+
+Batch 9 of the Figma re-audit: new opt-in options, and Radiant 3.0 sizes and states for prototypes with `look: 'radiant-3'`. Other prototypes look the same.
+
+- New options, off unless you use them:
+  - SearchInput `onClear` shows a clear button while the field has a value. `variant="underlined"` gives the 40px row with a bottom border used in menus and panels
+  - Tabs: a tab with `disabled: true` shows but can't be selected
+  - LoadingIndicator.Contextual `color`: blue (default), gray or white
+- For everyone: an icon-only Button uses its text children as its accessible name, so screen readers can announce it
+- Under `look: 'radiant-3'`:
+  - Select puts helper text beside the label, and on an error the label reads Please choose “Label” with an icon, as TextInput already does
+  - SearchInput's icon is Content/Secondary
+  - ProgressBar's default bar is 8px, fully rounded and brand blue
+  - PageHeader draws a divider between the title and the tabs
+  - Stepper and VerticalStepper titles are regular weight
+  - The Contextual spinner defaults to 18px
+  - Avatar names scale with the avatar (12, 14 or 16px), and AvatarGroup shows three avatars before +N
+- Select and SearchInput doc pages show the new options
+- Component doc pages start with Props collapsed, behind a Show props button, so Usage and the example come first. A link to `#props` opens it
+
+## 26.10.4k — 2026-10-28
+
+More components follow the Radiant 3.0 Figma file. Two plain bugs are fixed for everyone; everything else applies only to prototypes with `look: 'radiant-3'`, so other prototypes look the same.
+
+- For everyone: a tertiary icon-only button (the Ghost icon button) is round, as `iconOnly` always meant. Two class names in the tertiary style outranked it and left it square. Only the hover fill changes shape. White links keep their colour on hover and underline, instead of turning grey
+- Under `look: 'radiant-3'`:
+  - Ghost icon buttons draw the icon in Content/Primary, and in brand only when activated
+  - The active menu row and the selected Select option use Ghost Highlight with brand text instead of a solid blue fill. Menu group titles are 14px in sentence case on a 32px row
+  - The selected day, month and year in the date picker use Ghost Highlight with brand text instead of solid brand
+  - Tooltips have no arrow
+  - Segmented control segments are 4/16 with no gap, and hover uses Ghost Hover
+  - The page alert action is shaped like Button Primary White Small, and alert dismiss buttons are round with Ghost Hover
+  - Global header buttons change their fill on hover instead of drawing a ring
+
+## 26.10.4j — 2026-10-28
+
+Component docs carry the usage rules from the Radiant 3.0 Figma file, and the entries that were wrong are corrected. Components look the same.
+
+- Doc pages have a Usage section (Do and Don't) above Props, filled from Figma for Button, Toast, Alert, Avatar, LoadingIndicator, ExplainerCard, Modal, TextInput and TextArea. For example: one Primary button per screen, toasts only confirm and never show errors, page banner captions stay under 80 characters
+- `.cursor/rules/component-inventory.md` gets the same rules, so Claude follows them when building prototypes
+- Corrected doc entries: LoadingIndicator (no Global mode; adds Skeleton), SearchInput (no `onClear`), Tabs (no keyboard navigation claim; adds `size` and tab icons), Modal (sizes M1 to M4, default M2, and `type`, `eyebrow`, wizard, sub-navigation and splash props), AppSidebar width 260
+- Props tables add what was missing: Button `xs`, `iconOnly`, `active`, `htmlType`; TextInput `trailingIcon`, `readOnly`; Table `compact`, `stickyHeader`, `onRowClick` and sortable columns
+- The Avatar entry in the Component Registry links to its Figma page
+
+## 26.10.4i — 2026-10-27
+
+New `/rp-contribute` command for sending work back to Radiant Play.
+
+- It asks what you're sharing, who should use it and how final it is, then reads your files and decides where each piece belongs: a Radiant component, a Spotter component, shared prototype code or a sample prototype
+- It spots copies of shared components inside a prototype, entries added to `registry-mine.ts` and changes to components other prototypes use, then proposes a set of PRs in merge order. PRs go to `staging`, or to a shared team branch in a teammate's fork (like Simran's `feat/agentic-ds`) where several designers build one set of components before its owner raises it against `staging`
+- Each PR is built in its own worktree from `upstream/staging`, checked (typecheck, build, dark scan, token lint, and the prototypes it affects opened in light and dark) and given a PR description. It asks before every commit and push, and your branch and work stay as they were
+- The forking guide's contributing steps now branch from `upstream/staging` and open PRs against `staging`
+
+## 26.10.4h — 2026-10-27
+
+The gallery suggests groups for prototypes that look like one project.
+
+- Prototypes without a group that share a name prefix before a colon ("Apps in ThoughtSpot: Native"), a folder prefix before an underscore (`AppsInTS_*`) or a folder name (`MuzeTemplates`, `MuzeTemplatesAI`) get a note: "3 prototypes look like one project: Apps in ThoughtSpot". Group them sets the group in one go and drops the colon prefix from the names, with one Undo. A newcomer that matches an existing group gets Add to group
+- One suggestion shows at a time, and a dismissed one stays dismissed in that browser. On a deployed site the click copies a prompt for Claude
+- The gallery's notes (group suggestions, missing thumbnails) use a quieter style that matches the Sort pill and Help menu, instead of the Alert component
+
+## 26.10.4g — 2026-10-27
+
+The playground gallery sorts prototypes into groups, has a list view, and saves changes made in it straight to your project.
+
+- Prototypes can carry a `group` (for example 'Apps in ThoughtSpot'). The gallery shows each group as a collapsible heading; a collapsed group is one row that lists what's inside. Prototypes without a group sit under Other. `group` is optional, so existing entries don't change
+- Under `npm run dev`, changes made in the gallery save to `registry-mine.ts`, with an Undo toast: Move to group on a card's menu, dragging a card onto a heading, onto a new group or onto Archived, renaming a group by clicking its name, and archiving or restoring. On a deployed site, and for samples, the gallery copies a prompt for Claude instead. Only `registry-mine.ts` is ever written, and only by the gallery's own page
+- Sort by recent or name, show prototypes in groups or all in one grid, and switch between grid and list. The list is one table with name, group, author and date. Choices are remembered in your browser
+- Samples moved from the main Prototypes page to their own Samples item in the left pane, under Archived
+- Cards without a thumbnail show the prototype's initial on a Radiance-style wash instead of a live preview of the whole prototype, so a long gallery stays light. Under `npm run dev` a note offers Capture thumbnails, which captures and wires up the missing ones; it never runs on its own
+- Sample prototypes are grouped as Admin, Data model, Liveboard and Spotter
+
+## 26.10.4f — 2026-10-26
+
+The Spotter composer takes the options the Apps in ThoughtSpot prototypes need, from Devanshi's Apps branch. Existing prototypes don't change.
+
+- `PromptBar` gets opt-in props: `placeholder`, `onBlur`, `showModel`, `showPlus`, `connectors` and `onConnectorsChange`, a `'left'` connectors placement with a count badge (`connectorsBadge`), hover text (`connectorsTooltip`, `modelTooltip`), `plusMenuContent` and `leftExtras`. The old defaults stay
+- `@spotter/chat` exports `DeepAnalysisGlyph` and the `Connector` and `ConnectorStatus` types
+- `Select` shows the icon an option already carries, in the list and in the trigger
+- `Tooltip` renders on the page body and measures again once it's laid out, so it stays on its trigger inside animated or transformed layouts
+
+## 26.10.4e — 2026-10-26
+
+Shared component work reads its rules every time, a test checks that Claude finds the rules, and release highlights land in the right file.
+
+- New `src/components/CLAUDE.md`, loaded whenever Claude works on shared components: read the four Tier 3 rule files first, keep default looks unchanged (new looks are opt-in), search for every use before changing a prop, then scan, build and update the Component Registry and changelog. In tests, Tier 3 work read all four rule files in 2 of 2 runs (before: `design-system.md` in 2 of 3)
+- `internal/scripts/guidance-test/` (maintainer only): runs 10 prompts through headless Claude Code in a throwaway copy of your checkout and scores which rule files each session read and whether it asked the gate questions. Run it after changing `CLAUDE.md`, `.cursor/rules/` or the hooks
+- `release.sh` asks for highlights for `src/data/highlights.ts`, the file the changelog page reads, instead of `ChangelogPage.tsx`, which the site doesn't show. `generate-changelog.sh` points at `versionHistory.ts` too
+
+## 26.10.4d — 2026-10-26
+
+New prototypes keep their styles in CSS Modules, so the handoff export converts them with nothing left over.
+
+- The rule files tell Claude to put static styles in a CSS Module next to the component. Inline `style={{ }}` is only for values computed at runtime, and the `styles.ts` object pattern is gone from the templates
+- The Liveboard template moves to CSS Modules: a new Liveboard prototype goes from 35 inline style blocks to 3, the tile positions that have to stay inline. It looks and works as before in view mode, edit mode, dragging and the SpotterViz panel
+- `npm run handoff` ignores CSS comments, so a hex value in a comment no longer shows as ambiguous
+- Existing prototypes don't change
+
+## 26.10.4c — 2026-10-26
+
+Prototypes can be handed to engineering as SCSS that uses the product codebase's Radiant tokens, instead of inline CSS.
+
+- `npm run handoff <Prototype>` writes the prototype's CSS Modules to `handoff/<Prototype>/` as `.module.scss`: spacing vars and on-scale px become `$rd-spacing--a` to `l`, colour vars become `rd-sys-color('name')`, and each file imports `radiant-styles/_base.scss`. Raw hex converts only when one token owns that value
+- `HANDOFF-REPORT.md` beside it lists what still needs a person: inline styles, raw `<button>`, `<input>`, `<select>` and `<table>`, typography and radius vars, shared hex values and anything off the scale
+- The lookup tables are read from `src/tokens/` each run, so they follow token changes. `handoff/` is gitignored
+- The prototype template uses a token-only CSS Module instead of inline styles, so new prototypes export clean
+
+## 26.10.4b — 2026-10-26
+
+Text fields on the Radiant 3.0 look follow the Figma Form spec (node 25110:47073): helper and error text sit on the label line, and nothing goes under the field.
+
+- `TextInput` and `TextArea` under `look: 'radiant-3'` read "Label (helper text)" on one line, with the helper text in the secondary colour. The label turns brand blue on focus
+- On error the label itself turns red with an exclamation icon and the field gets a red edge. The label reads `errorMessage` when one is set, or Please add “{label}” when it isn't; the helper text stays beside it
+- Without a visible label (`showLabel={false}` or no `label`), helper and error text still go under the field so nothing is lost. `TextArea` keeps its character counter under the field
+- Prototypes on the default look don't change, and the existing props (`label`, `helperText`, `error`, `errorMessage`) keep working
+- The TextInput and TextArea doc pages show the Radiant 3.0 states
+
+## 26.10.4a — 2026-10-26
+
+The M4 full screen modal matches the Radiant 3.0 Figma spec.
+
+- `Modal` size `M4` fills the overlay's padded area, so it sits 24px from every edge of the window. It used to take the full window height with an 8px margin, which ran past the overlay padding and left 8px at the top and bottom; the 1440px and 1366px width caps are gone too
+- The M4 header is 72px tall, border included, with the title and Close button 20px from the top (it measured 73px)
+- The Spotter `VizBlock` expand modal drops its own M4 width override, which the fix makes redundant
+
+## 26.10.3j — 2026-10-14
+
+Claude Code reads the tier rules again. Since April, `CLAUDE.md` only said "See `_orchestration.md`", and nothing in `.cursor/rules/` loads on its own in Claude Code, so new prototypes were planned without the rule files.
+
+- `CLAUDE.md` tells Claude to read `.cursor/rules/_orchestration.md` before any UI or prototype task, and carries the tier table (exploratory, 0 to 3) again
+- `CLAUDE.md` asks Claude for short, plain replies: the answer or result first, detail only when asked
+- The Requirements Gate hook now also catches new Data Model Editor and Spotter prototypes, not only Liveboards
+- Fixed sentences that sent Claude the wrong way: `_orchestration.md` said the rules were "auto-activating skills" you "may not need to manually read", `CLAUDE.md` said the orchestrator "auto-loads" the Spotter rules, the README called the flat `.claude/skills/*.md` files native skills, and `/explore` said the orchestrator would ask
+- Stale facts: the icon list has all 151 icons (it listed 46), the component count is gone from the summary, and the Data Model Editor gate uses the `rp-prototype-model` skill instead of old model ids and asking for the API key
+- `CLAUDE.public.md` imports `sysVar`, `compVar` and `shadowVar` for colours, as `CLAUDE.md` does
+
+## 26.10.3i — 2026-10-14
+
+The changelog highlights catch up with v26.10.
+
+- Six short highlights: dark mode, Geist, components updated to Radiant 3.0, a new look for Radiant Play, design system updates, and one item for everything else
+- The page shows the first six highlights in `src/data/highlights.ts`, instead of every item from the last 60 days. Older items stay in the file
+
+## 26.10.3h — 2026-10-14
+
+Security fix for a build tool dependency.
+
+- `source-map-js` 1.2.1 → 1.2.2 in `package-lock.json` (Dependabot alert 37, GHSA-68fv-2mgg-jv7q, high): a crafted source map could stall the build. Development only, pulled in by Vite through PostCSS; `package.json` is unchanged
+
+## 26.10.3g — 2026-10-14
+
+The playground and the design system share one frame, the guides follow light and dark mode, and menus close after a choice.
+
+- One frame for both sections: a full-height left pane with the Radiant Play logo (a play mark with "Rp", teal mixed from Radiant's green and blue), a top row with a Playground / Design system switcher and the theme icon, and the content on a raised panel. Light mode separates surfaces by fill instead of hairlines
+- Help at the bottom of both left panes opens What's new (the changelog, with the version) and the three guides, which open in a new tab. The design system's version button moved into it
+- The design system panel scrolls on its own, so its frame stays put; On this page follows it, and scrollbars show only on hover
+- Section titles in the design system no longer jump when a page opens: they get their style before the first paint
+- Getting started, How it works and Claude setup and skills use Radiant tokens and Geist, follow the app's light or dark setting, and show the Radiance Home pattern at the top, as /home and the playground do (`public/guides-theme.css` and `guides-theme.js`)
+- ActionMenu closes once an item is chosen, and Escape and Tab always close it (Sneharsh Damani's fix, taken unchanged from their fork). Tour also follows scrolling inside a container
+
+## 26.10.3f — 2026-10-13
+
+The last Cursor mentions outside the changelog are gone.
+
+- The prototype template's README (copied into every new prototype) starts with `/rp-new-prototype` and describing the UI to Claude
+- `docs/ux-writing-rules.md` says the rules are shared with Claude
+- `cursor-model-guide.md` and `cursor-to-claude-loom-script.md` move from `docs/collaboration/` to `docs/archive/`
+
+## 26.10.3e — 2026-10-13
+
+The onboarding docs teach the Claude desktop app and name the Node version you need, and one push reaches both remotes on the maintainer machine.
+
+- `guide.html`: setup is now the Claude app's Code tab (clone, open the folder, ask Claude to start the dev server); the first prototype starts with `/rp-new-prototype`, and sharing points to `/rp-coolify-deploy`. The model credits slide is now a slash commands slide. The wizard's code boxes keep their line breaks
+- `how-it-works.html`: says Claude finds the rules in `.cursor/rules/` through `CLAUDE.md`
+- Claude setup page (`cursor-to-claude-setup.html`, linked from the gallery) and `docs/collaboration/cursor-to-claude-setup.md`: rewritten for the desktop app with no API key, with the `/rp-` commands, troubleshooting and a short section for anyone who already has the project
+- `GETTING_STARTED.md`, `docs/collaboration/forking-guide.md`, `docs/prototyping-guide.md`, `FORK-WORKFLOW.md` and `README.md`: setup is the Claude desktop app and a Galaxy fork, not Cursor and GitHub; the first prototype starts with `/rp-new-prototype`
+- Node.js: the docs said 18+, but Vite 7 needs 22+ (or 20.19+). They say so now
+- `guide.html` gives the Galaxy repo URL on the fork step
+- `origin` gets two push URLs, GitHub and galaxy, so a plain `git push` updates both. `bash internal/scripts/install-maintainer-hooks.sh` sets this up on a new clone. `push-faris.sh` still works, and `release.sh` only prints `git push galaxy main` when it is still needed
+- Designer forks are unchanged: they have one remote and push to it as before
+
+## 26.10.3d — 2026-10-13
+
+Thumbnail setup works again.
+
+- `npm run thumbnails:setup` failed on every machine: `npm init -y` names the package after its folder, and npm rejects `.radiantplay-visual` for the leading dot. Setup now writes its own `package.json`
+- `npm run thumbnails` takes `--wait <ms>` (default 800) to settle longer before each shot, for screens that reload an iframe when the theme switches to dark
+
+## 26.10.3c — 2026-10-13
+
+RadiantPlay runs on Coolify only. Vercel is switched off.
+
+- The docs (CLAUDE.md, README, getting started, the Coolify docs) and the project canvas Sites tab list Coolify sites only
+- `vercel.json`, `middleware.ts` and `api/chat.ts` stay, so a fork that still deploys on Vercel keeps working after `/rp-sync-upstream`. The Data Model Editor's AI panel works in local dev (`npm run dev`) and not on the Coolify sites, as before
+
+## 26.10.3b — 2026-10-13
+
+Thirteen new Radiant components from Figma (batch 5), a token sweep with no visual change (batch 6), and a tidier design system: the theme icon moves to the top right and the Colours page follows the theme.
+
+- PageHeader: new component from Figma. A 24/32 title with optional `breadcrumbs`, `description`, `tabs` (Radiant Tabs) and `actions` (Buttons on the right).
+- EditHeader: new component from Figma, the edit-mode sibling of WizardHeader. A 20/28 title with optional segmented `tabs`, and Reset, Save and Exit buttons (`onReset`, `onSave`, `onExit`); `edited` switches between the Saved and Edited states.
+- SplitButton: a main action plus a chevron that opens an ActionMenu (Figma Split button). Props: label, onClick, items, variant (primary, secondary), icon, iconOnly, disabled, mainDisabled, menuDisabled, menuPlacement.
+- DotLoader: the three-dot global loader from Figma, with an optional message below. Props: message, label. Respects reduced motion. LoadingIndicator is unchanged.
+- ScrollArea: a wrapper that styles its content's scroll bar like Figma (8px track, rounded tertiary thumb) with CSS only. Props: orientation, maxHeight, maxWidth, focusable. Global scrollbars are unchanged.
+- Token: new 24px read only and editable token for measures, attributes, conditions and dates (`type`, `status` default/warning/error, `editable`, `active`, `onRemove`, `showIcon`). First component to use the chip date, error and active-border tokens.
+- ChipIdentifier: new 24px brand chip with inverse text for identifiers such as key columns (`label`, `maxWidth`).
+- UserChip: new 28px person chip with a Radiant Avatar, name and optional remove button for inputs (`name`, `src`, `selected`, `onClick`, `onRemove`, `disabled`). First component to use the chip input tokens.
+- Breadcrumb: new component from Figma. A round back button and gray parent links; `items` takes `{ label, href?, onClick? }`, the last item is the current page, with `showBackButton`, `onBack` and `showCurrent`.
+- NumberInput: a number field with spin buttons that show on hover and focus, with min, max, step, error, helper text, disabled and read-only states; arrow keys step the value and it follows TextInput's radiant-3 look.
+- InlineEdit: text that turns into a field on click or Enter, in 14 and 16px sizes; Enter or blur confirms, Escape cancels, with value, onChange, placeholder, required and disabled props.
+- FileUploader: a file field with an Upload button, drag and drop, a clear button and an optional file list showing uploading, complete or error per file; no real upload, with files, onFilesChange, multiple, accept, error, disabled and readOnly props.
+- DateRangePicker: new range version of DatePicker from Figma "Date Picker / Range". Two fields joined by "to" share one calendar that opens under the active field; days between start and end are highlighted, with a hover preview while picking the end. Props: value ({ start, end }), onChange, format, label, startPlaceholder, endPlaceholder, separator, hasError, helperText, disabled, minDate, maxDate. DatePicker itself is unchanged.
+- Token sweep (no visual change): GlobalHeader, AppSidebar and DatePicker now use spacing, radius, font size, weight and line height tokens wherever a token has the exact same value (54 replacements). Values with no exact token, such as 999px pills, 120ms transitions and the legacy dark sidebar colours, are unchanged.
+- Design system pages: the theme icon sits at the top right, as on the playground, instead of the Light, Dark and System control in the sidebar footer; the Inspect button is gone from that footer (Sidebar gains `showInspect`, on by default)
+- On this page: design system pages with three or more sections list them on the right once you scroll, with the current section highlighted. Content starts after the sidebar on every page, up to 1200px, with the same room kept on the right for the list
+- One heading style across the design system: page titles at 32/40 and section headings at 20/28, on every page; section links are blue pills (demos keep their own type)
+- Radiance guide: the template builder comes first and hands you a prompt for Claude with a Copy button instead of a code line; the section links are pills, pinned at the top when there's no room for the list
+- Colours page: each token is one swatch that follows the theme, with the current mode's value first and the other under it
+- Component Registry: rows for the new components, and the rows batches 1 to 4 changed now carry their real Figma node, file and sync date; placeholder Figma ids are gone
+- Avatar: the count badge and status dot are solid failure red with contrasting text and a thin ring, readable in light and dark (they used the pale failure background before); purple and orange initials avatars are lighter in dark mode so their initials stay readable
+- The New tag stays only on items added in the last month; the Icons page puts Usage at the bottom; changelog highlights follow the v26.10 teaser
+
+## 26.10.3a — 2026-10-13
+
+Typing `/rp-` lists only the commands you pick on purpose, and the maintainer's project canvas opens in seconds.
+
+- The `rp-radiance`, `rp-prototype-model` and `rp-prototype-thumbnails` skills no longer appear in the `/` menu. Claude still loads each one when a request needs it: mention Radiance or an AI background, ask to switch a prototype's model ("switch it to Sonnet"), or ask to update a thumbnail. `/rp-radiant-check`, `/rp-sync-upstream` and `/rp-migrate-prototype` still capture thumbnails as before
+- `/rp-project-canvas` on the maintainer's checkout takes about 14 seconds instead of about two minutes. The Forks tab shows the results saved by the last full run, with their age, instead of calling GitHub for every fork. Checking which docs are local now takes two git calls instead of two per doc
+- `/rp-project-canvas full` (or `census`) opens the quick canvas, then refreshes the Forks tab and the prototype census in the background and rewrites the page. Each fork fetch in the census has a 60 second limit, so one slow fork no longer stalls the run
+- The census has its own Census tab on the maintainer canvas. With nothing saved, or results more than a week old, it shows the command to run with a Copy button
+- `/rp-prototype-census` is removed: `/rp-project-canvas full` replaces it. `internal/scripts/prototype-census.sh` is unchanged apart from the time limit
+
+## 26.10.2e — 2026-10-12
+
+Figma-shaped variants for five Radiant components, plus a new WizardHeader. Every variant is opt-in: each component's default looks and behaves exactly as before.
+
+- Accordion `variant="card"`: each item is a card (radius 6, Base background, surface shadow that lifts to the menu shadow on hover) with 24px padding, a leading 18px chevron (right when collapsed, down when open), a 16/24 title at 550 and a 12/16 body lined up with the title
+- ExplainerCard `appearance="raised"`: menu shadow, no border, radius 6, padding 20, gap 12, an 18/24 title and body in primary text. New props for both appearances: `media` (300 x 170, radius 6), `onDismiss` (24px close button), `primaryAction` and `secondaryAction` (small Primary and Tertiary buttons). `title` is now optional, for the title-less layout
+- NoData `layout="horizontal"`: icon left, title and description in secondary text. `type="section"` uses a 32px status icon, `type="page"` a status illustration; `status` is empty, warning or success. `primaryAction`, `secondaryAction` and `link` add Small Primary, Small Secondary and a tertiary link
+- Tour `tone="brand"`: the Figma spotlight card, a 340px brand-filled card with inverse text, a "2 of 4" step counter and white tertiary buttons
+- New `WizardHeader`: the Figma wizard as a 64px page header, eyebrow over a 20/28 title, Secondary and Primary buttons, a divider and a tertiary Exit button, with a 4px segmented progress bar below. It has its own page in the Radiant docs. WizardModal is unchanged
+- Radiance guide at /radiant/radiance: the four product patterns live, a template builder, the rules and how Radiance reaches prototypes
+
+## 26.10.2d — 2026-10-12
+
+Radiant 3.0 Figma sizes arrive as an opt-in look. Add `look: 'radiant-3'` to a prototype's entry in `registry-mine.ts` and its Radiant components switch to the Figma sizes. New prototypes get it from `/rp-new-prototype` and `npm run new-prototype`. Existing prototypes look exactly as before until they opt in, and `/rp-migrate-prototype` offers it after the dark check, never on its own. `/rp-sync-upstream` never adds it.
+
+Under `look: 'radiant-3'`:
+
+- Text fields (TextInput, TextArea, Select, SearchInput, DatePicker) are 32px tall with 16px left and 12px right padding and a 6px radius. Labels are 12/18 regular and turn brand blue while the field has focus. Hover darkens the border; focus shows the brand border with no ring. Disabled fades the whole field to 40%
+- Menus and the Select popup sit on Raised with no border and a 6px radius, 8px list padding and 32px items (16px sides, 12px gap). Hover uses the ghost hover fill
+- Tabs are 48px with 12px side padding and regular weight in every state (`size="small"` gives 32px)
+- The 32px icon-only button uses an 18px icon
+- DatePicker: the panel has 24px padding, a 6px radius, Raised background, menu shadow and no border. Day cells are 32px rounded squares (6px), weekday labels are 14/20 emphasis in secondary text, and the month and year are brand tertiary buttons with 32px nav buttons and 18px chevrons
+- Pagination Range uses 24px round secondary icon buttons and reads "Showing 1-20 of 500 results"
+
+Available in both looks:
+
+- TextInput gains `readOnly` (filled On Base background, no border), `helperText` and `trailingIcon`. Existing props work as before
+- Tabs gain `size` (`medium` 48px, `small` 32px). Without it Tabs keep today's height
+- Button gains `size="xs"`: a 20px icon-only button with a 12px icon
+- `RadiantLook`, `useRadiantLook()` and `RadiantLookScope` (in `src/context/RadiantLookContext.tsx`). Portaled content wraps itself in `RadiantLookScope` to keep the look; the Spotter VizBlock expand modal does
+
+## 26.10.2c — 2026-10-12
+
+Five Radiant components take their Figma shape. Each stays inside the space it used before, so layouts around them do not move; the Toast is the one exception noted below.
+
+- Toggle is a thin 8px track with a 16px round thumb that overhangs it. Off is a grey track with a white, outlined thumb and a soft shadow; on is a light blue track with a blue thumb. The outer box stays 28x16, so labels and rows do not shift. The grey hover tint is gone; Figma has no hover state
+- Toast is dark grey (Background Inverse) with white text, 16px padding, 6px corners, an 18px status icon and the menu shadow. Its action is a real white Button (Primary White Small) and the dismiss is a 24px white icon button. A toast is about 8px taller; prototypes that place it in the page flow (Variables in NewUIAdmin2) push content down by that much while it shows
+- Stepper and VerticalStepper: done steps are green with a 16px check, the current step is a blue outline with a blue number, upcoming steps are grey outlines. Circles are 32px with a 1px stroke, connectors are 1px and turn green after done steps. Titles: done in secondary grey, current in blue
+- Tabs hover turns the label blue with no grey fill behind it, and inactive tabs use the primary text colour, a shade darker. The active underline uses the Brand border token (same blue). The tab colours now live in CSS instead of inline styles, which had kept hover from changing the label. Weight and padding are unchanged
+- Small primary buttons are rounder: 16px corners on Primary Small and Primary White Small, matching the basic size
+
+## 26.10.2b — 2026-10-12
+
+Radiant components pick up the right Figma colours, and the playground header switches theme with one icon button. Sizes, padding and heights are unchanged; only colours, weights and a few radii move.
+
+- The Light, Dark and System control at the top right of the playground is now one icon button. It shows the current theme (sun for light, moon for dark, half-filled circle for system) and a click moves to the next one: light, dark, system. Ctrl+D works as before. `ThemeSwitch` gains `variant="icon"`; the default stays the segmented control, so the Radiant docs sidebar and forks using `ThemeSwitch` are unchanged
+
+- Button White (`colorway="white"`) is fully white, with Figma's hover and pressed fills. Disabled is the white fill at 40%
+- Button Tertiary White hovers with a fainter tint and presses with the light blue tint, instead of a black overlay
+- Button Secondary hover is now a darker grey (it showed no change before), and pressed is a deeper grey with dark text instead of blue
+- Button Primary, Secondary and Tertiary use their button colour tokens (same colours). Small buttons get Figma's positive letter spacing, so their labels are about 1px wider
+- Segmented control inactive labels are darker (primary text instead of secondary). The selected label stays blue in light mode and turns near-white in dark mode
+- Modal titles are bolder (550). The header sits on Raised and the footer on On Base with no top border; the footer stays 72px
+- Tooltips are rounder (6px), with the menu shadow and the inverse colours; the arrow matches
+- Checkbox and Radio borders use the border tokens (Brand, Failure, Bold), set in CSS instead of inline styles. The hover border that never showed is gone; Figma has no hover state
+- Muted alerts sit on Secondary Action grey, a shade darker. The page alert's dismiss icon is 18px inside the same 32px button
+- Progress bar track and blue fill use the background tokens (same colours)
+- Corrected `var()` fallbacks in WizardModal (radius) and TextArea (label size)
+
+- Radiance is now managed: `public/vendor/radiance/manifest.json` records the source commit and a checksum per file, the vendored files include every product recipe (Home, SpotterX, Liveboard) and Radiance's own lint, `npm run radiance:check` (also in `build:strict`) fails if a copy is edited, `npm run radiance:lint -- src/prototypes/<Name>` checks a prototype, the maintainer refreshes everything with `npm run radiance:update`, and `/rp-sync-upstream` brings updates to forks. `RadianceBackground` takes a `pattern` (home, signup, spotterx, liveboard or a template) and a `state`; existing pages are unchanged. Prototypes of the Home page, SpotterX, a Liveboard with Spotter or sign up now get their Radiance pattern automatically (the `rp-radiance` skill), and `/rp-new-prototype` asks about Radiance for AI surfaces
+
+## 26.10.2a — 2026-10-12
+
+Radiance, ThoughtSpot's AI identity background, comes to the playground, the home page and the design system page. `/rp-project-canvas` on a designer's fork now shows a canvas about the designer's own work.
+
+- The playground (`/`) and the home page (`/home`) carry Radiance's Home pattern, a subtle top wash that follows light and dark and freezes under reduced motion. It loads only on those pages and `/radiant`; prototype pages never fetch it
+- The design system page (`/radiant`) opens on a light hero card with the Radiance wash instead of the dark gradient card, with Radiant buttons
+- Text over the wash uses the primary text colour so it stays readable
+
+- The designer canvas has two tabs. Home lists up to four next steps, each with the command that fixes it, says how many releases your fork is behind RadiantPlay with each release's summary and a link to `/radiant/changelog`, lists your branches, and links the designer guides. My prototypes shows each prototype in `registry-mine.ts` with its last change, theme, dark and Geist readiness, thumbnail and an open link, then your Coolify site (up or down, and whether pages are served `no-cache`).
+- The first run asks two questions, what to call the canvas and whether your fork is on Coolify, and saves the answers in `internal/status.local.sh`, which stays on your machine. Running `bash internal/scripts/status.sh` directly never asks anything
+- Off Twingate VPN the canvas no longer hangs: it checks the git host for 3 seconds before fetching RadiantPlay
+- `scan.mjs --mine --json` adds each prototype's `name` and `lastChange` to `meta`. Existing fields are unchanged
+- The designer canvas uses the Radiance look in Geist, light and dark, with Radiance's own Home wash drawn by its renderer. The renderer and its Home stylesheet sit in `public/vendor/radiance/`, an interim copy from the Radiance site until the Radiance repo is available
+- The maintainer canvas is unchanged. `STATUS_ROLE=designer bash internal/scripts/status.sh` previews the designer canvas on the maintainer's checkout
+
+## 26.10.1b — 2026-10-12
+
+Every RadiantPlay command now starts with `rp-`, so typing `/rp-` lists them all. Thumbnails happen as part of other work, and designers' prototypes stay light until they're migrated, so one sync is all it takes.
+
+- `/thumbnail` is no longer a command. `/rp-radiant-check` captures or refreshes a prototype's thumbnail after a check, `/rp-sync-upstream` captures missing ones after a sync, and `/rp-migrate-prototype` keeps capturing them in its light and dark check. Asking Claude to "update my thumbnail" works too. The steps live in the `rp-prototype-thumbnails` skill, which asks the one-time screenshot tool question once per machine
+- Ask Claude to switch a prototype's model ("switch it to Sonnet") and the `rp-prototype-model` skill handles it. It changes the model AI prototypes call, not Claude Code's own `/model`. `/switch-model` stays for now, since a fork has edited it
+- Designer prototypes stay light by default. A prototype in `registry-mine.ts` with no `theme` line stays light when someone turns dark mode on, exactly as it looked before; `theme: 'global'` puts it in dark mode. `/rp-migrate-prototype` sets `global` once a prototype is dark ready, and `/rp-new-prototype` sets it for new prototypes. `/rp-sync-upstream` no longer marks anything, so one sync is enough (26.10.1a's "run `npm run migrate:light-only` once" step isn't needed). Older `theme: 'light-only'` lines keep working
+- `/rp-new-prototype` points to `/rp-radiant-check` for the thumbnail, and to asking for a model switch
+- RadiantPlay commands now start with `rp-`: `/rp-new-prototype`, `/rp-radiant-check`, `/rp-migrate-prototype`, `/rp-sync-upstream`, `/rp-coolify-deploy`, `/rp-explore`, `/rp-project-canvas` and `/rp-prototype-census`. Type `/rp-` to see them all. The old names keep working too: for now the steps stay in the old files, so forks that edited a command merge cleanly, and each `rp-` command hands off to its old file
+- `npm run new-prototype <Name>` scaffolds from the token-based `_template` (or `_liveboard-template` with `--liveboard`), registers in `registry-mine.ts` instead of `registry.ts`, and marks the prototype `theme: 'global'` when the dark scan confirms it. It used to write `systemColors.light[...]` and register where the gallery never looked
+- New `src/prototypes/CLAUDE.md`: Claude Code loads it whenever it works in `src/prototypes/`, so a prototype made by just asking Claude also gets `theme: 'global'` after a dark check, and lands in `registry-mine.ts`
+
+## 26.10.1a — 2026-10-09
+
+Dark mode, Geist and the Radiant 3.0 Figma tokens. Every page, shared component and sample prototype works in light and dark (Ctrl+D), type is Geist, and tokens match Figma. `/migrate-prototype` moves your own prototypes across, and `/sync-upstream` keeps the ones that aren't ready in light mode until you do.
+
+- Added `scripts/figma-tokens/`: a snapshot of the Figma design system's variables, text styles and effect styles, and a diff that compares it with `src/tokens/*` and `src/styles/tokens.css`. Run `npm run figma-tokens:diff`; refresh steps are in its README. Tooling only
+- Light mode tokens now match Figma:
+  - `background-base-inverse` is Gray/80 (`#323946`) per Figma `Background/Inverse`. Tooltips and the Liveboard edit header get slightly lighter. This undoes the 26.5.4a revert to `#1D232F`, which had matched the production edit bar; Figma is now the source of truth
+  - `brand/10` is `#F2F7FF` (was `#EBF2FD`)
+  - Component tokens: `button-secondary-pressed`, `button-tertiary-pressed`, `toggle-track-on` and `toggle-thumb-on` match Figma. No component reads these tokens yet, so nothing changes on screen
+- Added tokens from Figma: `button-overlay`, `segmented-control-content-active`, and the `gray-20a`, `brand-10a` and `purple-20a` alpha colours
+- Added Figma's names as aliases next to ours: `background-inverse`, `background-secondary-action`, `content-inverse`, `border-subtle`, `border-bold`, `border-bold-hover`. Nothing is renamed
+- Chip component tokens are now CSS variables (`--rd-comp-color-chip-*`), so CSS Modules can use them
+- Dark mode values now match Figma: the neutral Dark Gray scale (every stop except 90 moved), all 52 semantic and 48 component dark values, and the 22 dark values `tokens.css` was missing. The system-dark (`prefers-color-scheme`) block now matches the dark theme, including shadows. Dark mode isn't switched on anywhere yet, so nothing changes on screen. Tokens Figma doesn't have (`content-alternate`, the `*-inverse` set, links, `background-inset`) keep their older dark values
+- Typography is now Geist, matching Figma:
+  - Geist and Geist Mono variable fonts are self-hosted in `public/fonts/geist/` (SIL Open Font License, licence file alongside) and preloaded. Plain was never shipped for most users, so most screens were falling back to system fonts; they now render in Geist
+  - New `--font-weight-emphasis` (550), Figma's "Emphasis" weight for headings and labels. `semibold` and `light` stay as deprecated aliases that point at 550 and 400, so older code follows the new weights
+  - Text styles: headings and labels at 550, body and footnote at 400, letter spacing per Figma (0, 0.4% and 0.6% as `normal`, `relaxed`, `loose`). New `--letter-spacing-*` CSS variables
+  - Monospace is now Geist Mono
+  - Replaced hardcoded Plain font stacks and `600` / `375` weights with the tokens across components, Spotter, pages and sample prototypes (including `_template` and the `/new-prototype` scaffold, so new prototypes start on Geist)
+  - DataModelEditor uses Geist; its bundled Plain font files are removed
+  - Rule and skill docs updated to Geist and the new weights
+- Typography component variants (headline, titles, labels) now use the 550 emphasis weight and Figma letter spacing; they were at 500. The Typography page's spec labels match Figma
+- Conditional weights (`active ? 600 : 400`, used on selected tabs) and 45 hardcoded monospace stacks now use the tokens; code text renders in Geist Mono
+- Native buttons, inputs, selects and text areas inherit the page font instead of the browser default (Arial), and `code`, `kbd`, `samp`, `pre` use Geist Mono
+- `npm run figma-tokens:diff` also checks the Typography component's CSS against Figma
+- Added `scripts/visual-snapshots/`: screenshots every page and sample prototype of a build in light and dark, and compares two builds in a review page. Playwright stays outside `package.json`; setup is in its README
+- The token count on the Radiant home page goes from 373 to 400 (new Figma tokens, the product's token names, and aliases)
+- Press Ctrl+D anywhere in the app to switch between light and dark mode. The choice is saved, so it survives a reload
+- Added a theme controller (`src/context/ThemeContext.tsx`): light, dark or system mode, saved in the browser, light by default. It is the only code that sets `data-theme`; use `useTheme()` to change the theme and `useIsDarkMode()` to read it. A small script in `index.html` applies the saved theme before the page paints, so a reload never flashes the wrong one. Native scrollbars and form controls follow the theme (`color-scheme`)
+- Added `scripts/scaligent-tokens/`: compares our colour tokens with the ThoughtSpot product's (Scaligent `radiant-styles`) and reports match, differs, proposed and Scaligent-only per token. `--names` adds Figma names to the check. Run `npm run scaligent-tokens:tally`; needs a local Scaligent checkout. Tooling only
+- Visual snapshots pick dark mode through the saved theme instead of setting the attribute after load
+- Token names now follow the product (Scaligent) where Figma and the product differ. Older names keep working as aliases:
+  - Shadows are `--rd-sys-color-shadow-surface`, `-menu` and `-modal`, with light and dark values. `--shadow-surface`, `--shadow-menu` and `--shadow-modal` still work and point at them
+  - `button-overlay` is now `button-bg-overlay`; `button-overlay` still works
+- Added `background-secondary-hover` (Gray/30, dark Dark Gray/30) and the circular progress tokens `progress-track-active`, `progress-track-empty` and `progress-indicator-default`, from the product. Nothing uses them yet
+- Removed the `prefers-color-scheme` copy of the dark tokens from `tokens.css` (about 130 lines). The theme controller resolves the system setting and sets `data-theme`, so the copy was never used. `npm run figma-tokens:diff` no longer checks it
+- Added `docs/2026-10-06-scaligent-token-differences.md`: the 33 token values where Figma and the product disagree, grouped by cause
+- Shared components, Spotter, the Liveboard tiles and the prototype templates now follow the theme:
+  - Inline styles read CSS variables through new helpers, `sysVar()`, `compVar()` and `shadowVar()` from `@tokens/colors`, instead of `systemColors.light[...]`, which is always light. No component reads light-only values any more
+  - Hard-coded colours in component and tile CSS became tokens. A few light values moved to the nearest token: modal overlays use `background-overlay`, ad-hoc shadows use the three shadow tokens, the Liveboard toolbar is a touch lighter (`background-inverse`), and tile descriptions use `content-secondary`
+  - The docs sidebar follows the theme; its dark gradient is gone. The ThoughtSpot primary nav (Liveboard header, AppSidebar) stays dark in both themes
+  - 11 token names that never existed (`content-subtle`, `background-surface`, `content-negative` and others) now point at real tokens, so those colours show in both themes
+  - `_template` and `_liveboard-template` start new prototypes dark-ready, and the template README teaches `sysVar()`
+- Charts follow the theme:
+  - Added 13 chart tokens (`--rd-comp-color-chart-*`) with the product's names and dark values. The product has no light values yet, so ours are proposed, taken from the current chart colours
+  - New `useChartTheme()` gives ECharts its colours for the current theme. Dark series colours come from the product's OKLCH lightness remap, ported so our charts match. All shared chart types and the Spotter chart block use it and redraw when the theme changes
+  - User-picked note text colours are lightened on dark tiles
+- Added `ThemeSwitch` (`src/components/ThemeSwitch/`): Light, Dark and System, built on `SegmentedControl` and bound to the theme controller. It sits in the gallery header and at the foot of the Radiant docs sidebar (new `footerContent` slot on `Sidebar`). Ctrl+D still works and the two stay in step
+- The gallery, home pages, Radiant docs pages and changelog follow the theme. Code blocks on the docs pages stay dark in both themes. A few light values moved to the nearest token, mostly mid-grey text that is now `content-primary` and pale tints that are now the matching background token
+- The Colours page shows every system, shadow, component and chart token with its light and dark value side by side, and lists aliases under the token they point at. The Architecture page describes how theming works now
+- Added a dark readiness scan (`scripts/radiant-check/`): per prototype and layer it counts colour literals, light-only reads, unknown token names, `prefers-color-scheme` media queries and `data-theme` writes, with accepted exceptions and their reasons in `rules.json`. `npm run scan:dark` reports; `npm run lint:tokens` fails on the shared layers only and isn't wired into `/ship`. `/radiant-check` now prints a dark ready line and suggests `sysVar()` instead of `systemColors.light[...]`
+- Visual snapshots list light surfaces per page, so a dark run shows what didn't follow the theme
+- Component status badges (registry) and the "synced" changelog colour follow the theme
+- The ThoughtSpot nav follows the theme, matching the product with the Radiant theme on (checked on champagne): `GlobalHeader`, `AppSidebar`, the Liveboard primary nav, the Liveboard edit toolbar and the styling drawer use `background-on-base` with a `border-subtle` divider. In light mode that's light grey instead of the old dark navy. `GlobalHeader` takes `theme="auto"` by default; `light` is the older name for it and `dark` is the legacy always-dark nav. The GlobalHeader doc page shows both
+- All sample prototypes work in dark mode, including NewUIAdmin2. Tailwind-style greys map to Radiant tokens through `docs/2026-10-07-phase6-colour-mapping.md`, so light mode shifts slightly in those prototypes. Third-party logos, user-picked colours and palettes stay as they are
+- A prototype that isn't dark ready yet can set `theme: 'light-only'` in its registry entry. It stays light, charts included, while the rest of the app is dark
+- Gallery thumbnails are real screenshots, in light and dark, saved next to each prototype (`thumbnail.light.jpg`, `thumbnail.dark.jpg`, 640x360, 15 to 30 KB). Every sample prototype has them now. Capture with `/thumbnail` or `npm run thumbnails -- <Name>`; `npm run thumbnails:setup` installs the screenshot tool once, outside the project. `npm run thumbnails:check` lists missing or outdated ones, and `/sync-upstream` reports them
+- A prototype without a thumbnail shows a live preview of itself instead of a folder icon. At most four previews load at once, only while on screen
+- `/new-prototype` no longer draws a blank placeholder thumbnail. Hand-made SVG thumbnails still work, and `scripts/thumbnails/tokenize-svg.mjs` converts one to theme tokens so it follows light and dark
+- The SpotterViz side panel uses the nav surface and follows the theme
+- The guidance Claude follows now teaches theme-aware colour. `CLAUDE.md`, the `.cursor/rules` files, the repo skills and the `/new-prototype` templates use `sysVar()`, `compVar()` and `shadowVar()` instead of `systemColors.light[...]`, which stays light in dark mode, and font weights through tokens. `systemColors` and `rdComponentColors` carry a note that they are token data, not for UI. `/new-prototype` ends with a dark readiness scan
+- `AppSidebar` takes `theme`: `auto` (default) follows the app theme, `dark` keeps the legacy navy nav, like `GlobalHeader`. Forks that pass `theme: 'dark'` keep working after sync
+- `/sync-upstream` always builds after merging and repairs `systemColors` reads that a clean merge can break, found in a dry run of this release against the maintainer's own fork
+- `/sync-upstream` knows how to resolve three more conflicts found in the second dry run: sample thumbnail SVGs (take upstream, including deletions), `package.json` scripts added on both sides (keep both), and guidance files (take upstream's block, keep the fork's other edits)
+- The readiness scan also checks fonts: hardcoded font stacks and the old Plain weights 600 and 375 written as numbers, with a "geist" column next to "dark". `node scripts/radiant-check/scan.mjs --mine` shows one row per prototype in `registry-mine.ts` with its theme and thumbnail status. Code under a `vendor/` folder is counted in its own column and left alone. Designers keep their own exceptions in `scripts/radiant-check/rules-mine.json`, which upstream never edits. `/radiant-check` prints a "Geist ready" line
+- Added a migration codemod (`npm run migrate:codemod -- <paths>`, dry run by default, `--write` to apply). It moves prototype code onto Geist and theme tokens: font stacks, weights (600 to emphasis, 375 to regular), exact-match font sizes, `systemColors.light[...]` to `sysVar()`, hex values that equal a token (picked by the property's role), Tailwind-style greys, alpha tints and plain shadows. Anything it can't settle goes to a decision list grouped by value. It never touches `vendor/`, follows the scan's exceptions, and treats logo and brand colours as data. `npm run codemod:check` tests it against the sample prototypes' before and after states
+- Added `/migrate-prototype`: brings a designer's existing prototypes onto Geist and dark mode, all of them in one pass by default (or one, by name). It scans everything into one table, lets you pick, applies the codemod in one run, asks the leftover decisions once per kind across all prototypes, builds once, checks light and dark screenshots, and lifts the light-only flag where a prototype is clean. It never commits, never touches `vendor/`, and only shows its undo unless you ask for it
+- `/sync-upstream` marks prototypes that aren't dark ready yet as light-only after a merge (`npm run migrate:light-only`, with a dated comment), shows the status table, and points to `/migrate-prototype`. A flag removed by hand stays removed. The first sync that brings this release in runs your fork's older copy of `/sync-upstream`, which doesn't have this step yet: after that sync, run `npm run migrate:light-only -- --write` once (or run `/sync-upstream` again). Later syncs re-read the command file after the merge and pick up new steps themselves
+- `/sync-upstream` fixes a build break a clean merge can cause: a `registry-mine.ts` entry that imports a sample thumbnail SVG this release deletes. It drops the import and the gallery shows a live preview
+- `applyTheme()` accepts `'system'` again and resolves it to the system preference, so older fork code that passes it still typechecks
+- The codemod says which path doesn't exist instead of crashing when given a missing prototype folder
+- `docker/nginx.conf` sends `Cache-Control: no-cache` on every `.html`, so after a Coolify deploy browsers load the new build instead of the old one, and a page added to `public/` can't get stuck on the app shell. The `radiantplay-staging` Coolify app has it now too
+- `/coolify-deploy` follows how designers actually run it, in Claude in Chrome: field names for Coolify v4.4.3 (Build strategy, Site type, Ports exposes, the Auto deploy dropdown), the full nginx block set through the code editor rather than typed, a no-cache check in `check` mode, and the secret rule from the "Deploy a prototype to Coolify" guide (ask before each move, never read it). The Coolify MCP is listed as maintainer-only
+- Fixed from the first full migration run: the codemod no longer writes CSS variables or font tokens into chart options (ECharts draws on a canvas and can't read them); those lines become `chart` decisions, resolved with `useChartTheme()`. `--include-vendor` migrates a `vendor/` folder when you decide it's yours to change
+- The readiness scan no longer calls a prototype dark ready when its screens come from code it doesn't scan: imports from another prototype's folder, or a static page shown in an iframe. It names the reason. Screenshots flag a dark image that looks the same as the light one, and archived prototypes can be captured by name. `light-only.mjs --force --reason` keeps a prototype light-only when the scan says ready but it isn't
+
+## 26.9.1c — 2026-09-03
+
+Guided Coolify setup for designers. Docs and tooling only, no product changes.
+
+- Added `/coolify-deploy`: a Claude Code command that walks a designer through putting their fork on Coolify one verified step at a time (deploy key, app, build settings, Node pin, static site and nginx fallback, first deploy, auto-deploy webhook), plus `/coolify-deploy check` to compare an existing app against the known-good recipe. Reads `docs/coolify/` at run time; never types secrets
+- Documented that every Coolify app on one fork must share the same GitHub webhook secret, since Coolify verifies the signature per app and silently skips mismatches
+
+## 26.9.1b — 2026-09-03
+
+Dependency security update. No product changes.
+
+- Resolved all 19 Dependabot alerts with `npm audit fix` (no major bumps): react-router-dom 7.13 → 7.18.3 (12 advisories, mostly server-side features this static SPA never uses), vite 7.3.3 → 7.3.6, and transitive patches for postcss, browserslist, @babel/core and esbuild. Lockfile stays on the public npm registry only
+
+## 26.9.1a — 2026-09-03
+
+Spotter Refresh blocks adopted into the shared Spotter DS, and Coolify deployment consolidated into the shared repo.
+
+- Adopted Devanshi's Refresh blocks into `src/spotter/chat/`: `Reasoning` (timeline), `UserMessage` (bubble), `PromptBar` (composer) and `ToolIcon`. `ReasoningBlock` and `UserBubble` remain as adapters over the new components, so existing prototypes keep working; `PromptBar` ships alongside `SpotterPrompt` until the composer decision
+- Added a Refresh blocks front door on `/radiant/spotter` (showcase, rules) and updated the Spotter roadmap
+
+- Added `docs/coolify/`: a designer deploy guide, an operations sheet (apps, webhook, recipe, known quirks) and a short index. The original design record moved to `docs/archive/`
+- Added `docker/nginx.conf` (the SPA fallback every Coolify app uses) and a `Dockerfile` for the no-git deploy path
+- Added `internal/scripts/push-faris.sh` (push a branch to origin and galaxy in one step) and updated the pre-push hook to protect the `faris` working branch instead of the retired `personal` branch
+- Updated CLAUDE.md and the README: `faris` replaces `personal` in the branch model, and each branch's Coolify URL sits beside its Vercel one
+
+## 26.7.1b — 2026-07-01
+
+SegmentedControl visual refresh. CSS-only, no breaking changes.
+
+- Aligned SegmentedControl to the Radiant 3.0 Figma: pill-shaped track and segments, brand-blue active label, Elevation/100 shadow, lighter font weight, unified disabled opacity. Propagates everywhere SegmentedControl is used.
+
+## 26.7.1a — 2026-07-01
+
+Maintainer tooling and a small design-system addition. No breaking changes.
+
+- Added an opt-in prototype census (`/prototype-census`) that counts prototypes across every fork, with API-based fork auto-discovery, surfaced in the local status dashboard
+- Added an optional per-tile chart color override to AnswerTile and the chart renderer, falling back to the default palette
+- Removed the Vercel Analytics dependency and bumped echarts to 6.1
+- Fixed the public snapshot to omit `.claude/settings.json` and the post-compact hook, avoiding a hook error on public clones
+- Removed the personal Revefi talk deck from main (it now lives on the personal branch)
+
+## 26.5.4b — 2026-05-27
+
+Internal repository housekeeping and public-release groundwork. No user-facing changes.
+
+- Archived stale root files (old HTML exports, a duplicate page, the superseded root backlog) to `internal/archive/` with a manifest noting each move
+- Consolidated onboarding docs: `SETUP-GUIDE.md` and `getting-started/` merged into `GETTING_STARTED.md`
+- Grouped maintainer-only scripts under `internal/scripts/`
+- Dropped a redundant build-time `cp` of `cursor-to-claude-setup.html`
+- Stopped tracking the 11 MB Notion export (kept on disk, gitignored)
+- Added `public-strip.sh` (public-snapshot generator) and `housekeeping-check.sh` (reorg pre-merge checks)
+
 ## 26.5.4a — 2026-05-26
 
 ### Highlights
@@ -10,7 +570,7 @@
 - **Playground archive section and sidebar navigation** — Gallery now has a light left sidebar with Prototypes (default) and Archived sections. Per-card 3-dot menu archives or restores any prototype in your session. Save-to-code modal generates a Claude-ready prompt to commit the layout permanently. `MiniSpotters` and `AdminLang` now appear as archived by default.
 
 ### Added
-- `src/prototypes/StylingPanel/` — Liveboard Styling panel prototype restored (originally PR #14, reverted then re-landed via worktree cherry-pick). Per-tile drawer with density, color theme, corner style, spacing, and highlight overrides. Authored by Devanshi Behara.
+- `src/prototypes/StylingPanel/` — Liveboard Styling panel prototype restored (originally PR #14, reverted then re-landed via worktree cherry-pick). Per-tile drawer with density, color theme, corner style, spacing, and highlight overrides. Authored by Devanshi Behera.
 - Shared tile CSS variables for tile density / color theme / corner / spacing / highlight on `AnswerTile`, `NoteTile`, `GroupTile`.
 - `src/prototypes/NewUIAdmin2/` — AdminUI 2.0 Application Settings screen. Registered in `registry-core.ts` as a sample. Cluster settings, administration toggles, downloads and schedules, version control, AI settings. Authored by the Design Team via Simran Pandit (PR #19).
 - `src/prototypes/Spotter/AnalystLandingPage.tsx` + `AnalystListPage.tsx` — right-pane state machine for the standalone Spotter prototype. Replaces the prior "always show chat" right pane.

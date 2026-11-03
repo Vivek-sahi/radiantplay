@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Icon, isValidIconName } from '../icons';
 import type { IconName } from '../icons';
-import { rdComponentColors, systemColors } from '../../tokens/colors';
+import { compVar, sysVar } from '../../tokens/colors';
 import styles from './Chip.module.css';
 
 export type ChipType = 'attribute' | 'measure' | 'filter' | 'skeleton';
@@ -35,25 +35,25 @@ export interface ChipProps {
 /** Color configuration for each chip type - using semantic tokens */
 const chipColors = {
   attribute: {
-    default: rdComponentColors.light['chip-attribute-default'],
-    hover: rdComponentColors.light['chip-attribute-hover'],
-    pressed: rdComponentColors.light['chip-attribute-pressed'],
-    icon: rdComponentColors.light['chip-attribute-icon'],
-    activeBorder: rdComponentColors.light['chip-attribute-active-border'],
+    default: compVar('chip-attribute-default'),
+    hover: compVar('chip-attribute-hover'),
+    pressed: compVar('chip-attribute-pressed'),
+    icon: compVar('chip-attribute-icon'),
+    activeBorder: compVar('chip-attribute-active-border'),
   },
   measure: {
-    default: rdComponentColors.light['chip-measure-default'],
-    hover: rdComponentColors.light['chip-measure-hover'],
-    pressed: rdComponentColors.light['chip-measure-pressed'],
-    icon: rdComponentColors.light['chip-measure-icon'],
-    activeBorder: rdComponentColors.light['chip-measure-active-border'],
+    default: compVar('chip-measure-default'),
+    hover: compVar('chip-measure-hover'),
+    pressed: compVar('chip-measure-pressed'),
+    icon: compVar('chip-measure-icon'),
+    activeBorder: compVar('chip-measure-active-border'),
   },
   filter: {
-    default: rdComponentColors.light['chip-filter-default'],
-    hover: rdComponentColors.light['chip-filter-hover'],
-    pressed: rdComponentColors.light['chip-filter-pressed'],
-    icon: rdComponentColors.light['chip-filter-icon'],
-    activeBorder: rdComponentColors.light['chip-filter-active-border'],
+    default: compVar('chip-filter-default'),
+    hover: compVar('chip-filter-hover'),
+    pressed: compVar('chip-filter-pressed'),
+    icon: compVar('chip-filter-icon'),
+    activeBorder: compVar('chip-filter-active-border'),
   },
   skeleton: {
     default: 'transparent',
@@ -200,7 +200,7 @@ export const Chip: React.FC<ChipProps> = ({
           <Icon 
             name="chevron-right"
             size="s"
-            color={systemColors.light['content-primary']}
+            color={sysVar('content-primary')}
             className={styles.chevron}
           />
         )}

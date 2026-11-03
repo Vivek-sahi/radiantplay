@@ -1,0 +1,392 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "Radiance Language",
+  "version": "2.0.0",
+  "owner": "ThoughtSpot Design · Radiance admin (vinayakr-cpu)",
+  "description": "Machine-readable source of truth for the Radiance language. Every value here is LOCKED, and the product patterns are FIXED (RULES.md section 12). Mirrored from renderer/radiance-renderer.js - if one changes, both change. Agents should read this file rather than eyeballing values from the renderer.",
+  "renderer": {
+    "version": "2.0.0",
+    "path": "renderer/radiance-renderer.js"
+  },
+  "frozen": [
+    {
+      "name": "the 1.0 renderer",
+      "path": "renderer/v1/radiance-renderer.js",
+      "sha256": "28eae883158e576a7c336fcee89d1342dc64e877bc59f860c3eda4a92419df95",
+      "note": "The 1.0 renderer, byte-for-byte, for reference and for compare/. Never edited; new work uses the current renderer, and a page never loads both (IMPL-1)."
+    },
+    {
+      "name": "SpotterX and Liveboard's renderer from before 2.0",
+      "path": "compare/reference/spotter-before-2.0.js",
+      "sha256": "4e47c74511cb223e65582e639d5ed6d3a3efe74a22389716aeb242a7d93f4685",
+      "note": "The renderer SpotterX and Liveboard ran before they became product patterns, byte-for-byte, for the left side of their comparison in compare/. Never edited, never used by a product."
+    },
+    {
+      "name": "Home's page recipe from before 2.0",
+      "path": "compare/reference/home-before-2.0.css",
+      "sha256": "e86a0d4ee61d932d4c6967e543cc69195cde45cd001543b0daae538cd4e3febc",
+      "note": "Home's page recipe as the product shipped it before 2.0 (the hero at 76% / 66%, with its own 64px noise), byte-for-byte, for the left side of its comparison in compare/. Never edited, never used by a product: Home's recipe is products/home/radiance-home.css (GRAIN-6)."
+    }
+  ],
+  "tiers": {
+    "locked": "Never changed by an AI on its own; overridable only through RULES.md section 10.",
+    "onRequest": "The user may have these; an AI never initiates them.",
+    "free": "The user's call.",
+    "fixed": "Product patterns. Never adjusted or overridden; only the Radiance admin changes them, in this repository."
+  },
+  "surface": {
+    "light": "#FFFFFF",
+    "dark": "#1A1B1E",
+    "base": {
+      "attribute": "data-radiance-base",
+      "customProperty": "--radiance-base",
+      "default": {
+        "light": "#FFFFFF",
+        "dark": "#1A1B1E"
+      },
+      "rule": "SURFACE-1",
+      "note": "The base is the host's own opaque background colour, per theme: white where the host is white, the host's colour where it is not. data-radiance-base wins over --radiance-base; with neither, the default is used. Product patterns lock their base."
+    },
+    "opaque": true,
+    "note": "The Radiance canvas is created with { alpha: false }. It is a background, never a translucent overlay."
+  },
+  "palette": {
+    "light": {
+      "pink": { "hex": "#FF78A0", "rgb": [255, 120, 160], "role": "dominant" },
+      "violet": { "hex": "#8C64FF", "rgb": [140, 100, 255], "role": "dominant" },
+      "blue": { "hex": "#288CFF", "rgb": [40, 140, 255], "role": "dominant" },
+      "peach": { "hex": "#FFB464", "rgb": [255, 180, 100], "role": "warmth" },
+      "mint": { "hex": "#50DCB4", "rgb": [80, 220, 180], "role": "support-only", "maxOpacity": 0.32 }
+    },
+    "lightVeil": {
+      "paleBlue": { "hex": "#C8DCFF", "rgb": [200, 220, 255] },
+      "palePink": { "hex": "#FFC8DC", "rgb": [255, 200, 220] },
+      "paleGold": { "hex": "#FFF0B4", "rgb": [255, 240, 180] }
+    },
+    "dark": {
+      "pink": { "hex": "#FF5D8E", "rgb": [255, 93, 142], "role": "dominant" },
+      "violet": { "hex": "#8A5DFF", "rgb": [138, 93, 255], "role": "dominant" },
+      "blue": { "hex": "#278CFF", "rgb": [39, 140, 255], "role": "dominant" },
+      "peach": { "hex": "#FFB45A", "rgb": [255, 180, 90], "role": "warmth" },
+      "mint": { "hex": "#2DDCB1", "rgb": [45, 220, 177], "role": "support-only", "maxOpacity": 0.18 }
+    },
+    "darkVeil": {
+      "paleBlue": { "hex": "#A0C4FF", "rgb": [160, 196, 255] },
+      "palePink": { "hex": "#FFAAD2", "rgb": [255, 170, 210] },
+      "paleGold": { "hex": "#FFE896", "rgb": [255, 232, 150] }
+    }
+  },
+  "blendOrder": {
+    "order": [
+      "peach",
+      "pink",
+      "violet",
+      "blue",
+      "mint"
+    ],
+    "rule": "COLOR-5",
+    "note": "Each colour only blends into its neighbour in this order; opposite hues (mint and pink, peach and blue or violet) never overlap, so no pair mixes through grey. Peach and mint are compact accents at the ends."
+  },
+  "grain": {
+    "size": 1.0,
+    "unit": "px",
+    "passes": [
+      "macro",
+      "micro"
+    ],
+    "alphaMultiplier": {
+      "lightMacro": 1.16,
+      "lightMicro": 0.3,
+      "darkMacro": 1.18,
+      "darkMicro": 0.36
+    },
+    "darkDitherAlpha": 0.42,
+    "maskedTextures": [
+      "grain",
+      "darkDither",
+      "fineNoise"
+    ],
+    "imageSmoothing": false,
+    "coverage": "colour-field-masked",
+    "maskSaturation": 12,
+    "maskScale": 0.25,
+    "note": "Multi-channel colour noise generated per surface, not a bitmap. Composited through the colour field's alpha so the bare base stays clean; mask saturation 12 brings the film to ~80% by 12% colour and keeps it under ~6% over the bare base. The Figma plugin's tiled grain image is the one sanctioned substitute, because Figma cannot run the generator."
+  },
+  "film": {
+    "rule": "GRAIN-2, GRAIN-6",
+    "light": {
+      "grain": 1,
+      "dither": 0,
+      "fineNoise": 0.22,
+      "fineNoiseBlend": "multiply",
+      "saturate": 1.16,
+      "contrast": 1.06
+    },
+    "dark": {
+      "grain": 0.76,
+      "dither": 0.3192,
+      "fineNoise": 0.27,
+      "fineNoiseBlend": "screen",
+      "saturate": 1.2,
+      "contrast": 1.08
+    },
+    "fineNoiseTilePx": 56,
+    "order": [
+      "dither (dark only)",
+      "grain",
+      "fine noise",
+      "tone lift"
+    ],
+    "note": "The one film per theme: every surface, template or product pattern, draws exactly this grain (GRAIN-6). The Home page hero's film, drawn by the renderer on every surface and masked to the colour field. dark.dither is the dither's 0.42 at the dark grain strength 0.76. The fine noise is an SVG fractal-noise tile rasterised at the surface's pixel density."
+  },
+  "blend": {
+    "light": "source-over",
+    "dark": "screen"
+  },
+  "blur": {
+    "light": {
+      "default": 40,
+      "neutral": 22
+    },
+    "dark": {
+      "default": 64,
+      "neutral": 40
+    },
+    "unit": "px"
+  },
+  "motion": {
+    "rule": "MOTION-2",
+    "orbit": "Every blob's orbit, size, stretch and tilt is 2-3 sines at incommensurate, seeded per-blob frequencies.",
+    "breath": {
+      "size": 0.05,
+      "glow": 0.05,
+      "periodMs": [
+        5000,
+        8000
+      ],
+      "tempo": "square root of the speed"
+    },
+    "timeline": "One shared, session-anchored timeline (MOTION-4).",
+    "reducedMotion": "Freezes every surface at its resting frame, product patterns included (MOTION-7)."
+  },
+  "layerOrder": [
+    "base surface fill",
+    "blobs (blurred)",
+    "directional support wash",
+    "dark falloff (dark + subtle only)",
+    "film: dither (dark only)",
+    "film: grain",
+    "film: fine noise",
+    "film: tone lift"
+  ],
+  "patterns": {
+    "right-wash": {
+      "layout": "right-wash",
+      "speeds": {
+        "slow": 0.62,
+        "fast": 1.02
+      },
+      "homes": [
+        "Sign up (signup product pattern)",
+        "Colour system"
+      ]
+    },
+    "left-wash": {
+      "layout": "left-wash",
+      "speeds": {
+        "slow": 0.62,
+        "fast": 1.02
+      },
+      "homes": [
+        "Opportunity"
+      ]
+    },
+    "neutral": {
+      "layout": "neutral",
+      "speeds": {
+        "slow": 0.86,
+        "fast": 1.34
+      },
+      "homes": [
+        "Cover",
+        "Handoff"
+      ]
+    },
+    "top-wash": {
+      "layout": "top-wash",
+      "speeds": {
+        "slow": 0.92,
+        "fast": 1.72
+      },
+      "homes": [
+        "Home page (home product pattern)"
+      ]
+    },
+    "bottom-wash": {
+      "layout": "bottom-wash",
+      "speeds": {
+        "slow": 0.92,
+        "fast": 1.72
+      },
+      "homes": []
+    }
+  },
+  "defaultPattern": "top-wash-subtle-dynamic-fast",
+  "products": {
+    "tier": "fixed",
+    "rules": "RULES.md section 12 (PRODUCT-1 to PRODUCT-5)",
+    "owner": "Radiance admin (vinayakr-cpu)",
+    "lockedAttributes": [
+      "data-radiance-prominence",
+      "data-radiance-spread",
+      "data-radiance-speed-scale",
+      "data-radiance-speed",
+      "data-radiance-base",
+      "data-radiance-intensity",
+      "data-radiance-layout",
+      "data-radiance-variant",
+      "data-radiance-motion",
+      "data-radiance-dark-glow",
+      "data-radiance-seed"
+    ],
+    "states": {
+      "attribute": "data-radiance-state",
+      "values": [
+        "idle",
+        "reasoning",
+        "answered"
+      ],
+      "default": "idle",
+      "answeredDelayMs": 530,
+      "oncePerConversation": true,
+      "engines": [
+        "spotter"
+      ]
+    },
+    "patterns": {
+      "signup": {
+        "name": "Sign up",
+        "engine": "template",
+        "layout": "right-wash",
+        "intensity": "prominent",
+        "motion": "dynamic",
+        "speed": {
+          "light": 1.02,
+          "dark": 1.02
+        },
+        "seed": "signin-v2",
+        "film": "renderer",
+        "reducedMotion": "static",
+        "base": {
+          "light": "#FFFFFF",
+          "dark": "#1A1B1E"
+        },
+        "recipe": "products/signup/README.md",
+        "css": null
+      },
+      "home": {
+        "name": "Home page",
+        "engine": "template",
+        "layout": "top-wash",
+        "intensity": "subtle",
+        "motion": "dynamic",
+        "speed": {
+          "light": 1.86,
+          "dark": 1.72
+        },
+        "seed": "home-hero",
+        "film": "page",
+        "fieldOpacity": {
+          "light": 0.76,
+          "dark": 0.66
+        },
+        "base": {
+          "light": "#FFFFFF",
+          "dark": "#131416"
+        },
+        "recipe": "products/home/README.md",
+        "css": "products/home/radiance-home.css"
+      },
+      "spotterx": {
+        "name": "SpotterX",
+        "engine": "spotter",
+        "film": "recipe",
+        "base": {
+          "light": "#FFFFFF",
+          "dark": "#131416"
+        },
+        "recipe": "products/spotterx/README.md",
+        "css": "products/spotterx/radiance-spotterx.css"
+      },
+      "liveboard": {
+        "name": "Liveboard",
+        "engine": "spotter",
+        "film": "recipe",
+        "base": {
+          "light": "#FFFFFF",
+          "dark": "#131416"
+        },
+        "recipe": "products/liveboard/README.md",
+        "css": "products/liveboard/radiance-liveboard.css"
+      }
+    }
+  },
+  "adjustments": {
+    "model": "percentage-of-pattern-value",
+    "note": "100% is always the pattern's shipped value. Adjust templates by percentage, never by absolute value; product patterns take no adjustment (PRODUCT-2). Only these scale; colour, grain, blend, blur and layer order have no percentage interface.",
+    "prominence": {
+      "attribute": "data-radiance-prominence",
+      "min": 0.5,
+      "max": 1.5,
+      "default": 1,
+      "scales": [
+        "blob opacity",
+        "directional wash intensity"
+      ],
+      "rule": "ADJUST-3"
+    },
+    "spread": {
+      "attribute": "data-radiance-spread",
+      "min": 0.75,
+      "max": 1.25,
+      "default": 1,
+      "scales": [
+        "blob radius"
+      ],
+      "rule": "ADJUST-4"
+    },
+    "speed": {
+      "attribute": "data-radiance-speed-scale",
+      "min": 0.5,
+      "max": 1.5,
+      "default": 1,
+      "scales": [
+        "pattern canonical speed"
+      ],
+      "rule": "ADJUST-5",
+      "note": "The absolute 0.4-2.0 speed range still applies on top of this."
+    },
+    "size": {
+      "attribute": null,
+      "note": "Container CSS. Free, no attribute, no warning (ADJUST-6)."
+    }
+  },
+  "ranges": {
+    "speed": {
+      "min": 0.4,
+      "max": 2.0,
+      "note": "Absolute guardrail. Below 0.4 reads dead. Above 2.0 reads nervous. Applies after any percentage adjustment."
+    },
+    "minSurfacePx": 120,
+    "maxConcurrentDynamicSurfaces": 3,
+    "maxDpr": 2
+  },
+  "intensity": {
+    "values": [
+      "subtle",
+      "prominent"
+    ],
+    "productDefault": "subtle",
+    "rule": "data-radiance-dark-glow must always equal data-radiance-intensity."
+  }
+}

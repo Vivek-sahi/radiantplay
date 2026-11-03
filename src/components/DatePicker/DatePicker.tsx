@@ -1,5 +1,17 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import styles from './DatePicker.module.css';
+import {
+  WEEKDAYS,
+  MONTHS,
+  MONTHS_SHORT,
+  formatDate,
+  parseDate,
+  getCalendarDays,
+  isSameDay,
+  isToday,
+} from './dateUtils';
+import type { CalendarView } from './dateUtils';
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from './CalendarIcons';
 
 export type DateFormat = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD';
 
@@ -57,154 +69,6 @@ export interface DatePickerProps {
    */
   id?: string;
 }
-
-const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-];
-const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-type CalendarView = 'days' | 'months' | 'years';
-
-/**
- * Format date to string based on format
- */
-function formatDate(date: Date | null, format: DateFormat): string {
-  if (!date) return '';
-  
-  const d = date.getDate().toString().padStart(2, '0');
-  const m = (date.getMonth() + 1).toString().padStart(2, '0');
-  const y = date.getFullYear().toString();
-  
-  switch (format) {
-    case 'DD/MM/YYYY': return `${d}/${m}/${y}`;
-    case 'YYYY-MM-DD': return `${y}-${m}-${d}`;
-    case 'MM/DD/YYYY':
-    default: return `${m}/${d}/${y}`;
-  }
-}
-
-/**
- * Parse string to date based on format
- */
-function parseDate(value: string, format: DateFormat): Date | null {
-  if (!value) return null;
-  
-  let parts: string[];
-  let d: number, m: number, y: number;
-  
-  switch (format) {
-    case 'DD/MM/YYYY':
-      parts = value.split('/');
-      if (parts.length !== 3) return null;
-      d = parseInt(parts[0], 10);
-      m = parseInt(parts[1], 10) - 1;
-      y = parseInt(parts[2], 10);
-      break;
-    case 'YYYY-MM-DD':
-      parts = value.split('-');
-      if (parts.length !== 3) return null;
-      y = parseInt(parts[0], 10);
-      m = parseInt(parts[1], 10) - 1;
-      d = parseInt(parts[2], 10);
-      break;
-    case 'MM/DD/YYYY':
-    default:
-      parts = value.split('/');
-      if (parts.length !== 3) return null;
-      m = parseInt(parts[0], 10) - 1;
-      d = parseInt(parts[1], 10);
-      y = parseInt(parts[2], 10);
-  }
-  
-  const date = new Date(y, m, d);
-  if (isNaN(date.getTime())) return null;
-  return date;
-}
-
-/**
- * Get days in month grid (including prev/next month days)
- */
-function getCalendarDays(year: number, month: number): { date: Date; isCurrentMonth: boolean }[] {
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const startDay = firstDay.getDay();
-  const daysInMonth = lastDay.getDate();
-  
-  const days: { date: Date; isCurrentMonth: boolean }[] = [];
-  
-  // Previous month days
-  const prevMonthLastDay = new Date(year, month, 0).getDate();
-  for (let i = startDay - 1; i >= 0; i--) {
-    days.push({
-      date: new Date(year, month - 1, prevMonthLastDay - i),
-      isCurrentMonth: false,
-    });
-  }
-  
-  // Current month days
-  for (let i = 1; i <= daysInMonth; i++) {
-    days.push({
-      date: new Date(year, month, i),
-      isCurrentMonth: true,
-    });
-  }
-  
-  // Next month days (fill to 42 = 6 weeks)
-  const remaining = 42 - days.length;
-  for (let i = 1; i <= remaining; i++) {
-    days.push({
-      date: new Date(year, month + 1, i),
-      isCurrentMonth: false,
-    });
-  }
-  
-  return days;
-}
-
-/**
- * Check if two dates are the same day
- */
-function isSameDay(a: Date | null, b: Date): boolean {
-  if (!a) return false;
-  return a.getFullYear() === b.getFullYear() &&
-         a.getMonth() === b.getMonth() &&
-         a.getDate() === b.getDate();
-}
-
-/**
- * Check if date is today
- */
-function isToday(date: Date): boolean {
-  return isSameDay(new Date(), date);
-}
-
-/**
- * Calendar icon
- */
-const CalendarIcon: React.FC = () => (
-  <svg className={styles.calendarIcon} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M2 6H14" stroke="currentColor" strokeWidth="1.5" />
-    <path d="M5 1V4M11 1V4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-  </svg>
-);
-
-/**
- * Navigation icons
- */
-const ChevronLeftIcon: React.FC = () => (
-  <svg className={styles.navIcon} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const ChevronRightIcon: React.FC = () => (
-  <svg className={styles.navIcon} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
 
 /**
  * DatePicker Component

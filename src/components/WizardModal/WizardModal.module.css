@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(28, 35, 48, 0.5);
+  background-color: var(--rd-sys-color-background-overlay);
   z-index: var(--z-index-modal, 1000);
   padding: var(--spacing-6);
   animation: fadeIn var(--duration-fast, 150ms) ease-out;
@@ -32,8 +32,8 @@
   display: flex;
   flex-direction: column;
   background-color: var(--rd-sys-color-background-base);
-  border-radius: var(--radius-xl, 16px);
-  box-shadow: 0 24px 48px rgba(25, 35, 49, 0.2);
+  border-radius: var(--radius-xl, 12px);
+  box-shadow: var(--rd-sys-color-shadow-modal);
   max-height: calc(100vh - var(--spacing-12, 48px));
   overflow: hidden;
   animation: slideUp var(--duration-normal, 200ms) ease-out;
@@ -78,7 +78,7 @@
 .stepTitle {
   font-family: var(--font-family-primary);
   font-size: var(--font-size-lg, 18px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-primary);
 }
 

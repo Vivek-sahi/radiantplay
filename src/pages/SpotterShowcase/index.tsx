@@ -1,14 +1,29 @@
 import React, { useState } from 'react';
 import {
   UserBubble,
+  UserMessage,
   AgentMessage,
   TypingIndicator,
   ReasoningBlock,
+  Reasoning,
   SpotterPrompt,
+  PromptBar,
   QuickAction,
   QuickActionRow,
   SpotterChatProvider,
 } from '@spotter/chat';
+import type {
+  OpenMenu,
+  PromptBarMode,
+  ReasoningItem,
+  UserMessageFile,
+} from '@spotter/chat';
+// The chat barrel does not export the Slack logo asset, so the fixture imports
+// it from the component's own asset folder.
+import slackLogo from '@spotter/chat/assets/slack.png';
+import { Horizontal, Vertical } from '@components/Layout';
+import { spacing } from '@tokens/spacing';
+import { fontSize, fontWeight } from '@tokens/typography';
 import {
   TextBlock,
   VizBlock,
@@ -36,6 +51,7 @@ import type {
 } from '@spotter/runtime';
 import { PreviewCard } from './PreviewCard';
 import styles from './SpotterShowcase.module.css';
+import { SectionLinks } from '@/app-chrome/OnThisPage/OnThisPage';
 
 // ── Mock messages for static previews ──────────────────────────────────────
 
@@ -140,6 +156,182 @@ const reasoningStreaming = {
   ],
   isDone: false,
 };
+
+// ── Refresh reasoning fixtures ─────────────────────────────────────────────
+//
+// `Reasoning` owns a flat timeline of text rows and tool rows, not the runtime's
+// step model, so its fixtures are written directly as `ReasoningItem[]`.
+
+const reasoningRunningItems: ReasoningItem[] = [
+  {
+    kind: 'text',
+    id: 'run-intent',
+    summaryHeader: 'Reading the question',
+    text: 'You want pipeline by stage for last quarter, plus whatever the revenue channel said about the two deals that slipped.',
+  },
+  {
+    kind: 'tool',
+    id: 'run-search',
+    title: 'Searching the data model',
+    doneTitle: 'Searched the data model',
+    toolIcon: 'fetch',
+    input: "search({ model: 'Sales core', terms: ['pipeline', 'stage'] })",
+    output: '3 matching tables — Opportunities, Stages, Accounts',
+  },
+  {
+    kind: 'tool',
+    id: 'run-query',
+    title: 'Running the query',
+    doneTitle: 'Ran the query',
+    toolIcon: 'code',
+    group: 'parallel-1',
+  },
+  {
+    kind: 'tool',
+    id: 'run-slack',
+    title: 'Reading #revenue',
+    doneTitle: 'Read #revenue',
+    connector: 'Slack',
+    logo: slackLogo,
+    group: 'parallel-1',
+  },
+];
+
+// Only the first tool has finished; the trailing pair is still loading, which is
+// what puts the semi-collapsed view on a parallel step.
+const reasoningRunningLoaded = new Set(['run-search']);
+
+const reasoningDoneItems: ReasoningItem[] = [
+  {
+    kind: 'text',
+    id: 'done-intent',
+    summaryHeader: 'Reading the question',
+    text: 'Total sales grouped by month, over the last quarter.',
+  },
+  {
+    kind: 'tool',
+    id: 'done-fetch',
+    title: 'Fetching sales by month',
+    doneTitle: 'Fetched sales by month',
+    toolIcon: 'fetch',
+    input: "fetch({ table: 'Orders', measure: 'revenue', groupBy: 'month' })",
+    output: '{ "rows": 3, "total": 4200000, "peak": "Feb" }',
+  },
+  {
+    kind: 'text',
+    id: 'done-read',
+    text: 'February led the quarter at $1.7M, mostly enterprise renewals. March dipped early and recovered in the second half.',
+  },
+  {
+    kind: 'tool',
+    id: 'done-error',
+    title: 'Posting the summary to #revenue',
+    doneTitle: 'Posted the summary to #revenue',
+    connector: 'Slack',
+    logo: slackLogo,
+    error: 'Permission denied. The Slack connector is not authorised to post in #revenue.',
+  },
+];
+
+// `Reasoning` is controlled, so previews own the expanded flag and stay clickable.
+const ReasoningPreview: React.FC<{
+  items: ReasoningItem[];
+  status: 'running' | 'done';
+  initialExpanded: boolean;
+  loadedToolIds?: Set<string>;
+  doneLabel?: string;
+}> = ({ items, status, initialExpanded, loadedToolIds, doneLabel }) => {
+  const [expanded, setExpanded] = useState(initialExpanded);
+  return (
+    <Reasoning
+      items={items}
+      visibleCount={items.length}
+      status={status}
+      expanded={expanded}
+      onToggleExpanded={() => setExpanded((prev) => !prev)}
+      loadedToolIds={loadedToolIds}
+      doneLabel={doneLabel}
+    />
+  );
+};
+
+// ── Refresh user-message fixtures ──────────────────────────────────────────
+
+const userMessageFiles: UserMessageFile[] = [
+  { name: 'q4-pipeline.csv', type: 'csv', size: '48 KB' },
+  { name: 'board-deck.pdf', type: 'pdf', size: '2.1 MB' },
+];
+
+// ── PromptBar previews ─────────────────────────────────────────────────────
+//
+// `PromptBar` is the core bar. `PromptBarPlayground` wraps it with a resizable
+// frame and a drag handle, which a doc card does not need, so these previews
+// drive the core directly from local state.
+
+const PromptBarPreview: React.FC<{
+  mode: PromptBarMode;
+  startFocused?: boolean;
+}> = ({ mode, startFocused = false }) => {
+  const [value, setValue] = useState(startFocused ? 'Pipeline by stage for last quarter' : '');
+  const [openMenu, setOpenMenu] = useState<OpenMenu>('none');
+  const [focused, setFocused] = useState(startFocused);
+  const [deepAnalysis, setDeepAnalysis] = useState(false);
+  return (
+    <Vertical style={{ width: '100%', maxWidth: 640 }}>
+      <PromptBar
+        focused={focused}
+        openMenu={openMenu}
+        onOpenMenuChange={setOpenMenu}
+        deepAnalysis={deepAnalysis}
+        onDeepAnalysisChange={setDeepAnalysis}
+        value={value}
+        onValueChange={setValue}
+        onFocus={() => setFocused(true)}
+        onSend={() => setValue('')}
+        minLines={mode === 'landing' ? 2 : 1}
+        menuDirection={mode === 'landing' ? 'down' : 'up'}
+        modelSelected
+        modelName="Sales core"
+        skills
+        googleDrive
+      />
+    </Vertical>
+  );
+};
+
+// ── Response grid spec ─────────────────────────────────────────────────────
+
+const RESPONSE_GRID_ROWS: Array<{ label: string; value: string; note: string }> = [
+  { label: 'Page gutter', value: '24px', note: 'Outer band on each side of the page.' },
+  { label: 'Inner padding', value: '16px', note: 'Each side of the response, inside the content column.' },
+  { label: 'Content column', value: 'max 800px', note: 'Centred. Holds the user message and the response.' },
+  { label: 'Text column', value: 'max 768px', note: 'Text inside the response, after the inner padding.' },
+];
+
+const ResponseGridSpec: React.FC = () => (
+  <Vertical gap={spacing.D} style={{ width: '100%' }}>
+    {RESPONSE_GRID_ROWS.map((row) => (
+      <Vertical key={row.label} gap={spacing.A}>
+        <Horizontal gap={spacing.C} align="baseline" justify="space-between">
+          <span style={{ fontSize: fontSize.sm, fontWeight: fontWeight.emphasis, color: 'var(--rd-sys-color-content-primary)' }}>
+            {row.label}
+          </span>
+          <code style={{ fontSize: fontSize.xs, fontFamily: 'var(--font-family-mono)', color: 'var(--rd-sys-color-content-secondary)' }}>
+            {row.value}
+          </code>
+        </Horizontal>
+        <span style={{ fontSize: fontSize.xs, color: 'var(--rd-sys-color-content-tertiary)' }}>{row.note}</span>
+      </Vertical>
+    ))}
+    <span style={{ fontSize: fontSize.xs, color: 'var(--rd-sys-color-content-tertiary)' }}>
+      The live spec, with a grid overlay you can toggle, is at{' '}
+      <a href="/playground/SpotterComponents" style={{ color: 'var(--rd-sys-color-content-brand)', fontWeight: fontWeight.medium }}>
+        /playground/SpotterComponents
+      </a>
+      .
+    </span>
+  </Vertical>
+);
 
 // ── Mock block data ────────────────────────────────────────────────────────
 
@@ -293,7 +485,7 @@ const ChartBgSwatches: React.FC = () => (
     {(Object.entries(spotterChartBg) as Array<[keyof typeof spotterChartBg, string]>).map(([key, color]) => (
       <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ height: 64, background: color, borderRadius: 8, border: '1px solid var(--rd-sys-color-background-subtle)' }} />
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--rd-sys-color-content-primary)' }}>{key}</div>
+        <div style={{ fontSize: 13, fontWeight: 'var(--font-weight-emphasis)', color: 'var(--rd-sys-color-content-primary)' }}>{key}</div>
         <code style={{ fontSize: 11, fontFamily: 'var(--font-family-mono)', color: 'var(--rd-sys-color-content-secondary)' }}>{color}</code>
       </div>
     ))}
@@ -304,7 +496,7 @@ const LayoutSwatch: React.FC = () => (
   <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--rd-sys-color-content-primary)' }}>chatMaxWidth</span>
+        <span style={{ fontSize: 13, fontWeight: 'var(--font-weight-emphasis)', color: 'var(--rd-sys-color-content-primary)' }}>chatMaxWidth</span>
         <code style={{ fontSize: 12, fontFamily: 'var(--font-family-mono)', color: 'var(--rd-sys-color-content-secondary)' }}>{spotterLayout.chatMaxWidth}px</code>
       </div>
       <div style={{ height: 8, background: 'var(--rd-sys-color-content-brand)', borderRadius: 4, width: '100%' }} />
@@ -314,7 +506,7 @@ const LayoutSwatch: React.FC = () => (
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--rd-sys-color-content-primary)' }}>textMaxWidth</span>
+        <span style={{ fontSize: 13, fontWeight: 'var(--font-weight-emphasis)', color: 'var(--rd-sys-color-content-primary)' }}>textMaxWidth</span>
         <code style={{ fontSize: 12, fontFamily: 'var(--font-family-mono)', color: 'var(--rd-sys-color-content-secondary)' }}>{spotterLayout.textMaxWidth}px</code>
       </div>
       <div style={{ height: 8, background: 'var(--rd-sys-color-content-brand)', borderRadius: 4, width: `${(spotterLayout.textMaxWidth / spotterLayout.chatMaxWidth) * 100}%` }} />
@@ -344,13 +536,15 @@ const SpotterShowcaseInner: React.FC = () => {
           Every component in the Spotter design system — chat surface, block renderers, page shell,
           icons, and tokens. Static previews with the common variants.
         </p>
-        <nav className={styles.toc} aria-label="Sections">
-          <a href="#chat">Chat</a>
-          <a href="#blocks">Blocks</a>
-          <a href="#shell">Page shell</a>
-          <a href="#icons">Spotter icons</a>
-          <a href="#tokens">Spotter tokens</a>
-        </nav>
+        <SectionLinks
+          links={[
+            { id: 'chat', label: 'Chat' },
+            { id: 'blocks', label: 'Blocks' },
+            { id: 'shell', label: 'Page shell' },
+            { id: 'icons', label: 'Spotter icons' },
+            { id: 'tokens', label: 'Spotter tokens' },
+          ]}
+        />
       </header>
 
       {/* ─── Chat section ───────────────────────────────────────────────── */}
@@ -365,11 +559,52 @@ const SpotterShowcaseInner: React.FC = () => {
         <PreviewCard
           name="UserBubble"
           path="@spotter/chat"
-          description="Single-row layout: avatar + text + timestamp inside a soft-gray rounded container."
+          description="Adapter, not a renderer. Takes a runtime ChatMessage and renders UserMessage — a right-aligned squircle bubble with the timestamp below it, no avatar. New code that owns its own strings should render UserMessage directly."
           variants={[
             {
               label: 'Default',
+              description: 'Runtime ChatMessage in, Refresh bubble out.',
               node: <UserBubble message={userMessage} />,
+            },
+          ]}
+        />
+
+        <PreviewCard
+          name="UserMessage"
+          path="@spotter/chat"
+          description="The Refresh user bubble. Right-aligned squircle with the timestamp below, hover actions, inline edit, file cards, and a quoted-context pill. Long text clamps with a show-more affordance."
+          variants={[
+            {
+              label: 'Default',
+              description: 'Message text plus timestamp.',
+              node: (
+                <UserMessage
+                  message="Show me total sales by month for the last quarter."
+                  timestamp="10:24 AM"
+                />
+              ),
+            },
+            {
+              label: 'With files',
+              description: 'Two attached files render as FileCards below the text.',
+              node: (
+                <UserMessage
+                  message="Compare these two against what the model says."
+                  files={userMessageFiles}
+                  timestamp="10:26 AM"
+                />
+              ),
+            },
+            {
+              label: 'With highlighted text',
+              description: 'Quoted context pill above the message; the text clamps to three lines instead of four.',
+              node: (
+                <UserMessage
+                  message="Why did this happen, and is it likely to repeat next quarter?"
+                  highlightedText="February had the strongest performance, driven by enterprise renewals."
+                  timestamp="10:31 AM"
+                />
+              ),
             },
           ]}
         />
@@ -412,7 +647,7 @@ const SpotterShowcaseInner: React.FC = () => {
         <PreviewCard
           name="ReasoningBlock"
           path="@spotter/chat"
-          description='Collapsible "Show work ⌄" trigger. Steps render with status dots, optional descriptions, and a "Worked for X seconds" footer.'
+          description='Adapter, not a renderer. Takes a runtime ReasoningTrace and renders Reasoning, turning each step into a text row plus a tool row. It also owns the lifecycle: semi-collapsed while running, a brief expand at done, then "Show work" — and a user click locks the state. "Thought for N seconds" is now the terminal row of the expanded timeline, not a footer. New code that owns its own item list should render Reasoning directly.'
           variants={[
             {
               label: 'Collapsed (done)',
@@ -426,8 +661,52 @@ const SpotterShowcaseInner: React.FC = () => {
             },
             {
               label: 'Streaming',
-              description: 'Auto-expanded while the agent is thinking.',
+              description: 'Semi-collapsed while the agent is thinking — only the latest step shows.',
               node: <ReasoningBlock reasoning={reasoningStreaming} stage="streaming" />,
+            },
+          ]}
+        />
+
+        <PreviewCard
+          name="Reasoning"
+          path="@spotter/chat"
+          description="The Refresh reasoning timeline, and what new chat surfaces should render. A flat list of text rows and tool rows; tool rows expand to input / output code, carry a Radiant icon, a tool glyph or an MCP logo, and can report an error. Controlled — the consumer owns `expanded` and `visibleCount`. Tools sharing a `group` run in parallel and collapse into one step."
+          variants={[
+            {
+              label: 'Running, semi-collapsed',
+              description: 'Latest step is a parallel group — one internal tool plus a Slack connector — so the shimmer header reads "Calling tool and using Slack".',
+              node: (
+                <ReasoningPreview
+                  items={reasoningRunningItems}
+                  status="running"
+                  initialExpanded={false}
+                  loadedToolIds={reasoningRunningLoaded}
+                />
+              ),
+            },
+            {
+              label: 'Done, expanded',
+              description: 'Text rows, a tool row with input and output, a failed connector row, and the terminal done row.',
+              node: (
+                <ReasoningPreview
+                  items={reasoningDoneItems}
+                  status="done"
+                  initialExpanded
+                  doneLabel="Thought for 6 seconds"
+                />
+              ),
+            },
+            {
+              label: 'Done, collapsed',
+              description: 'The resting state — "Show work" with an empty mask.',
+              node: (
+                <ReasoningPreview
+                  items={reasoningDoneItems}
+                  status="done"
+                  initialExpanded={false}
+                  doneLabel="Thought for 6 seconds"
+                />
+              ),
             },
           ]}
         />
@@ -451,6 +730,29 @@ const SpotterShowcaseInner: React.FC = () => {
               label: 'Disabled',
               description: 'Submit and inputs locked.',
               node: <PromptDisabled />,
+            },
+          ]}
+        />
+
+        <PreviewCard
+          name="PromptBar"
+          path="@spotter/chat"
+          description="The Refresh composer. Ships alongside SpotterPrompt rather than replacing it — SpotterPrompt carries the mode toggle and data-model picker, PromptBar carries model, skills and connectors, plus a deep-analysis chip, attached files and a quoted-context pill. Which one Spotter's composer should be is still open."
+          variants={[
+            {
+              label: 'Landing',
+              description: 'Two-line content height, menus open downward. The welcome-state shape.',
+              node: <PromptBarPreview mode="landing" />,
+            },
+            {
+              label: 'Asked',
+              description: 'One-line content height, menus open upward. The shape once a conversation is running.',
+              node: <PromptBarPreview mode="asked" />,
+            },
+            {
+              label: 'Selected',
+              description: 'Focused state — purple → cyan → blue gradient ring and the focus glow.',
+              node: <PromptBarPreview mode="asked" startFocused />,
             },
           ]}
         />
@@ -505,6 +807,15 @@ const SpotterShowcaseInner: React.FC = () => {
                 />
               ),
             },
+          ]}
+        />
+
+        <PreviewCard
+          name="Response grid"
+          path="Layout spec — no component"
+          description="The measurements the Refresh response layout is built on. Not a shipped component: ChatThread still sizes itself from --spotter-chat-max-width, and whether it moves to the 800px content column is an open decision."
+          variants={[
+            { label: 'Measurements', node: <ResponseGridSpec /> },
           ]}
         />
 

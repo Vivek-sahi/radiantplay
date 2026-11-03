@@ -31,25 +31,20 @@ cd radiantplay
 git remote add upstream https://galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay.git
 ```
 
-### 3. Install Dependencies
+### 3. Open in Claude
+
+Open the Claude desktop app, click **Code**, and start a session on the `radiantplay` folder. Claude reads the project's rules from it.
+
+### 4. Start the Development Server
+
+Type `Start the dev server` in the chat. The first time, Claude runs `npm install` too. Or by hand:
 
 ```bash
 npm install
-```
-
-### 4. Start Development Server
-
-```bash
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173`
-
-### 5. Open in Cursor
-
-```bash
-cursor .
-```
+The app will be available at `http://localhost:5173`. You need Node.js 22 or newer (20.19+ also works).
 
 ## Working with Branches
 
@@ -84,13 +79,15 @@ Use descriptive prefixes:
 
 ## Syncing with Upstream
 
-The easiest way is to use the `/sync-upstream` skill in Cursor — it handles fetching, merging, conflict resolution in `registry.ts`, build verification, and pushing automatically.
+The easiest way is to use the `/rp-sync-upstream` command in Claude. It previews what's coming, then handles fetching, merging, conflict resolution in the registry files, build verification, and pushing.
 
-Just open Cursor in your repo and type:
+Open your radiantplay folder in Claude's Code tab and type:
 
 ```
-/sync-upstream
+/rp-sync-upstream
 ```
+
+On an older fork without `/rp-` commands, type `/sync-upstream`; the old name still works.
 
 ### Manual sync (if needed)
 
@@ -153,17 +150,18 @@ src/prototypes/
 
 ## Contributing Back
 
-If you create something useful, consider contributing:
+If you create something useful, consider contributing. The easiest way is `/rp-contribute` in Claude: it asks what you're sharing, decides where each piece belongs (a Radiant or Spotter component, shared code, or a sample prototype), splits the work into PRs against `staging`, and runs the checks. The steps below are the manual version.
+
+Two rules either way: open PRs against `staging`, never `main`, and don't add entries to `registry-mine.ts` (every fork edits that file; samples go in `registry-core.ts`).
 
 ### 1. Create a Clean Branch
 
 ```bash
 # Start from your updated main
-git checkout main
-git pull upstream main
+git fetch upstream
 
-# Create a contribution branch
-git checkout -b contribution/my-feature
+# Create a contribution branch from upstream staging
+git checkout -b feat/my-feature upstream/staging
 ```
 
 ### 2. Make Your Changes
@@ -175,10 +173,10 @@ git checkout -b contribution/my-feature
 ### 3. Push and Create PR
 
 ```bash
-git push origin contribution/my-feature
+git push origin feat/my-feature
 ```
 
-Then create a Pull Request on galaxy from your fork to the upstream repository.
+Then create a Pull Request on galaxy from your fork to the upstream repository, with `staging` as the base.
 
 ### PR Guidelines
 

@@ -32,7 +32,7 @@ src/prototypes/
 // MyPrototype.tsx
 import React, { useState } from 'react';
 import { Button, Modal, TextInput } from '../components';
-import { systemColors } from '../tokens/colors';
+import { sysVar } from '../tokens/colors';
 import { spacing } from '../tokens/spacing';
 
 /**
@@ -53,7 +53,7 @@ export const MyPrototype: React.FC = () => {
 const styles: Record<string, React.CSSProperties> = {
   container: {
     padding: `${spacing.F}px`,
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     minHeight: '100vh',
   },
 };
@@ -108,7 +108,7 @@ export default Dashboard;
 ### styles.ts
 ```tsx
 import { CSSProperties } from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 
 export const styles: Record<string, CSSProperties> = {
@@ -116,7 +116,7 @@ export const styles: Record<string, CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
   },
   // More styles...
 };
@@ -219,42 +219,24 @@ export const roles = [
 
 ## Thumbnail Requirement
 
-**Every prototype MUST have a thumbnail image** for display in the Playground Gallery.
+**Every prototype should have a light and a dark screenshot thumbnail** for the Playground Gallery. Without one, the gallery shows a placeholder with the prototype's initial instead.
 
 ### Thumbnail Specifications
 
 | Requirement | Value |
 |-------------|-------|
-| **Location** | `src/prototypes/thumbnails/{PrototypeName}.svg` |
-| **Format** | SVG (recommended) or PNG |
-| **Dimensions** | 800 x 450 pixels (16:9 aspect ratio) |
-| **Naming** | Match the prototype folder name exactly |
+| **Location** | `src/prototypes/{PrototypeName}/thumbnail.light.jpg` and `thumbnail.dark.jpg` |
+| **Format** | JPEG screenshots, captured by the script |
+| **Size** | Captured at 1280 x 720, saved at 640 x 360 |
+| **Registry** | `thumbnail: { light, dark }` |
 
-### Creating a Thumbnail
+### Capturing a Thumbnail
 
-1. Create an SVG file in `src/prototypes/thumbnails/`
-2. Use the prototype name as the filename (e.g., `MyPrototype.svg`)
-3. Design a simple visual representation of the prototype
-4. Use Radiant brand colors for consistency
+1. Run `/rp-radiant-check MyPrototype`, or ask Claude to update the thumbnail. Both capture light and dark and wire the files into `registry-mine.ts` (the `rp-prototype-thumbnails` skill).
+2. By hand: `npm run thumbnails -- MyPrototype`. Run `npm run thumbnails:setup` once per machine first.
+3. Run `npm run thumbnails:check` to list thumbnails that are missing or older than their prototype.
 
-### Thumbnail Template
-
-```svg
-<svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background: systemColors.light['background-sunken'] -->
-  <rect width="800" height="450" fill="#F6F8FA"/>
-
-  <!-- UI representation: systemColors.light['background-base'] -->
-  <rect x="100" y="80" width="600" height="300" rx="12" fill="#FFFFFF"/>
-
-  <!-- Title: systemColors.light['content-primary'] -->
-  <text x="400" y="420" fill="#1D232F" font-family="system-ui" font-size="18" text-anchor="middle" font-weight="500">
-    Prototype Name
-  </text>
-</svg>
-```
-
-> Note: SVG thumbnails cannot import tokens directly. Use the hex values but document which token each maps to in comments. Keep colors aligned with the reference values in `token-usage.md`.
+Don't hand-draw SVG thumbnails. Screenshots stay accurate as the prototype changes and follow the theme. See `scripts/thumbnails/README.md` for the details.
 
 ---
 
@@ -268,7 +250,8 @@ All prototypes must be registered in `src/prototypes/registry-mine.ts` (designer
 // In registry-mine.ts:
 import React from 'react';
 import { ProjectMeta } from './registry-core';
-import MyPrototypeThumbnail from './thumbnails/MyPrototype.svg';
+import MyPrototypeThumbLight from './MyPrototype/thumbnail.light.jpg';
+import MyPrototypeThumbDark from './MyPrototype/thumbnail.dark.jpg';
 const MyPrototype = React.lazy(() => import('./MyPrototype'));
 
 // section: 'mine'   → "My prototypes" gallery (default for all new work)
@@ -279,7 +262,7 @@ export const myRegistry: ProjectMeta[] = [
     name: 'My Prototype',
     description: 'Description of what this prototype demonstrates.',
     author: 'Designer Name',
-    thumbnail: MyPrototypeThumbnail,
+    thumbnail: { light: MyPrototypeThumbLight, dark: MyPrototypeThumbDark },
     component: MyPrototype,
     section: 'mine',
   },
@@ -308,43 +291,35 @@ export const myRegistry: ProjectMeta[] = [
 
 ## Style Organization
 
-### Option 1: Inline Styles Object (Recommended for Prototypes)
+Use a CSS Module per component, with Radiant CSS variables only. This is what engineering can take: `npm run handoff <Prototype>` turns CSS Modules into the product's SCSS (`$rd-spacing--*`, `rd-sys-color()`), while inline style objects have to be rewritten by hand.
 
-```tsx
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    padding: `${spacing.F}px`,
-  },
-};
-
-// Usage
-<div style={styles.container}>
+```
+MyPrototype/
+├── index.tsx
+├── index.module.css
+└── components/
+    ├── AdminHeader.tsx
+    └── AdminHeader.module.css
 ```
 
-### Option 2: Separate styles.ts File
-
-```tsx
-// styles.ts
-import { CSSProperties } from 'react';
-import { systemColors } from '../../tokens/colors';
-
-export const styles: Record<string, CSSProperties> = {
-  layout: { ... },
-  header: { ... },
-};
-
-// Usage in component
-import { styles } from './styles';
+```css
+/* AdminHeader.module.css */
+.header {
+  padding: var(--spacing-4) var(--spacing-6);
+  background: var(--rd-sys-color-background-base);
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+}
 ```
 
-### Option 3: Categorized Styles
-
 ```tsx
-// styles.ts
-export const layoutStyles = { ... };
-export const headerStyles = { ... };
-export const tableStyles = { ... };
+import styles from './AdminHeader.module.css';
+
+<header className={styles.header}>
 ```
+
+- Toggle states with classes (`styles.selected`), not by spreading style objects.
+- Keep `style={{ }}` for values computed at runtime only: positions, measured sizes, colours from data. Static values never go inline.
+- Don't create `styles.ts` files of `React.CSSProperties` objects in new prototypes. Older prototypes that use them keep working.
 
 ---
 
@@ -429,7 +404,7 @@ Will this pattern be used in OTHER prototypes?
 import { Button, Modal, TextInput } from '../../../components';
 
 // Design tokens
-import { systemColors, referenceColors } from '../../../tokens/colors';
+import { sysVar } from '../../../tokens/colors';
 import { spacing } from '../../../tokens/spacing';
 
 // Prototype-local components
@@ -452,8 +427,9 @@ Before submitting a prototype:
 
 - [ ] Has `index.tsx` with proper exports and JSDoc
 - [ ] Main component has descriptive JSDoc
-- [ ] **Has thumbnail SVG in `thumbnails/` folder**
-- [ ] Registered in `registry-mine.ts` with thumbnail
+- [ ] **Has light and dark screenshot thumbnails** (`/rp-radiant-check` captures them, or `npm run thumbnails -- <Name>`)
+- [ ] Registered in `registry-mine.ts` with `thumbnail: { light, dark }`
+- [ ] Checked in dark mode (ThemeSwitch or Ctrl+D), and `npm run scan:dark -- src/prototypes/<Name>` is clean
 - [ ] Uses Radiant components (not custom HTML where components exist)
 - [ ] Uses design tokens (no hard-coded colors/spacing)
 - [ ] Mock data is typed and realistic

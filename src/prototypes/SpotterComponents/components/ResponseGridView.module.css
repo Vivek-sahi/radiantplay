@@ -1,0 +1,11 @@
+/* Footer action buttons (thumbs up/down, copy, double-check) — tertiary icon
+   buttons default to the brand color; the footer wants content-secondary. */
+.footerIconBtn svg {
+  color: var(--rd-sys-color-content-secondary) !important;
+}
+
+/* Uploaded agent photo — drop the Avatar's default gray fill so the image sits
+   on a transparent circle (root > avatarContainer > avatar). */
+.avatarNoBg > div > div {
+  background-color: transparent;
+}

@@ -1,15 +1,15 @@
 /**
  * Component Color Tokens
  *
- * Per-component tokens for button, chip, and toggle.
+ * Per-component tokens for button, chip, toggle, progress, charts and segmented control.
  * Mode-aware with separate light and dark maps.
  *
  * SCSS map names: $rd-comp-color-map, $rd-comp-color-map-dark
  */
 
-export const rdComponentColors = {
+const baseComponentColors = {
   light: {
-    // Button (11)
+    // Button (12)
     'button-primary-default': '#2770EF',
     'button-primary-hover': '#2359B6',
     'button-primary-pressed': '#163772',
@@ -18,9 +18,10 @@ export const rdComponentColors = {
     'button-primary-on-color-pressed': '#CEDCF5',
     'button-secondary-default': '#EAEDF2',
     'button-secondary-hover': '#DBDFE7',
-    'button-secondary-pressed': '#DEE8FA',
+    'button-secondary-pressed': '#C0C6CF',
     'button-tertiary-hover': 'rgba(192, 198, 207, 0.12)',
-    'button-tertiary-pressed': 'rgba(192, 198, 207, 0.24)',
+    'button-tertiary-pressed': '#71A1F41F',
+    'button-bg-overlay': '#20293A99',
 
     // Chip - Loading (1)
     'chip-loading-default': '#F6F8FA',
@@ -66,80 +67,161 @@ export const rdComponentColors = {
     'chip-error-hover': '#FCD4D7',
     'chip-error-active-border': '#DBDFE7',
 
+    // Progress / circular, purple (3)
+    'progress-track-active': '#F0EBFF',
+    'progress-track-empty': '#EAEDF2',
+    'progress-indicator-default': '#8C62F5',
+
+    // Charts (13). Names and dark values from the product; light values are proposed
+    'chart-surface': '#FFFFFF',
+    'chart-border': 'transparent',
+    'chart-gridline': '#F6F8FA',
+    'chart-axis-line': '#EAEDF2',
+    'chart-axis-label': '#777E8B',
+    'chart-label': '#1D232F',
+    'chart-tooltip-surface': '#323946',
+    'chart-tooltip-text': '#FFFFFF',
+    'chart-tooltip-shadow': '0 0 4px #19233114, 0 12px 24px #1923311f',
+    'chart-control-surface': '#EAEDF2',
+    'chart-table-striped-row': '#F6F8FA',
+    'chart-data-label-halo': '#FFFFFF',
+    'chart-scrollbar-track': '#F6F8FA',
+
     // Toggle (5)
     'toggle-track-off': '#C0C6CF',
-    'toggle-track-on': '#2770EF',
+    'toggle-track-on': '#CEDCF5',
     'toggle-thumb-off': '#FFFFFF',
-    'toggle-thumb-on': '#FFFFFF',
+    'toggle-thumb-on': '#2770EF',
     'toggle-thumb-outline-off': '#DBDFE7',
+
+    // Segmented control (1)
+    'segmented-control-content-active': '#2770EF',
   },
 
   dark: {
-    // Button (11)
-    'button-primary-default': '#2770EF',
-    'button-primary-hover': '#71A1F4',
-    'button-primary-pressed': '#ABC7F9',
-    'button-primary-on-color-default': '#1D232F',
-    'button-primary-on-color-hover': 'rgba(39, 112, 239, 0.3)',
-    'button-primary-on-color-pressed': 'rgba(39, 112, 239, 0.4)',
-    'button-secondary-default': '#4A515E',
-    'button-secondary-hover': '#323946',
-    'button-secondary-pressed': 'rgba(39, 112, 239, 0.3)',
-    'button-tertiary-hover': 'rgba(119, 126, 139, 0.24)',
-    'button-tertiary-pressed': 'rgba(119, 126, 139, 0.36)',
+    // Button (12)
+    'button-primary-default': '#71A1F4',
+    'button-primary-hover': '#ABC7F9',
+    'button-primary-pressed': '#CEDCF5',
+    'button-primary-on-color-default': '#1F2024',
+    'button-primary-on-color-hover': '#2D2F34',
+    'button-primary-on-color-pressed': '#46494E',
+    'button-secondary-default': '#34363C',
+    'button-secondary-hover': '#46494E',
+    'button-secondary-pressed': '#5D636A',
+    'button-tertiary-hover': '#C0C6CF1F',
+    'button-tertiary-pressed': '#71A1F41F',
+    'button-bg-overlay': '#EAEDF299',
 
     // Chip - Loading (1)
-    'chip-loading-default': '#323946',
+    'chip-loading-default': '#26282C',
 
     // Chip - Attribute / blue (5 + border)
-    'chip-attribute-default': 'rgba(39, 112, 239, 0.2)',
-    'chip-attribute-hover': 'rgba(39, 112, 239, 0.3)',
-    'chip-attribute-pressed': 'rgba(39, 112, 239, 0.4)',
+    'chip-attribute-default': '#082559',
+    'chip-attribute-hover': '#163772',
+    'chip-attribute-pressed': '#2359B6',
     'chip-attribute-icon': '#71A1F4',
-    'chip-attribute-active-border': '#71A1F4',
+    'chip-attribute-active-border': '#163772',
 
     // Chip - Measure / green (5)
-    'chip-measure-default': 'rgba(6, 191, 127, 0.2)',
-    'chip-measure-hover': 'rgba(6, 191, 127, 0.3)',
-    'chip-measure-pressed': 'rgba(6, 191, 127, 0.4)',
+    'chip-measure-default': '#003B26',
+    'chip-measure-hover': '#025B3C',
+    'chip-measure-pressed': '#049160',
     'chip-measure-icon': '#56D3A8',
-    'chip-measure-active-border': '#56D3A8',
+    'chip-measure-active-border': '#025B3C',
 
     // Chip - Filter / gray (5)
-    'chip-filter-default': '#4A515E',
-    'chip-filter-hover': '#323946',
-    'chip-filter-pressed': '#777E8B',
-    'chip-filter-icon': '#A5ACB9',
-    'chip-filter-active-border': '#777E8B',
+    'chip-filter-default': '#34363C',
+    'chip-filter-hover': '#46494E',
+    'chip-filter-pressed': '#5D636A',
+    'chip-filter-icon': '#9A9EA2',
+    'chip-filter-active-border': '#46494E',
 
     // Chip - Date / purple (5)
-    'chip-date-default': 'rgba(140, 98, 245, 0.2)',
-    'chip-date-hover': 'rgba(140, 98, 245, 0.3)',
-    'chip-date-pressed': 'rgba(140, 98, 245, 0.4)',
+    'chip-date-default': '#210F4F',
+    'chip-date-hover': '#422E75',
+    'chip-date-pressed': '#6A4ABA',
     'chip-date-icon': '#B094F8',
-    'chip-date-active-border': '#B094F8',
+    'chip-date-active-border': '#422E75',
 
     // Chip - Input / gray with selection (6)
-    'chip-input-default': '#323946',
-    'chip-input-hover': '#4A515E',
-    'chip-input-pressed': '#777E8B',
-    'chip-input-selected-default': '#A5ACB9',
-    'chip-input-selected-hover': '#C0C6CF',
-    'chip-input-selected-pressed': '#DBDFE7',
+    'chip-input-default': '#1F2024',
+    'chip-input-hover': '#2D2F34',
+    'chip-input-pressed': '#34363C',
+    'chip-input-selected-default': '#AFB2B6',
+    'chip-input-selected-hover': '#C7C9CC',
+    'chip-input-selected-pressed': '#DFE0E2',
 
     // Chip - Error / red (3)
-    'chip-error-default': 'rgba(226, 43, 61, 0.2)',
-    'chip-error-hover': 'rgba(226, 43, 61, 0.3)',
-    'chip-error-active-border': '#777E8B',
+    'chip-error-default': '#3D090E',
+    'chip-error-hover': '#721F27',
+    'chip-error-active-border': '#B6313E',
+
+    // Progress / circular, purple (3)
+    'progress-track-active': '#210F4F',
+    'progress-track-empty': '#1D232F',
+    'progress-indicator-default': '#B094F8',
+
+    // Charts (13)
+    'chart-surface': '#1F2024',
+    'chart-border': 'transparent',
+    'chart-gridline': '#34363C',
+    'chart-axis-line': '#5D636A',
+    'chart-axis-label': '#AFB2B6',
+    'chart-label': '#DFE0E2',
+    'chart-tooltip-surface': '#DFE0E2',
+    'chart-tooltip-text': '#1F2024',
+    'chart-tooltip-shadow': '0 0 6px rgba(0,0,0,0.16), 0 12px 28px rgba(0,0,0,0.32)',
+    'chart-control-surface': '#34363C',
+    'chart-table-striped-row': '#34363C',
+    'chart-data-label-halo': '#1F2024',
+    'chart-scrollbar-track': '#18191B',
 
     // Toggle (5)
-    'toggle-track-off': '#777E8B',
-    'toggle-track-on': '#2770EF',
-    'toggle-thumb-off': '#A5ACB9',
-    'toggle-thumb-on': '#FFFFFF',
-    'toggle-thumb-outline-off': '#4A515E',
+    'toggle-track-off': '#5D636A',
+    'toggle-track-on': '#163772',
+    'toggle-thumb-off': '#C7C9CC',
+    'toggle-thumb-on': '#CEDCF5',
+    'toggle-thumb-outline-off': '#C7C9CC',
+
+    // Segmented control (1)
+    'segmented-control-content-active': '#DFE0E2',
   },
+} as const;
+
+/**
+ * Older names kept as aliases of the product's (Scaligent) names.
+ * Aliases resolve to the same value in each mode.
+ */
+export const componentNameAliases = {
+  'button-overlay': 'button-bg-overlay',
+} as const satisfies Record<string, keyof typeof baseComponentColors.light>;
+
+type WithAliases<M> = M & { readonly [K in keyof typeof componentNameAliases]: string };
+
+function withAliases<M extends Record<keyof typeof baseComponentColors.light, string>>(mode: M): WithAliases<M> {
+  const aliases = Object.fromEntries(
+    Object.entries(componentNameAliases).map(([alias, source]) => [alias, mode[source]]),
+  );
+  return { ...mode, ...aliases } as WithAliases<M>;
+}
+
+/**
+ * Token values as data, for docs pages, swatches and canvas charts.
+ * Don't use these for UI: they are fixed values and stay light in dark mode.
+ * For UI use compVar('...') (a theme-aware CSS variable).
+ */
+export const rdComponentColors = {
+  light: withAliases(baseComponentColors.light),
+  dark: withAliases(baseComponentColors.dark),
 } as const;
 
 export type RdComponentColors = typeof rdComponentColors;
 export type RdComponentColorKey = keyof typeof rdComponentColors.light;
+
+/**
+ * CSS variable for a component token, for inline styles in TSX:
+ * compVar('chip-filter-default') → 'var(--rd-comp-color-chip-filter-default)'.
+ * Follows the theme. Use it instead of rdComponentColors.light[...], which is always light.
+ */
+export const compVar = (key: RdComponentColorKey): string => `var(--rd-comp-color-${key})`;

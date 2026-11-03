@@ -1,5 +1,6 @@
 import React from 'react';
-import { chartFont, chartUi } from '../chartPalette';
+import { chartFont } from '../chartPalette';
+import { compVar, sysVar } from '@tokens/colors';
 
 /**
  * KPI (no sparkline) — shows only period, value and comparison row.
@@ -24,8 +25,8 @@ export const KPISimpleChart: React.FC<Props> = ({
 }) => {
   const isUp   = trend > 0;
   const isFlat = trend === 0;
-  const trendColor = isFlat ? chartUi.labelColor : isUp ? '#06BF7F' : '#E22B3D';
-  const trendBg    = isFlat ? '#F6F8FA'           : isUp ? '#E0F8EF' : '#FFEBEC';
+  const trendColor = isFlat ? compVar('chart-axis-label') : isUp ? sysVar('content-success') : sysVar('content-failure');
+  const trendBg    = isFlat ? sysVar('background-sunken') : isUp ? sysVar('background-success') : sysVar('background-failure');
   const arrow      = isFlat ? '→' : isUp ? '↑' : '↓';
   const trendAbs   = Math.abs(trend).toFixed(2);
 
@@ -43,7 +44,7 @@ export const KPISimpleChart: React.FC<Props> = ({
       }}
     >
       {/* Period */}
-      <div style={{ fontSize: 13, color: chartUi.labelColor, lineHeight: '18px', flexShrink: 0 }}>
+      <div style={{ fontSize: 13, color: compVar('chart-axis-label'), lineHeight: '18px', flexShrink: 0 }}>
         {period}
       </div>
 
@@ -52,7 +53,7 @@ export const KPISimpleChart: React.FC<Props> = ({
         style={{
           fontSize: 24,
           fontWeight: 500,
-          color: '#1D232F',
+          color: sysVar('content-primary'),
           lineHeight: '32px',
           letterSpacing: '-0.096px',
           marginTop: 1,
@@ -69,9 +70,9 @@ export const KPISimpleChart: React.FC<Props> = ({
           <span style={{ fontSize: 12, fontWeight: 500, color: trendColor, lineHeight: '18px', letterSpacing: '-0.072px' }}>{trendAbs}</span>
           <span style={{ fontSize: 12, fontWeight: 500, color: trendColor, lineHeight: '18px', letterSpacing: '-0.072px' }}>%</span>
         </span>
-        <span style={{ fontSize: 14, fontWeight: 400, color: chartUi.labelColor, lineHeight: '20px', whiteSpace: 'nowrap' }}>{trendLabel}</span>
+        <span style={{ fontSize: 14, fontWeight: 400, color: compVar('chart-axis-label'), lineHeight: '20px', whiteSpace: 'nowrap' }}>{trendLabel}</span>
         {trendCompare && (
-          <span style={{ fontSize: 14, fontWeight: 400, color: chartUi.labelColor, lineHeight: '20px', whiteSpace: 'nowrap' }}>{trendCompare}</span>
+          <span style={{ fontSize: 14, fontWeight: 400, color: compVar('chart-axis-label'), lineHeight: '20px', whiteSpace: 'nowrap' }}>{trendCompare}</span>
         )}
       </div>
     </div>

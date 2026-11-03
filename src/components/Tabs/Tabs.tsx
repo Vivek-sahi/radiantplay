@@ -1,11 +1,12 @@
 import React from 'react';
-import { systemColors } from '../../tokens/colors';
 import styles from './Tabs.module.css';
 
 export interface Tab {
   id: string;
   label: string;
   icon?: React.ReactNode;
+  /** Shows the tab but doesn't let people select it */
+  disabled?: boolean;
 }
 
 export interface TabsProps {
@@ -13,6 +14,8 @@ export interface TabsProps {
   activeTab: string;
   onTabChange: (tabId: string) => void;
   className?: string;
+  /** Tab height: medium 48px, small 32px. Unset keeps the classic 46px tabs (48px under look: 'radiant-3') */
+  size?: 'medium' | 'small';
 }
 
 /**
@@ -37,9 +40,10 @@ export const Tabs: React.FC<TabsProps> = ({
   activeTab,
   onTabChange,
   className,
+  size,
 }) => {
   return (
-    <nav className={`${styles.tabs} ${className || ''}`} role="tablist">
+    <nav className={`${styles.tabs}${size ? ` ${styles[size]}` : ''} ${className || ''}`} role="tablist">
       {tabs.map((tab) => {
         const isActive = tab.id === activeTab;
         return (
@@ -47,12 +51,9 @@ export const Tabs: React.FC<TabsProps> = ({
             key={tab.id}
             role="tab"
             aria-selected={isActive}
+            disabled={tab.disabled}
             className={`${styles.tab} ${isActive ? styles.active : ''}`}
             onClick={() => onTabChange(tab.id)}
-            style={{
-              color: isActive ? systemColors.light['content-brand'] : systemColors.light['content-secondary'],
-              borderBottomColor: isActive ? systemColors.light['content-brand'] : 'transparent',
-            }}
           >
             {tab.icon && <span className={styles.icon}>{tab.icon}</span>}
             <span className={styles.label}>{tab.label}</span>

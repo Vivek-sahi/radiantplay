@@ -1,5 +1,6 @@
 import React from 'react';
-import { chartUi, chartFont } from '../chartPalette';
+import { chartFont } from '../chartPalette';
+import { compVar, sysVar } from '@tokens/colors';
 
 const columns = ['Region', 'Sales', 'Growth', 'Share'];
 const rows = [
@@ -16,7 +17,7 @@ export const TableChart: React.FC<Props> = ({ height }) => (
   <div style={{ width: '100%', height: height ?? 180, overflow: 'auto', fontFamily: chartFont }}>
     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
       <thead>
-        <tr style={{ backgroundColor: chartUi.gridLine }}>
+        <tr style={{ backgroundColor: compVar('chart-table-striped-row') }}>
           {columns.map((col) => (
             <th
               key={col}
@@ -24,8 +25,8 @@ export const TableChart: React.FC<Props> = ({ height }) => (
                 padding: '6px 10px',
                 textAlign: 'left',
                 fontSize: 10,
-                fontWeight: 600,
-                color: chartUi.labelColor,
+                fontWeight: 'var(--font-weight-emphasis)',
+                color: compVar('chart-axis-label'),
                 whiteSpace: 'nowrap',
               }}
             >
@@ -38,7 +39,7 @@ export const TableChart: React.FC<Props> = ({ height }) => (
         {rows.map((row, ri) => (
           <tr
             key={ri}
-            style={{ backgroundColor: ri % 2 === 1 ? chartUi.gridLine : 'transparent' }}
+            style={{ backgroundColor: ri % 2 === 1 ? compVar('chart-table-striped-row') : 'transparent' }}
           >
             {row.map((cell, ci) => (
               <td
@@ -46,8 +47,8 @@ export const TableChart: React.FC<Props> = ({ height }) => (
                 style={{
                   padding: '5px 10px',
                   fontSize: 11,
-                  color: chartUi.valueColor,
-                  borderBottom: `1px solid ${chartUi.axis}`,
+                  color: compVar('chart-label'),
+                  borderBottom: `1px solid ${sysVar('border-divider')}`,
                   whiteSpace: 'nowrap',
                 }}
               >

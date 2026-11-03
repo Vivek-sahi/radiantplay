@@ -1,0 +1,120 @@
+/* In the gallery's own style: a raised panel like the Help menu, rows like its items */
+.panel {
+  position: fixed;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-1);
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--rd-sys-color-background-raised);
+  box-shadow: var(--rd-sys-color-shadow-menu);
+  font-family: var(--font-family-primary);
+}
+
+.heading {
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-1);
+  color: var(--rd-sys-color-content-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-sm);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  min-height: 36px;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--rd-sys-color-content-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.item:hover {
+  background: var(--rd-sys-color-background-subtle);
+}
+
+.item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--rd-sys-color-content-brand);
+}
+
+.itemActive {
+  color: var(--rd-sys-color-content-brand);
+  font-weight: var(--font-weight-medium);
+}
+
+.check {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.divider {
+  height: 1px;
+  margin: var(--spacing-1) var(--spacing-2);
+  background: var(--rd-sys-color-border-subtle);
+}
+
+.newRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1);
+}
+
+/* Styled like the switcher track: a soft grey field, brand ring on focus */
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 var(--spacing-3);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--rd-sys-color-background-subtle);
+  color: var(--rd-sys-color-content-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  outline: none;
+}
+
+.input:focus {
+  box-shadow: 0 0 0 2px var(--rd-sys-color-content-brand);
+}
+
+.hint {
+  flex-shrink: 0;
+  color: var(--rd-sys-color-content-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.note {
+  margin: var(--spacing-1) var(--spacing-3) var(--spacing-2);
+  color: var(--rd-sys-color-content-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-sm);
+}

@@ -1,6 +1,0 @@
-﻿Ref,Name,Description,Dynamic Behaviour,Default State,Error State,Content Rules,Date,Status
-1,Modal title,"This title let users know they are editing which column property ",N/A,N/A,N/A,Edit + column’s name,,Not started
-2,Text input label,The label tells what need to text in the box,N/A,N/A,N/A,N/A,,Not started
-3,Text input box,The field where users can enter text,"When this dialog box pop up, the text input box is in the focus state by default.
-
-The text input box height is fixed. When the text is longer than the input box, display scroll bar. ","When this dialog box pop up, the text input box is in the focus state by default.",N/A,N/A,,Not started

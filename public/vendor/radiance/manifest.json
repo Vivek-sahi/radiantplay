@@ -1,0 +1,48 @@
+{
+  "$comment": "Managed by scripts/radiance/update.mjs. Never edit these files by hand: npm run radiance:check fails on any change.",
+  "source": {
+    "repo": "github.com/vinayakr-cpu/radiance-language",
+    "commit": "fe8c0cd73f9b9ee14d500333eb8c25421d3d1043",
+    "commitDate": "2026-09-29T08:36:09+05:30"
+  },
+  "radianceVersion": "2.0.0",
+  "vendorVersion": "2.0.0-fe8c0cd",
+  "updated": "2026-10-12",
+  "files": [
+    {
+      "path": "public/vendor/radiance/radiance-renderer.js",
+      "source": "renderer/radiance-renderer.js",
+      "sha256": "229c9887f9f412dee98434f49759b83f0d8bf139ec1df639c64984b36e7a74db"
+    },
+    {
+      "path": "scripts/radiance/upstream/tools/radiance-lint.mjs",
+      "source": "tools/radiance-lint.mjs",
+      "sha256": "3e145053ba6e9962a2998f3398f82dae835fd77d703aea622406417a536d22ce"
+    },
+    {
+      "path": "scripts/radiance/upstream/radiance.tokens.json",
+      "source": "radiance.tokens.json",
+      "sha256": "fa6ce6760cfe1b3991d53dbb378755518797f0b9074b9282519f5b7e3b12c7a8"
+    },
+    {
+      "path": "scripts/radiance/upstream/RULES.md",
+      "source": "RULES.md",
+      "sha256": "3038763c08a31ed73c9e73315b3416c03bf5aaae07cdcea6a8e124dee24215d9"
+    },
+    {
+      "path": "public/vendor/radiance/radiance-home.css",
+      "source": "products/home/radiance-home.css",
+      "sha256": "e9825ac07ff438f521aae6a660e70ee2aa28a0b6edb69905a2d3294f1b70362d"
+    },
+    {
+      "path": "public/vendor/radiance/radiance-liveboard.css",
+      "source": "products/liveboard/radiance-liveboard.css",
+      "sha256": "f209393b10b10c9c2b39c0c39b3292183523d053a02a6260434a580f226b3c91"
+    },
+    {
+      "path": "public/vendor/radiance/radiance-spotterx.css",
+      "source": "products/spotterx/radiance-spotterx.css",
+      "sha256": "713c1774aabc792cd1b38aa2522583001a1061eeea998ea0578f234919585c34"
+    }
+  ]
+}

@@ -1,57 +1,57 @@
 <svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="800" height="450" fill="#F6F8FA"/>
+  <rect width="800" height="450" style="fill: var(--rd-sys-color-background-sunken)"/>
   <!-- Header -->
-  <rect x="0" y="0" width="800" height="52" fill="white"/>
-  <rect x="20" y="18" width="120" height="14" rx="4" fill="#EAEDF2"/>
+  <rect x="0" y="0" width="800" height="52" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="20" y="18" width="120" height="14" rx="4" style="fill: var(--rd-sys-color-background-secondary-action)"/>
   <!-- Left sidebar -->
-  <rect x="0" y="52" width="240" height="398" fill="white"/>
-  <rect x="240" y="52" width="1" height="398" fill="#EAEDF2"/>
-  <rect x="16" y="68" width="100" height="10" rx="3" fill="#A5ACB9"/>
+  <rect x="0" y="52" width="240" height="398" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="240" y="52" width="1" height="398" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="16" y="68" width="100" height="10" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
   <!-- Spotter cards in sidebar -->
-  <rect x="12" y="88" width="216" height="56" rx="8" fill="#8AAEE8" fill-opacity="0.1"/>
-  <rect x="12" y="88" width="216" height="56" rx="8" stroke="#8AAEE8" stroke-width="1" stroke-opacity="0.4"/>
-  <circle cx="36" cy="116" r="12" fill="#8AAEE8"/>
-  <rect x="56" y="107" width="90" height="10" rx="3" fill="#C0C6CF"/>
-  <rect x="56" y="123" width="120" height="8" rx="3" fill="#A5ACB9"/>
+  <rect x="12" y="88" width="216" height="56" rx="8" fill-opacity="0.1" style="fill: color-mix(in srgb, var(--rd-sys-color-content-brand) 55%, var(--rd-sys-color-background-base))"/>
+  <rect x="12" y="88" width="216" height="56" rx="8" stroke-width="1" stroke-opacity="0.4" style="stroke: color-mix(in srgb, var(--rd-sys-color-content-brand) 55%, var(--rd-sys-color-background-base))"/>
+  <circle cx="36" cy="116" r="12" style="fill: color-mix(in srgb, var(--rd-sys-color-content-brand) 55%, var(--rd-sys-color-background-base))"/>
+  <rect x="56" y="107" width="90" height="10" rx="3" style="fill: var(--rd-sys-color-background-inset)"/>
+  <rect x="56" y="123" width="120" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
   <rect x="12" y="152" width="216" height="56" rx="8" fill="transparent"/>
   <circle cx="36" cy="180" r="12" fill="#B09AEF"/>
-  <rect x="56" y="171" width="80" height="10" rx="3" fill="#C0C6CF"/>
-  <rect x="56" y="187" width="100" height="8" rx="3" fill="#A5ACB9"/>
+  <rect x="56" y="171" width="80" height="10" rx="3" style="fill: var(--rd-sys-color-background-inset)"/>
+  <rect x="56" y="187" width="100" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
   <rect x="12" y="216" width="216" height="56" rx="8" fill="transparent"/>
   <circle cx="36" cy="244" r="12" fill="#72C9A8"/>
-  <rect x="56" y="235" width="100" height="10" rx="3" fill="#C0C6CF"/>
-  <rect x="56" y="251" width="110" height="8" rx="3" fill="#A5ACB9"/>
+  <rect x="56" y="235" width="100" height="10" rx="3" style="fill: var(--rd-sys-color-background-inset)"/>
+  <rect x="56" y="251" width="110" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
   <rect x="12" y="280" width="216" height="56" rx="8" fill="transparent"/>
   <circle cx="36" cy="308" r="12" fill="#F5C87A"/>
-  <rect x="56" y="299" width="90" height="10" rx="3" fill="#C0C6CF"/>
-  <rect x="56" y="315" width="80" height="8" rx="3" fill="#A5ACB9"/>
+  <rect x="56" y="299" width="90" height="10" rx="3" style="fill: var(--rd-sys-color-background-inset)"/>
+  <rect x="56" y="315" width="80" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
   <!-- Main chat area -->
-  <rect x="256" y="52" width="544" height="340" fill="#F6F8FA"/>
+  <rect x="256" y="52" width="544" height="340" style="fill: var(--rd-sys-color-background-sunken)"/>
   <!-- Chat header -->
-  <rect x="256" y="52" width="544" height="48" fill="white"/>
-  <circle cx="290" cy="76" r="14" fill="#8AAEE8"/>
-  <rect x="314" y="68" width="100" height="10" rx="3" fill="#C0C6CF"/>
-  <rect x="314" y="84" width="70" height="8" rx="3" fill="#A5ACB9"/>
+  <rect x="256" y="52" width="544" height="48" style="fill: var(--rd-sys-color-background-base)"/>
+  <circle cx="290" cy="76" r="14" style="fill: color-mix(in srgb, var(--rd-sys-color-content-brand) 55%, var(--rd-sys-color-background-base))"/>
+  <rect x="314" y="68" width="100" height="10" rx="3" style="fill: var(--rd-sys-color-background-inset)"/>
+  <rect x="314" y="84" width="70" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
   <!-- Messages -->
-  <rect x="276" y="120" width="280" height="44" rx="10" fill="white"/>
-  <rect x="290" y="132" width="220" height="8" rx="3" fill="#C0C6CF"/>
-  <rect x="290" y="148" width="160" height="8" rx="3" fill="#A5ACB9"/>
+  <rect x="276" y="120" width="280" height="44" rx="10" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="290" y="132" width="220" height="8" rx="3" style="fill: var(--rd-sys-color-background-inset)"/>
+  <rect x="290" y="148" width="160" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
   <!-- AI response bubble -->
-  <rect x="420" y="180" width="340" height="60" rx="10" fill="#8AAEE8" fill-opacity="0.1"/>
-  <rect x="436" y="193" width="260" height="8" rx="3" fill="#C0C6CF"/>
-  <rect x="436" y="209" width="200" height="8" rx="3" fill="#A5ACB9"/>
-  <rect x="436" y="225" width="160" height="8" rx="3" fill="#A5ACB9"/>
+  <rect x="420" y="180" width="340" height="60" rx="10" fill-opacity="0.1" style="fill: color-mix(in srgb, var(--rd-sys-color-content-brand) 55%, var(--rd-sys-color-background-base))"/>
+  <rect x="436" y="193" width="260" height="8" rx="3" style="fill: var(--rd-sys-color-background-inset)"/>
+  <rect x="436" y="209" width="200" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="436" y="225" width="160" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
   <!-- User message -->
-  <rect x="276" y="260" width="200" height="28" rx="10" fill="white"/>
-  <rect x="290" y="270" width="140" height="8" rx="3" fill="#C0C6CF"/>
+  <rect x="276" y="260" width="200" height="28" rx="10" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="290" y="270" width="140" height="8" rx="3" style="fill: var(--rd-sys-color-background-inset)"/>
   <!-- AI response short -->
-  <rect x="540" y="308" width="220" height="28" rx="10" fill="#8AAEE8" fill-opacity="0.1"/>
-  <rect x="556" y="318" width="160" height="8" rx="3" fill="#C0C6CF"/>
+  <rect x="540" y="308" width="220" height="28" rx="10" fill-opacity="0.1" style="fill: color-mix(in srgb, var(--rd-sys-color-content-brand) 55%, var(--rd-sys-color-background-base))"/>
+  <rect x="556" y="318" width="160" height="8" rx="3" style="fill: var(--rd-sys-color-background-inset)"/>
   <!-- Input bar -->
-  <rect x="256" y="392" width="544" height="58" fill="white"/>
-  <rect x="256" y="392" width="544" height="1" fill="#EAEDF2"/>
-  <rect x="272" y="407" width="460" height="28" rx="14" fill="#F6F8FA"/>
-  <rect x="288" y="417" width="160" height="8" rx="4" fill="#C0C6CF"/>
-  <circle cx="718" cy="421" r="10" fill="#8AAEE8"/>
-  <text x="400" y="438" fill="#64748B" font-family="system-ui" font-size="13" text-anchor="middle" font-weight="400">MiniSpotters</text>
+  <rect x="256" y="392" width="544" height="58" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="256" y="392" width="544" height="1" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="272" y="407" width="460" height="28" rx="14" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <rect x="288" y="417" width="160" height="8" rx="4" style="fill: var(--rd-sys-color-background-inset)"/>
+  <circle cx="718" cy="421" r="10" style="fill: color-mix(in srgb, var(--rd-sys-color-content-brand) 55%, var(--rd-sys-color-background-base))"/>
+  <text x="400" y="438" font-family="system-ui" font-size="13" text-anchor="middle" font-weight="400" style="fill: var(--rd-sys-color-content-secondary)">MiniSpotters</text>
 </svg>

@@ -1,14 +1,14 @@
 <svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="800" height="450" fill="#F6F8FA"/>
-  <rect x="0" y="0" width="800" height="56" fill="white"/>
-  <rect x="100" y="100" width="600" height="250" rx="12" fill="white"/>
-  <rect x="130" y="130" width="200" height="32" rx="4" fill="#1D232F"/>
-  <rect x="130" y="175" width="400" height="16" rx="4" fill="#A5ACB9"/>
-  <rect x="130" y="200" width="350" height="16" rx="4" fill="#A5ACB9"/>
-  <rect x="130" y="240" width="540" height="80" rx="8" fill="#F6F8FA"/>
-  <rect x="550" y="130" width="120" height="36" rx="4" fill="#2770EF"/>
-  <rect x="260" y="380" width="280" height="40" rx="20" fill="white" stroke="#EAEDF2"/>
-  <circle cx="300" cy="400" r="12" fill="#A5ACB9"/>
-  <rect x="325" y="393" width="180" height="14" rx="4" fill="#EAEDF2"/>
-  <text x="400" y="430" fill="#1D232F" font-family="system-ui" font-size="18" text-anchor="middle" font-weight="500">Homepage Example</text>
+  <rect width="800" height="450" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <rect x="0" y="0" width="800" height="56" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="100" y="100" width="600" height="250" rx="12" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="130" y="130" width="200" height="32" rx="4" style="fill: var(--rd-sys-color-content-primary)"/>
+  <rect x="130" y="175" width="400" height="16" rx="4" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="130" y="200" width="350" height="16" rx="4" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="130" y="240" width="540" height="80" rx="8" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <rect x="550" y="130" width="120" height="36" rx="4" style="fill: var(--rd-sys-color-content-brand)"/>
+  <rect x="260" y="380" width="280" height="40" rx="20" style="fill: var(--rd-sys-color-background-base); stroke: var(--rd-sys-color-border-subtle)"/>
+  <circle cx="300" cy="400" r="12" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="325" y="393" width="180" height="14" rx="4" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <text x="400" y="430" font-family="system-ui" font-size="18" text-anchor="middle" font-weight="500" style="fill: var(--rd-sys-color-content-primary)">Homepage Example</text>
 </svg>

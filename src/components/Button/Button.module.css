@@ -33,8 +33,8 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-sm);
-  letter-spacing: -0.072px;
-  border-radius: 14px;
+  letter-spacing: 0.072px;
+  border-radius: var(--radius-2xl);
   gap: var(--spacing-1);
 }
 
@@ -42,7 +42,7 @@
   height: 32px;
   padding: 6px var(--spacing-4);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md);
   border-radius: var(--radius-2xl);
   gap: var(--spacing-2);
@@ -52,7 +52,7 @@
   height: 32px;
   padding: 6px var(--spacing-4);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-light);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-md);
   border-radius: var(--radius-2xl);
   gap: var(--spacing-2);
@@ -64,8 +64,8 @@
    ============================================ */
 
 .primary.standard {
-  background-color: var(--rd-sys-color-background-brand);
-  color: var(--rd-sys-color-content-alternate);
+  background-color: var(--rd-comp-color-button-primary-default);
+  color: var(--rd-sys-color-content-inverse);
 }
 
 .primary.standard:hover:not(.disabled) {
@@ -86,28 +86,28 @@
    ============================================ */
 
 .primary.white {
-  background-color: var(--rd-sys-color-background-sunken);
+  background-color: var(--rd-comp-color-button-primary-on-color-default);
   color: var(--rd-sys-color-content-primary);
 }
 
 .primary.white:hover:not(.disabled) {
-  background-color: var(--rd-sys-color-background-ghost-highlight);
+  background-color: var(--rd-comp-color-button-primary-on-color-hover);
 }
 
 .primary.white.active:not(.disabled) {
-  background-color: var(--rd-sys-color-background-sunken);
-  color: var(--rd-sys-color-content-brand);
+  background-color: var(--rd-comp-color-button-primary-on-color-pressed);
+  color: var(--rd-sys-color-content-primary);
 }
 
+/* Disabled: the default fill at 40% */
 .primary.white.disabled {
-  background-color: var(--rd-sys-color-background-information);
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Override border-radius for small primary white */
+/* Small primary white: same 16px corner as Primary Small (Figma) */
 .primary.white.small {
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
 }
 
 /* ============================================
@@ -115,17 +115,17 @@
    ============================================ */
 
 .secondary.standard {
-  background-color: var(--rd-sys-color-background-subtle);
+  background-color: var(--rd-comp-color-button-secondary-default);
   color: var(--rd-sys-color-content-primary);
 }
 
 .secondary.standard:hover:not(.disabled) {
-  background-color: var(--rd-sys-color-background-subtle);
+  background-color: var(--rd-comp-color-button-secondary-hover);
 }
 
 .secondary.standard.active:not(.disabled) {
-  background-color: var(--rd-sys-color-background-ghost-highlight);
-  color: var(--rd-sys-color-content-brand);
+  background-color: var(--rd-comp-color-button-secondary-pressed);
+  color: var(--rd-sys-color-content-primary);
 }
 
 .secondary.standard.disabled {
@@ -151,11 +151,11 @@
 }
 
 .tertiary.standard:hover:not(.disabled) {
-  background-color: rgba(192, 198, 207, 0.12);
+  background-color: var(--rd-comp-color-button-tertiary-hover);
 }
 
 .tertiary.standard.active:not(.disabled) {
-  background-color: var(--rd-sys-color-background-ghost-highlight);
+  background-color: var(--rd-comp-color-button-tertiary-pressed);
 }
 
 .tertiary.standard.disabled {
@@ -169,18 +169,18 @@
 
 .tertiary.white {
   background-color: transparent;
-  color: var(--rd-sys-color-content-alternate);
+  color: var(--rd-sys-color-content-inverse);
   padding-left: var(--spacing-1);
   padding-right: var(--spacing-1);
   border-radius: var(--radius-md);
 }
 
 .tertiary.white:hover:not(.disabled) {
-  background-color: rgba(0, 0, 0, 0.24);
+  background-color: var(--rd-comp-color-button-tertiary-hover);
 }
 
 .tertiary.white.active:not(.disabled) {
-  background-color: rgba(0, 0, 0, 0.48);
+  background-color: var(--rd-comp-color-button-tertiary-pressed);
 }
 
 .tertiary.white.disabled {
@@ -223,7 +223,7 @@
 
 /* Icon colors for different variants */
 .primary.standard .icon {
-  color: var(--rd-sys-color-content-alternate);
+  color: var(--rd-sys-color-content-inverse);
 }
 
 .primary.white .icon {
@@ -231,7 +231,7 @@
 }
 
 .primary.white.active .icon {
-  color: var(--rd-sys-color-content-brand);
+  color: var(--rd-sys-color-content-primary);
 }
 
 .secondary.standard .icon {
@@ -239,7 +239,7 @@
 }
 
 .secondary.standard.active .icon {
-  color: var(--rd-sys-color-content-brand);
+  color: var(--rd-sys-color-content-primary);
 }
 
 .tertiary.standard .icon {
@@ -247,7 +247,7 @@
 }
 
 .tertiary.white .icon {
-  color: var(--rd-sys-color-content-alternate);
+  color: var(--rd-sys-color-content-inverse);
 }
 
 /* ============================================
@@ -304,6 +304,13 @@
   height: 24px;
 }
 
+/* .tertiary.standard sets padding and a 6px radius with two classes, which
+   outranked .iconOnly and left tertiary icon buttons square */
+.tertiary.standard.iconOnly {
+  padding: 0;
+  border-radius: 50%;
+}
+
 /* ============================================
    ICON POSITION ADJUSTMENTS
    ============================================ */
@@ -315,4 +322,53 @@
 
 .tertiary.basic.iconTrailing {
   gap: var(--spacing-1);
+}
+
+/* ============================================
+   XS (both looks): 20px icon-only button, 12px icon
+   ============================================ */
+
+.xs {
+  height: var(--spacing-5);
+  padding: 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-xs);
+  border-radius: var(--radius-full);
+  gap: var(--spacing-1);
+}
+
+.xs.iconOnly {
+  width: var(--spacing-5);
+  height: var(--spacing-5);
+  padding: 0;
+}
+
+.xs .icon,
+.xs .icon svg {
+  width: var(--spacing-3);
+  height: var(--spacing-3);
+}
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   32px icon-only button uses an 18px icon
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .basic.iconOnly .icon,
+:global([data-rd-look="radiant-3"]) .basic.iconOnly .icon svg,
+:global([data-rd-look="radiant-3"]) .large.iconOnly .icon,
+:global([data-rd-look="radiant-3"]) .large.iconOnly .icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Ghost icon button: a tertiary icon-only button draws its icon in
+   Content/Primary, and in brand only when activated */
+:global([data-rd-look="radiant-3"]) .tertiary.standard.iconOnly .icon {
+  color: var(--rd-sys-color-content-primary);
+}
+
+:global([data-rd-look="radiant-3"]) .tertiary.standard.iconOnly.active .icon {
+  color: var(--rd-sys-color-content-brand);
 }

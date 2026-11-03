@@ -13,13 +13,15 @@ Run these checks on every `.tsx` file you create or modify. Do NOT declare done 
 - No `#` hex values (outside SVG path data)
 - No `rgb()` / `rgba()` / `hsl()`
 - No deprecated `import { brandColors }`
-- Use `systemColors.light['...']` or `referenceColors`
+- Use `var(--rd-sys-color-*)` in CSS Modules and `sysVar()` / `compVar()` / `shadowVar()` only for runtime inline values
+- Static styles live in a CSS Module, not `style={{ }}` or a `styles.ts` object, so `npm run handoff` can convert them
+- No `systemColors.light[...]`, `rdComponentColors.light[...]` or `referenceColors.*` in UI code: they stay light in dark mode
 
 ## Fonts — no hardcoded families
 
-- No `fontFamily: '"Plain", -apple-system, ...'`
-- No `fontFamily: 'Arial, sans-serif'`
-- Use `fontFamily.primary` from `../../tokens/typography`
+- No hardcoded stacks: `fontFamily: '"Geist", -apple-system, ...'`, the old Plain font stack, or `'Arial, sans-serif'`
+- Use `fontFamily.primary` from `../../tokens/typography`, or `var(--font-family-primary)` in CSS
+- No hardcoded weights (`600`, `375`). Use `var(--font-weight-emphasis)` (550) for headings and labels, `var(--font-weight-regular)` (400) for body
 
 ## HTML — no raw elements with Radiant equivalents
 

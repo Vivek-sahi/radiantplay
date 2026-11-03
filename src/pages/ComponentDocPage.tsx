@@ -12,7 +12,7 @@ import { Toast } from '../components/Toast';
 import { Modal } from '../components/Modal';
 import { Tabs } from '../components/Tabs';
 import { Select } from '../components/Select';
-import { Table } from '../components/Table';
+import { Table, TableCellRenderers } from '../components/Table';
 import { Tooltip } from '../components/Tooltip';
 import { Popover } from '../components/Popover';
 // New Phase 2-4 components
@@ -27,7 +27,7 @@ import { Menu } from '../components/Menu';
 import { Pagination } from '../components/Pagination';
 import { ProgressBar } from '../components/ProgressBar';
 import { Stepper } from '../components/Stepper';
-import { DatePicker } from '../components/DatePicker';
+import { DatePicker, DateRangePicker } from '../components/DatePicker';
 import { IconGallery } from '../components/IconGallery';
 import { SegmentedControl } from '../components/SegmentedControl';
 import { GlobalHeader } from '../components/GlobalHeader';
@@ -63,14 +63,33 @@ import { Tree } from '../components/Tree';
 import { TreeTable } from '../components/TreeTable';
 import { Formatters } from '../components/Formatters';
 import { Tour } from '../components/Tour';
+import { WizardHeader } from '../components/WizardHeader';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { FormBuilder } from '../components/FormBuilder';
 import { DynamicForm } from '../components/DynamicForm';
 import { FacetSortBar } from '../components/FacetSortBar';
 import { LiveboardHeader } from '../components/LiveboardHeader';
-import { systemColors, referenceColors } from '../tokens/colors';
+import { sysVar } from '../tokens/colors';
 import { getComponent, getSourceLabel, ComponentSource } from '../data/componentRegistry';
 import { LastUpdated } from '../components/LastUpdated';
+import { PageHeader } from '../components/PageHeader';
+import { EditHeader } from '../components/EditHeader';
+import { SplitButton } from '../components/SplitButton';
+import { DotLoader } from '../components/DotLoader';
+import { ScrollArea } from '../components/ScrollArea';
+import { Token } from '../components/Token';
+import type { TokenType } from '../components/Token';
+import { ChipIdentifier } from '../components/ChipIdentifier';
+import { UserChip } from '../components/UserChip';
+import { Breadcrumb } from '../components/Breadcrumb';
+import { NumberInput } from '../components/NumberInput';
+import { RadiantLook } from '../context/RadiantLookContext';
+import { InlineEdit } from '../components/InlineEdit';
+import { FileUploader } from '../components/FileUploader';
+import type { DateRange } from '../components/DatePicker';
+import { Icon } from '../components/icons';
+import { FontFormatter } from '../components/FontFormatter';
+import type { FontFormat } from '../components/FontFormatter';
 
 interface PropDefinition {
   name: string;
@@ -83,23 +102,45 @@ interface ComponentDocPageProps {
   componentId: string;
 }
 
+/** Usage rules from the Radiant 3.0 Figma pages. Claude reads these too, so keep them short and literal. */
+interface UsageGuidance {
+  use?: string[];
+  avoid?: string[];
+}
+
 const componentDocs: Record<string, {
   name: string;
   description: string;
+  usage?: UsageGuidance;
   props: PropDefinition[];
 }> = {
   button: {
     name: 'Button',
     description: 'A comprehensive button component supporting multiple variants, sizes, colorways, and states. The most used component in the Radiant design system.',
+    usage: {
+      use: [
+        'Use Primary for the one dominant action on a screen',
+        'Use Secondary for supporting or alternative actions',
+        'Use Tertiary for low-emphasis actions, like Learn more',
+      ],
+      avoid: [
+        'Place several Primary buttons close together',
+        'Use Tertiary for critical actions like Delete or Submit',
+        'Mix button styles in one group of actions unless the hierarchy needs it',
+      ],
+    },
     props: [
       { name: 'variant', type: "'primary' | 'secondary' | 'tertiary'", default: "'primary'", description: 'The visual style variant' },
-      { name: 'size', type: "'small' | 'basic' | 'large'", default: "'basic'", description: 'The size of the button' },
+      { name: 'size', type: "'xs' | 'small' | 'basic' | 'large'", default: "'basic'", description: 'The size of the button' },
       { name: 'colorway', type: "'standard' | 'white'", default: "'standard'", description: 'Color scheme for light/dark backgrounds' },
       { name: 'icon', type: 'ReactNode', description: 'Optional icon element' },
       { name: 'iconPosition', type: "'leading' | 'trailing' | 'none'", default: "'none'", description: 'Position of the icon' },
       { name: 'loading', type: 'boolean', default: 'false', description: 'Whether the button is in loading state' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'Whether the button is disabled' },
       { name: 'fullWidth', type: 'boolean', default: 'false', description: 'Whether the button spans full width' },
+      { name: 'iconOnly', type: 'boolean', default: 'false', description: 'Icon button: shows only the icon. children becomes the accessible label' },
+      { name: 'active', type: 'boolean', default: 'false', description: 'Selected or activated state, for toggle buttons' },
+      { name: 'htmlType', type: "'button' | 'submit' | 'reset'", default: "'button'", description: 'The native button type' },
     ],
   },
   checkbox: {
@@ -144,6 +185,12 @@ const componentDocs: Record<string, {
   textinput: {
     name: 'TextInput',
     description: 'A text input field with optional label and error states. Built for accessibility and form validation.',
+    usage: {
+      use: [
+        'Under look: \'radiant-3\', put helper text in brackets beside the label, not under the field',
+        'On an error, the label becomes the message, for example Please add “Name”',
+      ],
+    },
     props: [
       { name: 'label', type: 'string', description: 'Label text' },
       { name: 'showLabel', type: 'boolean', default: 'true', description: 'Whether to show the label' },
@@ -151,13 +198,22 @@ const componentDocs: Record<string, {
       { name: 'value', type: 'string', description: 'Current value' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'Whether the input is disabled' },
       { name: 'error', type: 'boolean', default: 'false', description: 'Whether the input has an error' },
-      { name: 'errorMessage', type: 'string', description: 'Error message to display' },
+      { name: 'errorMessage', type: 'string', description: 'Error message under the field. Under look: \'radiant-3\' it replaces the label text, defaulting to Please add “{label}”' },
+      { name: 'helperText', type: 'string', description: 'Helper text under the field. Under look: \'radiant-3\' it sits in brackets beside the label' },
+      { name: 'trailingIcon', type: 'ReactNode', description: 'Icon at the end of the field' },
+      { name: 'readOnly', type: 'boolean', default: 'false', description: 'Shows the value without letting people edit it' },
       { name: 'onChange', type: '(e: ChangeEvent) => void', description: 'Change handler' },
     ],
   },
   textarea: {
     name: 'TextArea',
     description: 'A multi-line text input field with optional label, helper text, character counter, and error states.',
+    usage: {
+      use: [
+        'Under look: \'radiant-3\', put helper text in brackets beside the label, not under the field',
+        'On an error, the label becomes the message, for example Please add “Description”',
+      ],
+    },
     props: [
       { name: 'label', type: 'string', description: 'Label text' },
       { name: 'showLabel', type: 'boolean', default: 'true', description: 'Whether to show the label' },
@@ -166,22 +222,23 @@ const componentDocs: Record<string, {
       { name: 'rows', type: 'number', default: '4', description: 'Number of visible text rows' },
       { name: 'resize', type: "'none' | 'vertical' | 'horizontal' | 'both'", default: "'vertical'", description: 'Whether to allow resizing' },
       { name: 'maxLength', type: 'number', description: 'Maximum character count (shows counter when set)' },
-      { name: 'helperText', type: 'string', description: 'Helper text below the input' },
+      { name: 'helperText', type: 'string', description: 'Helper text in brackets beside the label' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'Whether the textarea is disabled' },
       { name: 'error', type: 'boolean', default: 'false', description: 'Whether the textarea has an error' },
-      { name: 'errorMessage', type: 'string', description: 'Error message to display' },
+      { name: 'errorMessage', type: 'string', description: 'Error message under the field. Under look: \'radiant-3\' it replaces the label text, defaulting to Please add “{label}”' },
       { name: 'onChange', type: '(e: ChangeEvent) => void', description: 'Change handler' },
     ],
   },
   searchinput: {
     name: 'SearchInput',
-    description: 'A search input with icon and clear functionality. Perfect for filtering and search features.',
+    description: 'A search input with a leading search icon, for filtering lists and searching content.',
     props: [
       { name: 'placeholder', type: 'string', default: "'Search'", description: 'Placeholder text' },
       { name: 'value', type: 'string', description: 'Current value' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'Whether the input is disabled' },
       { name: 'onChange', type: '(e: ChangeEvent) => void', description: 'Change handler' },
-      { name: 'onClear', type: '() => void', description: 'Handler when clear button is clicked' },
+      { name: 'onClear', type: '() => void', description: 'Shows a clear button while there is a value, and is called when it is clicked' },
+      { name: 'variant', type: "'outlined' | 'underlined'", default: "'outlined'", description: 'Underlined is a 40px row with a bottom border, for menus and panels' },
     ],
   },
   chip: {
@@ -201,6 +258,11 @@ const componentDocs: Record<string, {
   alert: {
     name: 'Alert',
     description: 'A notification component for displaying important messages. Supports different statuses and variants.',
+    usage: {
+      use: [
+        'Keep a page banner caption to 80 characters or fewer',
+      ],
+    },
     props: [
       { name: 'status', type: "'info' | 'success' | 'warning' | 'failure' | 'muted'", default: "'info'", description: 'The status/type of alert' },
       { name: 'variant', type: "'page' | 'section' | 'section-multiline'", default: "'section'", description: 'The variant/layout of the alert' },
@@ -214,6 +276,14 @@ const componentDocs: Record<string, {
   toast: {
     name: 'Toast',
     description: 'A temporary notification that appears to provide feedback about an action. Auto-dismisses after a configurable duration.',
+    usage: {
+      use: [
+        'Confirm an action that finished, like a save or a share',
+      ],
+      avoid: [
+        'Show errors or warnings in a toast. Use an Alert instead. The warning and error types are kept for older prototypes but are off-spec',
+      ],
+    },
     props: [
       { name: 'message', type: 'string', description: 'Toast message' },
       { name: 'type', type: "'success' | 'info' | 'warning' | 'error'", default: "'info'", description: 'Toast type' },
@@ -228,22 +298,37 @@ const componentDocs: Record<string, {
   modal: {
     name: 'Modal',
     description: 'An overlay modal dialog for displaying content on top of the page. Supports keyboard navigation and focus trapping.',
+    usage: {
+      use: [
+        'Pick the size for the content: M1 394px for confirmations, M2 788px, M3 1182px, M4 full screen',
+        'Use the splash screen type to introduce a new feature, once per feature',
+        'In a splash screen, use one image or a short video of 6 to 11 seconds, and at most three steps',
+      ],
+    },
     props: [
       { name: 'isOpen', type: 'boolean', description: 'Whether the modal is open' },
       { name: 'onClose', type: '() => void', description: 'Handler to close the modal' },
       { name: 'title', type: 'string', description: 'Modal title' },
       { name: 'children', type: 'ReactNode', description: 'Modal content' },
       { name: 'footer', type: 'ReactNode', description: 'Footer content (typically buttons)' },
-      { name: 'size', type: "'small' | 'medium' | 'large'", default: "'medium'", description: 'Modal size' },
+      { name: 'size', type: "'M1' | 'M2' | 'M3' | 'M4' | 'small' | 'medium' | 'large'", default: "'M2'", description: 'M1 394px, M2 788px, M3 1182px, M4 full screen. small, medium and large are older names' },
+      { name: 'type', type: "'simple' | 'wizard' | 'subnavigation' | 'splashscreen'", default: "'simple'", description: 'Layout of the modal' },
+      { name: 'eyebrow', type: 'string', description: 'Small line above the title' },
+      { name: 'currentStep', type: 'number', description: 'Wizard: the current step' },
+      { name: 'totalSteps', type: 'number', description: 'Wizard: the number of steps' },
+      { name: 'navigation', type: 'ReactNode', description: 'Sub-navigation: the left panel' },
+      { name: 'mediaContent', type: 'ReactNode', description: 'Splash screen: the media area' },
+      { name: 'showCloseButton', type: 'boolean', default: 'true', description: 'Whether to show the close button' },
       { name: 'closeOnOverlayClick', type: 'boolean', default: 'true', description: 'Whether to close on overlay click' },
       { name: 'closeOnEscape', type: 'boolean', default: 'true', description: 'Whether to close on Escape key' },
     ],
   },
   tabs: {
     name: 'Tabs',
-    description: 'Navigation tabs for content organization. Supports keyboard navigation and active state management.',
+    description: 'Navigation tabs for switching between views of the same content.',
     props: [
-      { name: 'tabs', type: 'Array<{ id: string, label: string }>', description: 'Array of tab items' },
+      { name: 'tabs', type: 'Array<{ id: string, label: string, icon?: ReactNode }>', description: 'Array of tab items' },
+      { name: 'size', type: "'medium' | 'small'", description: 'Tab height: medium 48px, small 32px. Unset keeps the older 46px tabs; look: \'radiant-3\' uses 48px' },
       { name: 'activeTab', type: 'string', description: 'Currently active tab ID' },
       { name: 'onTabChange', type: '(id: string) => void', description: 'Handler when a tab is selected' },
     ],
@@ -279,7 +364,7 @@ const componentDocs: Record<string, {
   },
   table: {
     name: 'Table',
-    description: 'A flexible data table component for displaying tabular data with sorting, selection, and custom cell rendering.',
+    description: 'A data table with sorting, selection and custom cells. TableCellRenderers gives ready-made cells: title (with description and error lines), tokens, button, iconButton, avatar, chip, chips, status, date, number and boolean. Under look: \'radiant-3\' it follows the Figma Object table: a 32px header, 72px rows and Radiant checkboxes.',
     props: [
       { name: 'columns', type: 'Array<TableColumn>', description: 'Column definitions with key, label, width, and render function' },
       { name: 'data', type: 'Array<T>', description: 'Table data rows' },
@@ -292,6 +377,10 @@ const componentDocs: Record<string, {
       { name: 'hoverable', type: 'boolean', default: 'true', description: 'Show hover state on rows' },
       { name: 'bordered', type: 'boolean', default: 'false', description: 'Show table borders' },
       { name: 'striped', type: 'boolean', default: 'false', description: 'Striped rows' },
+      { name: 'compact', type: 'boolean', default: 'false', description: 'Shorter rows' },
+      { name: 'stickyHeader', type: 'boolean', default: 'false', description: 'Header stays visible while the rows scroll' },
+      { name: 'onRowClick', type: '(row: T, index: number) => void', description: 'Called when a row is clicked' },
+      { name: 'columns[].sortable', type: 'boolean', default: 'false', description: 'Makes a column sortable from its header' },
     ],
   },
   tooltip: {
@@ -325,16 +414,37 @@ const componentDocs: Record<string, {
   // Phase 2: Core Components
   loadingindicator: {
     name: 'LoadingIndicator',
-    description: 'A compound component providing both contextual (inline) and global (fullscreen) loading indicators.',
+    description: 'Loading states: a spinner with optional text, a small inline spinner (Contextual), and placeholder shapes (Skeleton). For a full-area loader over content, use LoadingOverlay.',
+    usage: {
+      use: [
+        'Use Skeleton when a section is loading, for cards, titles and images',
+        'Keep border radii consistent when combining several Skeletons',
+        'Use Contextual (the spinner) for small inline waits',
+      ],
+      avoid: [
+        'Use a single Skeleton to show a whole page loading',
+      ],
+    },
     props: [
-      { name: 'Contextual.size', type: "'xs' | 's' | 'm' | 'l' | 'xl'", default: "'m'", description: 'Size of the spinner (12-48px)' },
-      { name: 'Global.dark', type: 'boolean', default: 'false', description: 'Use dark theme overlay' },
-      { name: 'Global.message', type: 'string', description: 'Optional loading message' },
+      { name: 'size', type: "'small' | 'medium' | 'large'", default: "'medium'", description: 'Size of the spinner' },
+      { name: 'text', type: 'string', description: 'Text under the spinner' },
+      { name: 'centered', type: 'boolean', default: 'false', description: 'Centres the spinner in its container' },
+      { name: 'Contextual.size', type: "'xs' | 's' | 'm' | 'l' | 'xl'", default: "'m'", description: 'Size of the inline spinner (12-48px)' },
+      { name: 'Skeleton.variant', type: "'text' | 'circular' | 'rectangular' | 'rounded'", default: "'text'", description: 'Shape of the placeholder' },
+      { name: 'Skeleton.width', type: 'number | string', description: 'Placeholder width' },
+      { name: 'Skeleton.height', type: 'number | string', description: 'Placeholder height' },
     ],
   },
   avatar: {
     name: 'Avatar',
     description: 'Displays a user avatar with automatic initials fallback, image loading, and optional badge support.',
+    usage: {
+      use: [
+        'Group one to three avatars, overlapping left to right',
+        'Make avatars clickable or not, as the context needs',
+        'Show a tooltip on hover and focus, with the same text as the avatar label',
+      ],
+    },
     props: [
       { name: 'name', type: 'string', description: 'User name (used for initials and alt text)' },
       { name: 'src', type: 'string', description: 'Image source URL' },
@@ -403,7 +513,8 @@ const componentDocs: Record<string, {
       { name: 'defaultExpanded', type: 'number | number[]', description: 'Initially expanded item(s)' },
       { name: 'expanded', type: 'number | number[]', description: 'Controlled expanded state' },
       { name: 'onExpandedChange', type: '(expanded: number[]) => void', description: 'Expansion change handler' },
-      { name: 'variant', type: "'default' | 'minimal' | 'bordered'", default: "'default'", description: 'Visual variant' },
+      { name: 'variant', type: "'default' | 'minimal' | 'bordered' | 'card' | 'list'", default: "'default'", description: 'Visual variant. card is the Figma card: raised items with a leading chevron. list is the Figma basic list: 48px parent rows, 32px child rows when nested, and Accordion.ListItem rows' },
+      { name: 'Accordion.ListItem', type: '{ label, selected?, selectMode?, icon?, actions?, disabled?, onClick? }', description: 'A 32px selectable row for the list variant. single select uses Ghost Highlight; multi select shows a checkmark. actions show on hover' },
       { name: 'Item.title', type: 'ReactNode', description: 'Item title' },
       { name: 'Item.subtitle', type: 'string', description: 'Item subtitle' },
       { name: 'Item.disabled', type: 'boolean', default: 'false', description: 'Disable item' },
@@ -434,6 +545,213 @@ const componentDocs: Record<string, {
       { name: 'Dots.currentPage', type: 'number', description: 'Current page for dot indicators' },
       { name: 'Range.itemsPerPage', type: 'number', description: 'Items per page for range display' },
       { name: 'Range.totalItems', type: 'number', description: 'Total items for range calculation' },
+    ],
+  },
+  pageheader: {
+    name: 'PageHeader',
+    description: 'The Figma page header: an optional breadcrumb, a 24/32 title with optional tabs beside it and buttons on the right, and an optional description. Only the title is required.',
+    props: [
+      { name: 'title', type: 'string', description: 'Page title (required)' },
+      { name: 'description', type: 'string', description: 'Line under the title' },
+      { name: 'breadcrumbs', type: '{ label, href?, onClick? }[]', description: 'Pages above this one; shows the back button and parent links' },
+      { name: 'onBack', type: '() => void', description: 'Overrides what the breadcrumb back button does' },
+      { name: 'tabs', type: 'Tab[]', description: 'Radiant Tabs next to the title' },
+      { name: 'activeTab', type: 'string', description: 'Id of the active tab' },
+      { name: 'onTabChange', type: '(id: string) => void', description: 'Called when a tab is chosen' },
+      { name: 'actions', type: '{ label, onClick?, variant?, icon?, disabled? }[]', description: 'Buttons on the right; variant defaults to secondary' },
+    ],
+  },
+  editheader: {
+    name: 'EditHeader',
+    description: 'The Figma edit-mode page header, sibling of WizardHeader: a 20/28 title with optional segmented tabs, then Reset, Save, a divider and a tertiary Exit button. Reset is disabled until there are edits (Saved and Edited states).',
+    props: [
+      { name: 'title', type: 'string', description: 'Title of the thing being edited (required)' },
+      { name: 'edited', type: 'boolean', default: 'false', description: 'Edited state; false is Saved and disables Reset' },
+      { name: 'onReset', type: '() => void', description: 'Shows the secondary Reset button' },
+      { name: 'onSave', type: '() => void', description: 'Shows the primary Save button' },
+      { name: 'onExit', type: '() => void', description: 'Shows a divider and a tertiary Exit button' },
+      { name: 'saveDisabled', type: 'boolean', default: 'false', description: 'Disables Save' },
+      { name: 'resetLabel / saveLabel / exitLabel', type: 'string', default: "'Reset' / 'Save' / 'Exit'", description: 'Button labels' },
+      { name: 'tabs', type: 'SegmentOption[]', description: 'Segmented tabs next to the title' },
+      { name: 'activeTab', type: 'string', description: 'Id of the active tab' },
+      { name: 'onTabChange', type: '(id: string) => void', description: 'Called when a tab is chosen' },
+    ],
+  },
+  splitbutton: {
+    name: 'SplitButton',
+    description: 'A main action and a chevron that opens a menu, joined with a 2px gap. Primary and secondary types, each with a text or icon-only main action. Each half hovers, presses and disables on its own, and the chevron stays pressed while the menu is open. Enter, Space or Arrow down on the chevron opens the menu; arrow keys move; Escape closes it.',
+    props: [
+      { name: 'label', type: 'string', description: 'Main action text; the accessible name when iconOnly (required)' },
+      { name: 'onClick', type: '(e) => void', description: 'Main action handler' },
+      { name: 'items', type: '{ label, onClick?, icon?, disabled?, destructive? }[]', description: 'Menu items behind the chevron (required)' },
+      { name: 'variant', type: "'primary' | 'secondary'", default: "'primary'", description: 'Button type' },
+      { name: 'icon', type: 'IconName | ReactNode', description: 'Icon on the main action' },
+      { name: 'iconOnly', type: 'boolean', default: 'false', description: 'Main action shows only the icon (Figma Primary icon and Secondary icon)' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Disables both halves' },
+      { name: 'mainDisabled', type: 'boolean', default: 'false', description: 'Disables only the main action' },
+      { name: 'menuDisabled', type: 'boolean', default: 'false', description: 'Disables only the chevron' },
+      { name: 'menuPlacement', type: "'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'", default: "'bottom-start'", description: 'Where the menu opens' },
+      { name: 'menuLabel', type: 'string', default: "'More options'", description: 'Accessible name of the chevron' },
+    ],
+  },
+  dotloader: {
+    name: 'DotLoader',
+    description: 'The three-dot global loader for full-area waits, such as an answer being generated. The large dot travels left to right; with reduced motion the dots hold still. An optional message sits below. LoadingIndicator stays the ring spinner for inline loading.',
+    props: [
+      { name: 'message', type: 'ReactNode', description: 'Text under the dots, 14/20 secondary, up to 256px wide' },
+      { name: 'label', type: 'string', default: "'Loading'", description: 'Accessible name when there is no message' },
+      { name: 'className', type: 'string', description: 'Extra class on the root' },
+    ],
+  },
+  scrollarea: {
+    name: 'ScrollArea',
+    description: 'A light wrapper that gives its content the Figma scroll bar: an 8px track in the secondary action background with a rounded tertiary thumb. Native scrolling styled with CSS; global scrollbars are untouched. Firefox gets the same colors at its thin width.',
+    props: [
+      { name: 'orientation', type: "'vertical' | 'horizontal' | 'both'", default: "'vertical'", description: 'Which directions scroll' },
+      { name: 'maxHeight', type: 'number | string', description: 'Height before the content scrolls' },
+      { name: 'maxWidth', type: 'number | string', description: 'Width before the content scrolls' },
+      { name: 'focusable', type: 'boolean', default: 'true', description: 'Lets keyboard users focus and scroll the area; pair with aria-label' },
+      { name: 'children', type: 'ReactNode', description: 'Scrolling content (required)' },
+    ],
+  },
+  token: {
+    name: 'Token',
+    description: 'The Figma Token / Read Only and Token / Editable sets as one component: a 24px, 4px-radius label in the chip colours for a measure, attribute, condition or date. Read only tokens carry a 14px icon and a warning or error border; editable tokens drop the icon, show a remove circle on hover and take an active look while being edited.',
+    props: [
+      { name: 'label', type: 'string', description: 'Text shown in the token (required)' },
+      { name: 'type', type: "'measure' | 'attribute' | 'condition' | 'date'", default: "'measure'", description: 'Sets the fill and icon colour; condition uses the filter chip colours' },
+      { name: 'status', type: "'default' | 'warning' | 'error'", default: "'default'", description: 'Read only: border and alert icon. Editable: error uses the error fill' },
+      { name: 'editable', type: 'boolean', default: 'false', description: 'Editable token: no icon, remove button, active look' },
+      { name: 'showIcon', type: 'boolean', default: 'true', description: 'Read only: shows the leading icon' },
+      { name: 'icon', type: 'IconName | ReactNode', description: 'Read only: overrides the default icon for the type' },
+      { name: 'active', type: 'boolean', default: 'false', description: 'Editable: being edited, no fill and a 1px bottom line' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Fades the token to 40%' },
+      { name: 'onClick', type: '() => void', description: 'Click or Enter/Space on the token' },
+      { name: 'onRemove', type: '() => void', description: 'Editable: shows the remove button; Delete or Backspace also fires it' },
+      { name: 'maxWidth', type: 'number', description: 'Width in px before the label truncates' },
+    ],
+  },
+  chipidentifier: {
+    name: 'ChipIdentifier',
+    description: 'The Figma Chip - identifier: a 24px, 4px-radius brand chip with inverse text that marks an identifier, such as a key column or an id. Display only.',
+    props: [
+      { name: 'label', type: 'string', description: 'Text shown in the chip (required)' },
+      { name: 'maxWidth', type: 'number', description: 'Width in px before the label truncates' },
+      { name: 'className', type: 'string', description: 'Extra class on the chip' },
+    ],
+  },
+  userchip: {
+    name: 'UserChip',
+    description: 'The Figma Input chip: a 28px pill with a 24px Avatar, the person\'s name and an optional remove button, for people inside inputs such as share or mention fields. Selected chips use the dark fill, inverse text and a checkmark over the dimmed avatar.',
+    props: [
+      { name: 'name', type: 'string', description: 'Person\'s name; also the avatar initials (required)' },
+      { name: 'src', type: 'string', description: 'Avatar image URL; falls back to initials' },
+      { name: 'id', type: 'string', description: 'Stable id for the avatar initials colour' },
+      { name: 'selected', type: 'boolean', default: 'false', description: 'Selected look with a checkmark over the avatar' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Fades the chip to 40%' },
+      { name: 'onClick', type: '() => void', description: 'Click or Enter/Space, e.g. to toggle selection; sets aria-pressed' },
+      { name: 'onRemove', type: '() => void', description: 'Shows the remove button; Delete or Backspace also fires it' },
+      { name: 'maxWidth', type: 'number', description: 'Width in px before the name truncates' },
+    ],
+  },
+  breadcrumb: {
+    name: 'Breadcrumb',
+    description: 'The Figma breadcrumb: a small round back button and gray links for the pages above this one, separated by chevrons. The last item is the current page (aria-current="page"). Long labels truncate.',
+    props: [
+      { name: 'items', type: '{ label, href?, onClick? }[]', description: 'Trail from the top level down; the last item is the current page (required)' },
+      { name: 'showBackButton', type: 'boolean', default: 'true', description: 'Round back button that goes to the item before the current page' },
+      { name: 'onBack', type: '() => void', description: 'Overrides what the back button does' },
+      { name: 'showCurrent', type: 'boolean', default: 'true', description: 'Shows the current page at the end; turn off when a title below names the page' },
+      { name: 'aria-label', type: 'string', default: "'Breadcrumb'", description: 'Name of the navigation landmark' },
+    ],
+  },
+  numberinput: {
+    name: 'NumberInput',
+    description: 'A number field with up and down spin buttons that show on hover and focus. Follows TextInput for label, helper text and error message, and picks up the radiant-3 look (32px field, 6px radius, 12/18 label that turns brand on focus). ArrowUp and ArrowDown step the value, Shift steps by 10, Home and End jump to min and max, and typed values are clamped on blur.',
+    props: [
+      { name: 'label', type: 'string', description: 'Label text' },
+      { name: 'value', type: 'number | null', description: 'Current value (controlled); null is empty' },
+      { name: 'defaultValue', type: 'number | null', default: 'null', description: 'Starting value when uncontrolled' },
+      { name: 'onChange', type: '(value: number | null) => void', description: 'Called with the new number, or null when cleared' },
+      { name: 'min', type: 'number', description: 'Lowest allowed value' },
+      { name: 'max', type: 'number', description: 'Highest allowed value' },
+      { name: 'step', type: 'number', default: '1', description: 'Amount each spin or arrow key adds or removes' },
+      { name: 'error', type: 'boolean', default: 'false', description: 'Error state: failure border, label and icon' },
+      { name: 'errorMessage', type: 'string', description: 'Error message below the field' },
+      { name: 'helperText', type: 'string', description: 'Helper text below the field' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Disables the field' },
+      { name: 'readOnly', type: 'boolean', default: 'false', description: 'Filled background, no border, no spin buttons' },
+      { name: 'hideSpinButtons', type: 'boolean', default: 'false', description: 'Hide the spin buttons; arrow keys still work' },
+    ],
+  },
+  inlineedit: {
+    name: 'InlineEdit',
+    description: 'Text that reads as plain text, shows a Border/Bold outline on hover and turns into a field with a Border/Brand outline on click, Enter, Space or F2. Enter or blur confirms, Escape cancels and puts focus back on the text. Two sizes: 14/20 and 16/24. The field grows with the text.',
+    props: [
+      { name: 'value', type: 'string', description: 'Current text (controlled)' },
+      { name: 'defaultValue', type: 'string', default: "''", description: 'Starting text when uncontrolled' },
+      { name: 'onChange', type: '(value: string) => void', description: 'Called with the new text when an edit is confirmed' },
+      { name: 'onCancel', type: '() => void', description: 'Called when an edit is cancelled with Escape' },
+      { name: 'onEditingChange', type: '(editing: boolean) => void', description: 'Called when editing starts or stops' },
+      { name: 'size', type: "'basic' | 'large'", default: "'basic'", description: "Text size: 'basic' 14/20, 'large' 16/24" },
+      { name: 'placeholder', type: 'string', description: 'Text shown when empty' },
+      { name: 'confirmOnBlur', type: 'boolean', default: 'true', description: 'Blur confirms; when false, blur cancels' },
+      { name: 'required', type: 'boolean', default: 'false', description: 'Keep the old value when confirmed empty' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Turns editing off' },
+      { name: 'aria-label', type: 'string', description: 'Accessible name, e.g. "Liveboard name"' },
+    ],
+  },
+  fileuploader: {
+    name: 'FileUploader',
+    description: 'A label row, a 32px field that shows the chosen file name with a clear button, and a secondary Upload button. Click the field or the button to browse, or drop files on the field (dashed brand outline while dragging). Nothing uploads: picks and removals come through onFilesChange, and you set status and progress per file to show uploading, complete or error in the file list.',
+    props: [
+      { name: 'label', type: 'string', description: 'Label above the field' },
+      { name: 'helperText', type: 'string', description: 'Shown in brackets after the label' },
+      { name: 'placeholder', type: 'string', description: 'Text inside the empty field' },
+      { name: 'buttonLabel', type: 'string', default: "'Upload'", description: 'Upload button label' },
+      { name: 'files', type: 'FileUploaderItem[]', description: 'Files (controlled): { id, name, size?, file?, status?, progress?, errorMessage? }' },
+      { name: 'defaultFiles', type: 'FileUploaderItem[]', default: '[]', description: 'Starting files when uncontrolled' },
+      { name: 'onFilesChange', type: '(files: FileUploaderItem[]) => void', description: 'Called with the full list after a pick, drop or removal' },
+      { name: 'accept', type: 'string', description: 'Accepted types, e.g. ".csv,.xlsx"' },
+      { name: 'multiple', type: 'boolean', default: 'false', description: 'Allow several files; new picks add to the list' },
+      { name: 'showFileList', type: 'boolean', description: "File list with size and status; on by default when multiple or any file has a status other than 'idle'" },
+      { name: 'error', type: 'boolean', default: 'false', description: 'Failure border' },
+      { name: 'errorMessage', type: 'string', description: 'Shown in place of the label with an error icon' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Whole control at 40%' },
+      { name: 'readOnly', type: 'boolean', default: 'false', description: 'Filled field, no border, Upload disabled' },
+    ],
+  },
+  daterangepicker: {
+    name: 'DateRangePicker',
+    description: 'Two date fields joined by "to" that share one calendar. The calendar opens under the active field, picking a start date moves on to the end field, and the days in between are highlighted.',
+    props: [
+      { name: 'value', type: '{ start: Date | null; end: Date | null }', default: '{ start: null, end: null }', description: 'Selected range' },
+      { name: 'onChange', type: '(range: DateRange) => void', description: 'Called with the full range on every change' },
+      { name: 'format', type: "'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD'", default: "'MM/DD/YYYY'", description: 'Date format for both fields' },
+      { name: 'label', type: 'string', description: 'Label above both fields' },
+      { name: 'startPlaceholder', type: 'string', default: "'Start date'", description: 'Start field placeholder and accessible name' },
+      { name: 'endPlaceholder', type: 'string', default: "'End date'", description: 'End field placeholder and accessible name' },
+      { name: 'separator', type: 'string', default: "'to'", description: 'Word between the fields' },
+      { name: 'hasError', type: 'boolean', default: 'false', description: 'Error state on both fields' },
+      { name: 'helperText', type: 'string', description: 'Helper or error text' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Disables both fields' },
+      { name: 'minDate', type: 'Date', description: 'Earliest selectable date' },
+      { name: 'maxDate', type: 'Date', description: 'Latest selectable date' },
+      { name: 'id', type: 'string', description: 'Base id; fields get <id>-start and <id>-end' },
+    ],
+  },
+  wizardheader: {
+    name: 'WizardHeader',
+    description: 'The Figma wizard as a full-width page header: eyebrow over a 20/28 title, Secondary and Primary buttons, a divider and a tertiary Exit button, with a 4px segmented progress bar below. WizardModal stays for the modal form.',
+    props: [
+      { name: 'title', type: 'string', description: 'Step title (required)' },
+      { name: 'eyebrow', type: 'string', description: 'Small line above the title' },
+      { name: 'totalSteps', type: 'number', default: '0', description: 'Segments in the progress bar; 0 hides it' },
+      { name: 'currentStep', type: 'number', default: '0', description: 'Current step, 1-based; segments up to it are filled' },
+      { name: 'primaryAction', type: '{ label, onClick?, disabled? }', description: 'Primary button' },
+      { name: 'secondaryAction', type: '{ label, onClick?, disabled? }', description: 'Secondary button before the primary' },
+      { name: 'onExit', type: '() => void', description: 'Shows a divider and a tertiary Exit button' },
+      { name: 'exitLabel', type: 'string', default: "'Exit'", description: 'Exit button label' },
     ],
   },
   progressbar: {
@@ -510,7 +828,7 @@ const componentDocs: Record<string, {
       { name: 'onHamburgerClick', type: '() => void', description: 'Handler when hamburger is clicked' },
       { name: 'showDefaultActions', type: 'boolean', default: 'true', description: 'Show help, notification, and profile actions' },
       { name: 'rightSlot', type: 'ReactNode', description: 'Custom content rendered after default actions' },
-      { name: 'theme', type: "'dark' | 'light'", default: "'dark'", description: 'Color theme for the header' },
+      { name: 'theme', type: "'auto' | 'light' | 'dark'", default: "'auto'", description: 'auto follows the app theme, like the product nav. light is the older name for auto. dark is the legacy always-dark nav.' },
     ],
   },
   appsidebar: {
@@ -527,8 +845,9 @@ const componentDocs: Record<string, {
       { name: 'highlightedItem', type: 'string | null', default: 'null', description: 'Item ID to flash-highlight (e.g., after command palette navigation)' },
       { name: 'headerSlot', type: 'ReactNode', description: 'Custom content rendered below the tab title (e.g., search input)' },
       { name: 'isOverlay', type: 'boolean', default: 'false', description: 'Render in overlay mode with shadow (for fullscreen views)' },
+      { name: 'theme', type: "'auto' | 'light' | 'dark'", default: "'auto'", description: 'auto follows the app theme, like the product nav. light is the same as auto. dark is the legacy always-dark navy nav.' },
       { name: 'onClose', type: '() => void', description: 'Close handler for overlay mode' },
-      { name: 'width', type: 'number', default: '261', description: 'Sidebar width in pixels' },
+      { name: 'width', type: 'number', default: '260', description: 'Sidebar width in pixels' },
     ],
   },
   appshell: {
@@ -608,17 +927,36 @@ const componentDocs: Record<string, {
       { name: 'description', type: 'string', description: 'Explanatory text below the title' },
       { name: 'illustration', type: 'ReactNode', description: 'Illustration or icon above the title' },
       { name: 'action', type: 'ReactNode', description: 'CTA button or link below the description' },
+      { name: 'layout', type: "'stack' | 'horizontal'", default: "'stack'", description: 'horizontal is the Figma Muted layout: icon left, text right' },
+      { name: 'type', type: "'page' | 'section'", default: "'section'", description: 'Horizontal only. section: 32px status icon; page: status illustration' },
+      { name: 'status', type: "'empty' | 'warning' | 'success'", default: "'empty'", description: 'Horizontal only. Picks the status icon or illustration' },
+      { name: 'icon', type: 'ReactNode', description: 'Horizontal section only. Replaces the status icon' },
+      { name: 'primaryAction', type: '{ label, onClick? }', description: 'Horizontal only. Small primary button' },
+      { name: 'secondaryAction', type: '{ label, onClick? }', description: 'Horizontal only. Small secondary button' },
+      { name: 'link', type: '{ label, onClick? }', description: 'Horizontal only. Tertiary link after the buttons' },
     ],
   },
   explainercard: {
     name: 'ExplainerCard',
     description: 'Educational card with an icon, title, description body, and optional CTA. Use to explain features or onboard users.',
+    usage: {
+      use: [
+        'Opened by a click: show the dismiss button, and keep it open until people dismiss it or click outside',
+        'Opened by hover: no dismiss button, and close it when the pointer leaves',
+        'Keep the text to 4 lines or fewer',
+      ],
+    },
     props: [
-      { name: 'title', type: 'string', description: 'Card heading (required)' },
-      { name: 'description', type: 'string', description: 'Body text (required)' },
+      { name: 'title', type: 'string', description: 'Card heading. Leave it out for the title-less layout' },
+      { name: 'description', type: 'ReactNode', description: 'Body text (required)' },
       { name: 'icon', type: 'ReactNode', description: 'Leading icon element' },
       { name: 'action', type: 'ReactNode', description: 'CTA button or link' },
       { name: 'variant', type: "'default' | 'highlighted'", default: "'default'", description: 'Background style' },
+      { name: 'appearance', type: "'bordered' | 'raised'", default: "'bordered'", description: 'raised is the Figma card: menu shadow, no border, radius 6, 18/24 title' },
+      { name: 'media', type: 'ReactNode', description: 'Image or video, 300 x 170 with radius 6' },
+      { name: 'onDismiss', type: '() => void', description: 'Shows a 24px close button' },
+      { name: 'primaryAction', type: '{ label, onClick? }', description: 'Small primary button' },
+      { name: 'secondaryAction', type: '{ label, onClick? }', description: 'Small tertiary button before the primary' },
     ],
   },
   image: {
@@ -722,9 +1060,19 @@ const componentDocs: Record<string, {
     props: [
       { name: 'value', type: 'string', description: 'Current CSS color string' },
       { name: 'onChange', type: '(color: string) => void', description: 'Change handler' },
-      { name: 'selectorType', type: "'hex' | 'rgb' | 'palette'", default: "'hex'", description: 'Which mode to show' },
+      { name: 'selectorType', type: "'hex' | 'rgb' | 'palette' | 'menu'", default: "'hex'", description: 'Which mode to show. menu is the Figma picker: a trigger that opens a hex field and the Radiant swatches (RADIANT_PALETTE)' },
       { name: 'palette', type: 'string[]', description: 'Swatch colors for palette mode (defaults to 12 common colors)' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'Disabled state' },
+    ],
+  },
+  fontformatter: {
+    name: 'FontFormatter',
+    description: 'The Figma Font formatter: bold, italic, strikethrough and underline toggles in one bordered group. A format that is on uses Ghost Highlight. RichTextEditor uses the same icons.',
+    props: [
+      { name: 'value', type: 'FontFormat[]', default: '[]', description: "Formats that are on: 'bold' | 'italic' | 'strikethrough' | 'underline'" },
+      { name: 'onChange', type: '(value: FontFormat[]) => void', description: 'Called with the new set when a toggle is pressed' },
+      { name: 'formats', type: 'FontFormat[]', default: "['bold', 'italic', 'strikethrough', 'underline']", description: 'Which toggles to show, in order' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'Disables every toggle' },
     ],
   },
   inputmentions: {
@@ -894,6 +1242,7 @@ const componentDocs: Record<string, {
       { name: 'onFinish', type: '() => void', description: 'Called after the last step' },
       { name: 'onSkip', type: '() => void', description: 'Called when Skip is clicked' },
       { name: 'startIndex', type: 'number', default: '0', description: 'Step to start from' },
+      { name: 'tone', type: "'default' | 'brand'", default: "'default'", description: 'brand is the Figma spotlight card: brand fill, inverse text, "2 of 4" counter, white tertiary buttons' },
     ],
   },
   richtexteditor: {
@@ -971,11 +1320,11 @@ const getSourceBadgeStyle = (source: ComponentSource): React.CSSProperties => {
     fontWeight: 500,
     padding: '4px 12px',
     borderRadius: '20px',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
   };
   switch (source) {
     case 'figma':
-      return { ...base, backgroundColor: 'var(--rd-ref-color-purple-10, #f4effe)', color: 'var(--rd-ref-color-purple-60, #8C62F5)' };
+      return { ...base, backgroundColor: sysVar('background-accent-purple-subtle'), color: sysVar('content-accent-purple') };
     case 'scaligent':
       return { ...base, backgroundColor: 'var(--rd-sys-color-background-success)', color: 'var(--rd-sys-color-content-success)' };
     case 'custom':
@@ -998,7 +1347,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
   const [activeTab, setActiveTab] = useState('tab1');
   const [selectValue, setSelectValue] = useState('');
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const [globalHeaderTheme, setGlobalHeaderTheme] = useState<'dark' | 'light'>('dark');
+  const [globalHeaderTheme, setGlobalHeaderTheme] = useState<'auto' | 'dark'>('auto');
   // New component states
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [paginationPage, setPaginationPage] = useState(1);
@@ -1007,6 +1356,14 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
   const [segmentedValue, setSegmentedValue] = useState('day');
   // New component states (Phase 1-4)
   const [searchBarValue, setSearchBarValue] = useState('');
+  const [tableSelection, setTableSelection] = useState<string[]>([]);
+  const [accordionPick, setAccordionPick] = useState('Weekly revenue');
+  const [fontFormats, setFontFormats] = useState<FontFormat[]>(['bold']);
+  const [accordionChecks, setAccordionChecks] = useState<string[]>(['Campaign spend']);
+  // Props start collapsed on every component page, unless the link points at them
+  const [openPropsFor, setOpenPropsFor] = useState<string | null>(() =>
+    typeof window !== 'undefined' && window.location.hash === '#props' ? componentId : null);
+  const propsOpen = openPropsFor === componentId;
   const [sliderValue, setSliderValue] = useState(40);
   const [managedItems, setManagedItems] = useState([
     { id: '1', label: 'Item one' },
@@ -1035,6 +1392,15 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
   const [selectedTreeIds, setSelectedTreeIds] = useState<string[]>([]);
   const [richText, setRichText] = useState('<p>Start typing <strong>rich</strong> text here…</p>');
   const [isTourRunning, setIsTourRunning] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
+  const [userChipSelected, setUserChipSelected] = useState<string[]>(['Leo Park']);
+  const [userChipPeople, setUserChipPeople] = useState<string[]>(['Priya Shah', 'Leo Park', 'Ana García']);
+  const [editableTokens, setEditableTokens] = useState<TokenType[]>(['measure', 'attribute', 'condition', 'date']);
+  const [editHeaderDirty, setEditHeaderDirty] = useState(false);
+  const [editHeaderTab, setEditHeaderTab] = useState('tables');
+  const [pageHeaderTab, setPageHeaderTab] = useState('tables');
+  const [isBrandTourRunning, setIsBrandTourRunning] = useState(false);
+  const [wizardHeaderStep, setWizardHeaderStep] = useState(2);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedFacet, setSelectedFacet] = useState('all');
   const [selectedSort, setSelectedSort] = useState('newest');
@@ -1128,6 +1494,14 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               <TextInput label="Disabled" placeholder="Disabled input" disabled />
               <TextInput label="Error" error errorMessage="This field is required" value="Invalid value" />
             </div>
+            <RadiantLook>
+              <div style={styles.exampleColumn}>
+                <TextInput label="Label" helperText="helper text - optional" placeholder="Text" />
+                <TextInput label="Label" helperText="helper text - optional" value="Text" error />
+                <TextInput label="Label" helperText="helper text - optional" placeholder="Text" disabled />
+                <TextInput label="Label" helperText="helper text - optional" value="Text" readOnly />
+              </div>
+            </RadiantLook>
           </div>
         );
       
@@ -1154,10 +1528,17 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               />
               <TextArea 
                 label="Disabled" 
-                placeholder="This textarea is disabled" 
+                placeholder="This textarea is disabled"
                 disabled
               />
             </div>
+            <RadiantLook>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '400px' }}>
+                <TextArea label="Label" helperText="helper text - optional" placeholder="Text" rows={4} />
+                <TextArea label="Label" helperText="helper text - optional" value="Text" error rows={4} />
+                <TextArea label="Label" helperText="helper text - optional" placeholder="Text" rows={4} disabled />
+              </div>
+            </RadiantLook>
           </div>
         );
       
@@ -1169,7 +1550,11 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 placeholder="Search..." 
                 value={searchValue} 
                 onChange={(e) => setSearchValue(e.target.value)} 
+                onClear={() => setSearchValue('')}
               />
+            </div>
+            <div style={{ maxWidth: '320px' }}>
+              <SearchInput variant="underlined" placeholder="Search in this list" />
             </div>
           </div>
         );
@@ -1240,7 +1625,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 </>
               }
             >
-              <p style={{ margin: 0, color: referenceColors.gray['70'] }}>
+              <p style={{ margin: 0, color: sysVar('content-primary') }}>
                 This is the modal content. You can put any content here.
               </p>
             </Modal>
@@ -1259,7 +1644,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               activeTab={activeTab}
               onTabChange={setActiveTab}
             />
-            <div style={{ marginTop: '16px', padding: '16px', background: systemColors.light['background-sunken'], borderRadius: '8px' }}>
+            <div style={{ marginTop: '16px', padding: '16px', background: sysVar('background-sunken'), borderRadius: '8px' }}>
               Content for {activeTab}
             </div>
           </div>
@@ -1312,6 +1697,12 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 options={[{ id: '1', label: 'Option' }]}
               />
             </div>
+            <RadiantLook>
+              <div style={styles.exampleColumn}>
+                <Select label="Label" helperText="helper text - optional" placeholder="Select" options={[{ id: '1', label: 'Option' }]} />
+                <Select label="Label" helperText="helper text - optional" placeholder="Select" error options={[{ id: '1', label: 'Option' }]} />
+              </div>
+            </RadiantLook>
           </div>
         );
 
@@ -1404,6 +1795,27 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               rowKey="id"
               hoverable
             />
+            <RadiantLook>
+              <Table
+                selectable
+                selectedKeys={tableSelection}
+                onSelectionChange={setTableSelection}
+                columns={[
+                  { key: 'name', label: 'Name', sortable: true, render: TableCellRenderers.title({ descriptionKey: 'description', errorKey: 'error', icon: 'table' }) },
+                  { key: 'columns', label: 'Columns', render: TableCellRenderers.tokens({ type: 'attribute', max: 2 }) },
+                  { key: 'owner', label: 'Owner', sortable: true },
+                  { key: 'open', label: '', width: '96px', render: TableCellRenderers.button({ label: 'Open', onClick: () => {} }) },
+                  { key: 'more', label: '', width: '56px', render: TableCellRenderers.iconButton({ icon: 'more', label: 'More actions', onClick: () => {} }) },
+                ]}
+                data={[
+                  { id: 'a', name: 'Retail sales', description: 'Orders, returns and stores', columns: ['Region', 'Revenue', 'Store'], owner: 'Alex Johnson' },
+                  { id: 'b', name: 'Marketing spend', description: 'Campaigns by channel', columns: ['Channel', 'Spend'], owner: 'Sarah Chen' },
+                  { id: 'c', name: 'Support tickets', error: 'Could not load ticketing system data', columns: ['Priority'], owner: 'Mike Roberts' },
+                ]}
+                rowKey="id"
+                hoverable
+              />
+            </RadiantLook>
           </div>
         );
 
@@ -1445,7 +1857,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                   <div style={{ padding: '8px', minWidth: '150px' }}>
                     <Button variant="tertiary" fullWidth style={{ justifyContent: 'flex-start' }}>Edit</Button>
                     <Button variant="tertiary" fullWidth style={{ justifyContent: 'flex-start' }}>Duplicate</Button>
-                    <Button variant="tertiary" fullWidth style={{ justifyContent: 'flex-start', color: systemColors.light['content-failure'] }}>Delete</Button>
+                    <Button variant="tertiary" fullWidth style={{ justifyContent: 'flex-start', color: sysVar('content-failure') }}>Delete</Button>
                   </div>
                 }
                 placement="bottom-start"
@@ -1456,7 +1868,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               <Popover
                 content={
                   <div style={{ padding: '12px' }}>
-                    <p style={{ margin: 0, fontSize: '14px', color: referenceColors.gray['70'] }}>
+                    <p style={{ margin: 0, fontSize: '14px', color: sysVar('content-primary') }}>
                       This popover appears on hover
                     </p>
                   </div>
@@ -1504,11 +1916,11 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                   <LoadingIndicator.Contextual size="xl" />
                 </div>
                 <div style={{ ...styles.exampleRow, marginTop: '8px' }}>
-                  <span style={{ fontSize: '12px', color: systemColors.light['content-secondary'] }}>xs (12px)</span>
-                  <span style={{ fontSize: '12px', color: systemColors.light['content-secondary'] }}>s (16px)</span>
-                  <span style={{ fontSize: '12px', color: systemColors.light['content-secondary'] }}>m (24px)</span>
-                  <span style={{ fontSize: '12px', color: systemColors.light['content-secondary'] }}>l (32px)</span>
-                  <span style={{ fontSize: '12px', color: systemColors.light['content-secondary'] }}>xl (48px)</span>
+                  <span style={{ fontSize: '12px', color: sysVar('content-secondary') }}>xs (12px)</span>
+                  <span style={{ fontSize: '12px', color: sysVar('content-secondary') }}>s (16px)</span>
+                  <span style={{ fontSize: '12px', color: sysVar('content-secondary') }}>m (24px)</span>
+                  <span style={{ fontSize: '12px', color: sysVar('content-secondary') }}>l (32px)</span>
+                  <span style={{ fontSize: '12px', color: sysVar('content-secondary') }}>xl (48px)</span>
                 </div>
               </div>
               <div>
@@ -1622,19 +2034,19 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               <Card>
                 <Card.Header title="Basic Card" subtitle="With header and body" />
                 <Card.Body>
-                  <p style={{ margin: 0, color: referenceColors.gray['70'] }}>Card content goes here.</p>
+                  <p style={{ margin: 0, color: sysVar('content-primary') }}>Card content goes here.</p>
                 </Card.Body>
               </Card>
               <Card interactive onClick={() => alert('Card clicked!')}>
                 <Card.Header title="Interactive Card" />
                 <Card.Body>
-                  <p style={{ margin: 0, color: referenceColors.gray['70'] }}>Click me!</p>
+                  <p style={{ margin: 0, color: sysVar('content-primary') }}>Click me!</p>
                 </Card.Body>
               </Card>
               <Card isSelected>
                 <Card.Header title="Selected Card" />
                 <Card.Body>
-                  <p style={{ margin: 0, color: referenceColors.gray['70'] }}>This card is selected.</p>
+                  <p style={{ margin: 0, color: sysVar('content-primary') }}>This card is selected.</p>
                 </Card.Body>
                 <Card.Footer>
                   <Button variant="secondary" size="small">Cancel</Button>
@@ -1644,7 +2056,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               <Card isDisabled>
                 <Card.Header title="Disabled Card" />
                 <Card.Body>
-                  <p style={{ margin: 0, color: referenceColors.gray['70'] }}>This card is disabled.</p>
+                  <p style={{ margin: 0, color: sysVar('content-primary') }}>This card is disabled.</p>
                 </Card.Body>
               </Card>
             </div>
@@ -1678,14 +2090,14 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         return (
           <div style={styles.exampleContent}>
             <div style={styles.exampleColumn}>
-              <p style={{ margin: 0, color: referenceColors.gray['70'] }}>Content above divider</p>
+              <p style={{ margin: 0, color: sysVar('content-primary') }}>Content above divider</p>
               <Divider />
-              <p style={{ margin: 0, color: referenceColors.gray['70'] }}>Content below divider</p>
+              <p style={{ margin: 0, color: sysVar('content-primary') }}>Content below divider</p>
             </div>
             <div style={styles.exampleColumn}>
-              <p style={{ margin: 0, color: referenceColors.gray['70'] }}>With spacing="m"</p>
+              <p style={{ margin: 0, color: sysVar('content-primary') }}>With spacing="m"</p>
               <Divider spacing="m" />
-              <p style={{ margin: 0, color: referenceColors.gray['70'] }}>More space around</p>
+              <p style={{ margin: 0, color: sysVar('content-primary') }}>More space around</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', height: '40px' }}>
               <span>Item 1</span>
@@ -1738,6 +2150,54 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               <Accordion variant="bordered" allowMultiple>
                 <Accordion.Item title="Section 1">Content for section 1</Accordion.Item>
                 <Accordion.Item title="Section 2">Content for section 2</Accordion.Item>
+              </Accordion>
+            </div>
+            <div style={{ marginTop: '24px' }} data-demo="accordion-card">
+              <h4 style={styles.interactiveLabel}>Card variant:</h4>
+              <Accordion variant="card" defaultExpanded={0}>
+                <Accordion.Item title="What is a Liveboard?">
+                  A Liveboard is a set of answers pinned together, so you can track the numbers that matter in one place.
+                </Accordion.Item>
+                <Accordion.Item title="Who can see my answers?">
+                  Only people you share an answer with, or who can see the Liveboard it is pinned to.
+                </Accordion.Item>
+                <Accordion.Item title="Can I schedule a report?" disabled>
+                  This item is disabled.
+                </Accordion.Item>
+              </Accordion>
+            </div>
+            <div style={{ marginTop: '24px' }}>
+              <h4 style={styles.interactiveLabel}>List variant:</h4>
+              <Accordion variant="list" defaultExpanded={0}>
+                <Accordion.Item title="Sales">
+                  <Accordion variant="list" defaultExpanded={0}>
+                    <Accordion.Item title="Liveboards">
+                      {['Weekly revenue', 'Regional pipeline', 'Top accounts'].map((name) => (
+                        <Accordion.ListItem
+                          key={name}
+                          label={name}
+                          selected={accordionPick === name}
+                          onClick={() => setAccordionPick(name)}
+                          actions={<Button variant="tertiary" size="xs" iconOnly icon="more">More actions</Button>}
+                        />
+                      ))}
+                    </Accordion.Item>
+                    <Accordion.Item title="Answers">
+                      <Accordion.ListItem label="Churn by plan" />
+                    </Accordion.Item>
+                  </Accordion>
+                </Accordion.Item>
+                <Accordion.Item title="Marketing">
+                  {['Campaign spend', 'Leads by channel'].map((name) => (
+                    <Accordion.ListItem
+                      key={name}
+                      label={name}
+                      selectMode="multi"
+                      selected={accordionChecks.includes(name)}
+                      onClick={() => setAccordionChecks((c) => c.includes(name) ? c.filter((x) => x !== name) : [...c, name])}
+                    />
+                  ))}
+                </Accordion.Item>
               </Accordion>
             </div>
           </div>
@@ -1900,7 +2360,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
             </div>
             <div style={styles.interactiveBox}>
               <h4 style={styles.interactiveLabel}>Selected date:</h4>
-              <p style={{ margin: 0, color: referenceColors.gray['70'] }}>
+              <p style={{ margin: 0, color: sysVar('content-primary') }}>
                 {selectedDate ? selectedDate.toLocaleDateString() : 'No date selected'}
               </p>
             </div>
@@ -1920,15 +2380,18 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <Tabs
                 tabs={[
-                  { id: 'dark', label: 'Dark theme' },
-                  { id: 'light', label: 'Light theme' },
+                  { id: 'auto', label: 'Follows theme' },
+                  { id: 'dark', label: 'Legacy dark' },
                 ]}
                 activeTab={globalHeaderTheme}
-                onTabChange={(id) => setGlobalHeaderTheme(id as 'dark' | 'light')}
+                onTabChange={(id) => setGlobalHeaderTheme(id as 'auto' | 'dark')}
               />
+              <Typography variant="body-normal" style={{ color: sysVar('content-secondary') }}>
+                By default the header follows the app theme, like the product nav with the Radiant theme on. Switch the theme with the control in the sidebar or Ctrl+D.
+              </Typography>
               <div>
                 <Typography variant="overline" style={{ marginBottom: '8px', display: 'block' }}>Trigger mode (default)</Typography>
-                <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${referenceColors.gray['20']}` }}>
+                <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${sysVar('border-divider')}` }}>
                   <GlobalHeader
                     theme={globalHeaderTheme}
                     userName="Acme Apparel"
@@ -1940,7 +2403,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               </div>
               <div>
                 <Typography variant="overline" style={{ marginBottom: '8px', display: 'block' }}>Input mode</Typography>
-                <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${referenceColors.gray['20']}` }}>
+                <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${sysVar('border-divider')}` }}>
                   <GlobalHeader
                     theme={globalHeaderTheme}
                     searchMode="input"
@@ -1952,7 +2415,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               </div>
               <div>
                 <Typography variant="overline" style={{ marginBottom: '8px', display: 'block' }}>With hamburger (fullscreen mode)</Typography>
-                <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${referenceColors.gray['20']}` }}>
+                <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${sysVar('border-divider')}` }}>
                   <GlobalHeader
                     theme={globalHeaderTheme}
                     showHamburger
@@ -1970,7 +2433,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         return (
           <div style={styles.exampleContent}>
             <div style={{ display: 'flex', gap: '24px' }}>
-              <div style={{ height: '480px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${referenceColors.gray['20']}` }}>
+              <div style={{ height: '480px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${sysVar('border-divider')}` }}>
                 <AppSidebar
                   tabs={[
                     { id: 'insights', label: 'Insights', headerTitle: 'Insights', showAddButton: true },
@@ -2031,7 +2494,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
-                  color: systemColors.light['content-brand'],
+                  color: sysVar('content-brand'),
                   textDecoration: 'none',
                   fontSize: 13,
                   fontWeight: 500,
@@ -2040,7 +2503,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 View fullscreen ↗
               </a>
             </div>
-            <div style={{ height: '500px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${referenceColors.gray['20']}`, position: 'relative' }}>
+            <div style={{ height: '500px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${sysVar('border-divider')}`, position: 'relative' }}>
               <AppShell
                 headerProps={{
                   userName: 'Demo User',
@@ -2098,12 +2561,12 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               <Button variant="secondary" size="small">Cancel</Button>
             </Horizontal>
             <Horizontal gap={16} justify="space-between">
-              <span style={{ fontSize: 14, color: systemColors.light['content-primary'] }}>Left content</span>
-              <span style={{ fontSize: 14, color: systemColors.light['content-secondary'] }}>Right content</span>
+              <span style={{ fontSize: 14, color: sysVar('content-primary') }}>Left content</span>
+              <span style={{ fontSize: 14, color: sysVar('content-secondary') }}>Right content</span>
             </Horizontal>
             <Horizontal gap={8} wrap>
               {['React', 'TypeScript', 'Vite', 'CSS Modules', 'Radiant'].map(t => (
-                <span key={t} style={{ padding: '4px 10px', background: systemColors.light['background-subtle'], borderRadius: 99, fontSize: 12 }}>{t}</span>
+                <span key={t} style={{ padding: '4px 10px', background: sysVar('background-subtle'), borderRadius: 99, fontSize: 12 }}>{t}</span>
               ))}
             </Horizontal>
           </div>
@@ -2137,21 +2600,21 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Grid columns={3} gap={12}>
               {['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta'].map(n => (
-                <div key={n} style={{ background: systemColors.light['background-subtle'], borderRadius: 8, padding: '12px 16px', fontSize: 13, textAlign: 'center' }}>{n}</div>
+                <div key={n} style={{ background: sysVar('background-subtle'), borderRadius: 8, padding: '12px 16px', fontSize: 13, textAlign: 'center' }}>{n}</div>
               ))}
             </Grid>
             <Grid columns={3} gap={12}>
-              <RdGridItem colSpan={2} style={{ background: systemColors.light['background-information'], borderRadius: 8, padding: '12px 16px', fontSize: 13 }}>Spans 2 columns</RdGridItem>
-              <div style={{ background: systemColors.light['background-subtle'], borderRadius: 8, padding: '12px 16px', fontSize: 13 }}>1 column</div>
+              <RdGridItem colSpan={2} style={{ background: sysVar('background-information'), borderRadius: 8, padding: '12px 16px', fontSize: 13 }}>Spans 2 columns</RdGridItem>
+              <div style={{ background: sysVar('background-subtle'), borderRadius: 8, padding: '12px 16px', fontSize: 13 }}>1 column</div>
             </Grid>
           </div>
         );
 
       case 'splitpane':
         return (
-          <div style={{ height: 200, border: `1px solid ${systemColors.light['border-default']}`, borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ height: 200, border: `1px solid ${sysVar('border-default')}`, borderRadius: 8, overflow: 'hidden' }}>
             <SplitPane
-              left={<div style={{ padding: 16, height: '100%', background: systemColors.light['background-subtle'], fontSize: 13 }}>Left panel — drag the divider to resize</div>}
+              left={<div style={{ padding: 16, height: '100%', background: sysVar('background-subtle'), fontSize: 13 }}>Left panel — drag the divider to resize</div>}
               right={<div style={{ padding: 16, height: '100%', fontSize: 13 }}>Right panel content</div>}
               defaultSize={35}
             />
@@ -2169,6 +2632,29 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               action={<Button variant="secondary" size="small">Clear filters</Button>}
             />
             <NoData title="No data available" description="Connect a data source to get started." />
+            <div data-demo="nodata-horizontal" style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+              <h4 style={styles.interactiveLabel}>Horizontal layout, section type:</h4>
+              <NoData
+                layout="horizontal"
+                status="empty"
+                title="No answers yet"
+                description="Ask a question to see answers here."
+                secondaryAction={{ label: 'Browse data' }}
+                primaryAction={{ label: 'Ask a question' }}
+                link={{ label: 'Learn more' }}
+              />
+              <NoData layout="horizontal" status="warning" title="Some columns are missing" description="Reconnect the data source to bring them back." />
+              <NoData layout="horizontal" status="success" title="All caught up" description="There are no new alerts." />
+              <h4 style={styles.interactiveLabel}>Horizontal layout, page type:</h4>
+              <NoData
+                layout="horizontal"
+                type="page"
+                title="No Liveboards yet"
+                description="Pin answers to a Liveboard to track them in one place."
+                secondaryAction={{ label: 'Import' }}
+                primaryAction={{ label: 'Create Liveboard' }}
+              />
+            </div>
           </div>
         );
 
@@ -2176,7 +2662,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 480 }}>
             <ExplainerCard
-              icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="#2770EF" strokeWidth="1.5"/><path d="M10 6v4l2.5 2.5" stroke="#2770EF" strokeWidth="1.5" strokeLinecap="round"/></svg>}
+              icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ color: sysVar('content-brand') }}><circle cx="10" cy="10" r="9" stroke="currentColor" strokeWidth="1.5"/><path d="M10 6v4l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>}
               title="Schedule your first report"
               description="Reports can be scheduled to run automatically and delivered to your inbox."
               action={<Button variant="primary" size="small">Set up schedule</Button>}
@@ -2186,6 +2672,23 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               description="You can pin answers to a Liveboard for quick access."
               variant="highlighted"
             />
+            <div data-demo="explainer-raised" style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 8 }}>
+              <h4 style={styles.interactiveLabel}>Raised appearance:</h4>
+              <ExplainerCard
+                appearance="raised"
+                title="Meet Spotter"
+                description="Ask questions about your data in plain language and get answers as charts and tables."
+                media={<div style={{ width: '100%', height: '100%' }} />}
+                onDismiss={() => {}}
+                secondaryAction={{ label: 'Learn more' }}
+                primaryAction={{ label: 'Try it' }}
+              />
+              <ExplainerCard
+                appearance="raised"
+                description="Answers you pin show up here, so you can find them later."
+                onDismiss={() => {}}
+              />
+            </div>
           </div>
         );
 
@@ -2193,7 +2696,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         return (
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <Image src="https://picsum.photos/seed/radiant/240/160" alt="Sample image" style={{ width: 240 }} rounded />
-            <Image src="broken-url" alt="Fallback demo" style={{ width: 240, height: 160 }} fallback={<div style={{ width: 240, height: 160, background: systemColors.light['background-subtle'], display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, fontSize: 13, color: systemColors.light['content-secondary'] }}>Image failed to load</div>} />
+            <Image src="broken-url" alt="Fallback demo" style={{ width: 240, height: 160 }} fallback={<div style={{ width: 240, height: 160, background: sysVar('background-subtle'), display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, fontSize: 13, color: sysVar('content-secondary') }}>Image failed to load</div>} />
           </div>
         );
 
@@ -2203,7 +2706,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
             {(['no-data', 'error', 'success', 'welcome', 'no-access', 'loading'] as const).map(id => (
               <div key={id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                 <Illustration id={id} size="sm" />
-                <span style={{ fontSize: 11, color: systemColors.light['content-secondary'] }}>{id}</span>
+                <span style={{ fontSize: 11, color: sysVar('content-secondary') }}>{id}</span>
               </div>
             ))}
           </div>
@@ -2212,8 +2715,8 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
       case 'legend':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <Legend items={[{ color: '#2770EF', label: 'Revenue', value: '$1.2M' }, { color: '#06BF7F', label: 'Profit', value: '$340K' }, { color: '#F5A623', label: 'Expenses', value: '$860K' }]} orientation="horizontal" />
-            <Legend items={[{ color: '#2770EF', label: 'Completed' }, { color: '#F5A623', label: 'In progress' }, { color: '#E22B3D', label: 'Blocked' }]} orientation="vertical" dotShape="square" />
+            <Legend items={[{ color: sysVar('content-accent-blue'), label: 'Revenue', value: '$1.2M' }, { color: sysVar('content-accent-green'), label: 'Profit', value: '$340K' }, { color: sysVar('content-accent-yellow'), label: 'Expenses', value: '$860K' }]} orientation="horizontal" />
+            <Legend items={[{ color: sysVar('content-accent-blue'), label: 'Completed' }, { color: sysVar('content-accent-yellow'), label: 'In progress' }, { color: sysVar('content-accent-red'), label: 'Blocked' }]} orientation="vertical" dotShape="square" />
           </div>
         );
 
@@ -2227,7 +2730,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
 
       case 'overlayloading':
         return (
-          <div style={{ position: 'relative', height: 140, border: `1px solid ${systemColors.light['border-default']}`, borderRadius: 8, padding: 16 }}>
+          <div style={{ position: 'relative', height: 140, border: `1px solid ${sysVar('border-default')}`, borderRadius: 8, padding: 16 }}>
             <p style={{ fontSize: 14 }}>Content underneath the overlay — set isVisible to true to block it.</p>
             <OverlayLoading isVisible={true} text="Loading data…" transparent />
           </div>
@@ -2274,7 +2777,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 300 }}>
             <DirectionControl label="Text direction" value={directionValue} onChange={setDirectionValue} />
-            <span style={{ fontSize: 13, color: systemColors.light['content-secondary'] }}>Selected: {directionValue}</span>
+            <span style={{ fontSize: 13, color: sysVar('content-secondary') }}>Selected: {directionValue}</span>
             <DirectionControl label="Disabled" value="ltr" disabled />
           </div>
         );
@@ -2283,13 +2786,24 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         return (
           <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             <div>
-              <p style={{ fontSize: 12, marginBottom: 8, color: systemColors.light['content-secondary'] }}>Hex mode</p>
+              <p style={{ fontSize: 12, marginBottom: 8, color: sysVar('content-secondary') }}>Hex mode</p>
               <ColorPicker value={colorValue} onChange={setColorValue} selectorType="hex" />
             </div>
             <div>
-              <p style={{ fontSize: 12, marginBottom: 8, color: systemColors.light['content-secondary'] }}>Palette mode</p>
+              <p style={{ fontSize: 12, marginBottom: 8, color: sysVar('content-secondary') }}>Palette mode</p>
               <ColorPicker value={colorValue} onChange={setColorValue} selectorType="palette" />
             </div>
+            <div>
+              <p style={{ fontSize: 12, marginBottom: 8, color: sysVar('content-secondary') }}>Menu mode (Figma)</p>
+              <ColorPicker value={colorValue} onChange={setColorValue} selectorType="menu" />
+            </div>
+          </div>
+        );
+
+      case 'fontformatter':
+        return (
+          <div style={styles.exampleContent}>
+            <FontFormatter value={fontFormats} onChange={setFontFormats} />
           </div>
         );
 
@@ -2440,7 +2954,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
       // ── Data Visualization ─────────────────────────────────────────────
       case 'tree':
         return (
-          <div style={{ maxWidth: 320, border: `1px solid ${systemColors.light['border-default']}`, borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ maxWidth: 320, border: `1px solid ${sysVar('border-default')}`, borderRadius: 8, overflow: 'hidden' }}>
             <Tree
               nodes={[
                 { id: 'src', label: 'src', children: [
@@ -2462,7 +2976,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
 
       case 'treetable':
         return (
-          <div style={{ border: `1px solid ${systemColors.light['border-default']}`, borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ border: `1px solid ${sysVar('border-default')}`, borderRadius: 8, overflow: 'hidden' }}>
             <TreeTable
               nodes={[
                 { id: 'q1', label: 'Q1 2026', data: { revenue: '$1.2M', growth: '+12%' }, children: [
@@ -2484,15 +2998,15 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
-              <div><p style={{ fontSize: 11, color: systemColors.light['content-secondary'], marginBottom: 4 }}>Text</p><Formatters.Text value="Sample text" bold /></div>
-              <div><p style={{ fontSize: 11, color: systemColors.light['content-secondary'], marginBottom: 4 }}>Currency</p><Formatters.Number value={1234567} format="currency" /></div>
-              <div><p style={{ fontSize: 11, color: systemColors.light['content-secondary'], marginBottom: 4 }}>Percent</p><Formatters.Number value={0.724} format="percent" /></div>
-              <div><p style={{ fontSize: 11, color: systemColors.light['content-secondary'], marginBottom: 4 }}>Compact</p><Formatters.Number value={48200} format="compact" /></div>
+              <div><p style={{ fontSize: 11, color: sysVar('content-secondary'), marginBottom: 4 }}>Text</p><Formatters.Text value="Sample text" bold /></div>
+              <div><p style={{ fontSize: 11, color: sysVar('content-secondary'), marginBottom: 4 }}>Currency</p><Formatters.Number value={1234567} format="currency" /></div>
+              <div><p style={{ fontSize: 11, color: sysVar('content-secondary'), marginBottom: 4 }}>Percent</p><Formatters.Number value={0.724} format="percent" /></div>
+              <div><p style={{ fontSize: 11, color: sysVar('content-secondary'), marginBottom: 4 }}>Compact</p><Formatters.Number value={48200} format="compact" /></div>
             </div>
             <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
-              <div><p style={{ fontSize: 11, color: systemColors.light['content-secondary'], marginBottom: 4 }}>Sparkline</p><Formatters.Line data={[10, 25, 18, 40, 35, 55, 48, 62]} width={100} height={28} /></div>
-              <div><p style={{ fontSize: 11, color: systemColors.light['content-secondary'], marginBottom: 4 }}>Interval</p><Formatters.Interval start="2026-01-01" end="2026-03-31" format="range" /></div>
-              <div style={{ display: 'flex', gap: 8 }}><Formatters.Marker color="#06BF7F" /><Formatters.Marker color="#2770EF" /><Formatters.Marker color="#E22B3D" size="lg" /></div>
+              <div><p style={{ fontSize: 11, color: sysVar('content-secondary'), marginBottom: 4 }}>Sparkline</p><Formatters.Line data={[10, 25, 18, 40, 35, 55, 48, 62]} width={100} height={28} /></div>
+              <div><p style={{ fontSize: 11, color: sysVar('content-secondary'), marginBottom: 4 }}>Interval</p><Formatters.Interval start="2026-01-01" end="2026-03-31" format="range" /></div>
+              <div style={{ display: 'flex', gap: 8 }}><Formatters.Marker color={sysVar('content-accent-green')} /><Formatters.Marker color={sysVar('content-accent-blue')} /><Formatters.Marker color={sysVar('content-accent-red')} size="lg" /></div>
             </div>
           </div>
         );
@@ -2513,6 +3027,358 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
               onFinish={() => setIsTourRunning(false)}
               onSkip={() => setIsTourRunning(false)}
             />
+            <div style={{ marginTop: 24 }}>
+              <h4 style={styles.interactiveLabel}>Brand tone:</h4>
+              <Button variant="secondary" size="small" onClick={() => setIsBrandTourRunning(true)}>Start brand tour</Button>
+            </div>
+            <Tour
+              tone="brand"
+              steps={[
+                { target: '#tour-target-search', title: 'Search bar', content: 'Use this to search for any content in ThoughtSpot.', placement: 'bottom' },
+                { target: '#tour-target-search', title: 'Ask in plain language', content: 'Type a question and Spotter turns it into an answer.', placement: 'bottom' },
+                { target: '#tour-target-search', title: 'Pin what matters', content: 'Pin answers to a Liveboard to track them.', placement: 'bottom' },
+                { target: '#tour-target-search', title: 'Share', content: 'Share a Liveboard with your team.', placement: 'bottom' },
+              ]}
+              isRunning={isBrandTourRunning}
+              onFinish={() => setIsBrandTourRunning(false)}
+              onSkip={() => setIsBrandTourRunning(false)}
+            />
+          </div>
+        );
+
+      case 'pageheader':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+            <div data-demo="pageheader">
+              <PageHeader
+                breadcrumbs={[{ label: 'Previous page title', onClick: () => {} }]}
+                title="Page title"
+                description="Page description"
+              />
+            </div>
+            <PageHeader
+              breadcrumbs={[{ label: 'Data', onClick: () => {} }, { label: 'Connections', onClick: () => {} }]}
+              title="Snowflake prod"
+              description="Owned by Data platform. Synced every hour."
+              tabs={[
+                { id: 'tables', label: 'Tables' },
+                { id: 'columns', label: 'Columns' },
+                { id: 'settings', label: 'Settings' },
+              ]}
+              activeTab={pageHeaderTab}
+              onTabChange={setPageHeaderTab}
+              actions={[{ label: 'Share' }, { label: 'Edit', variant: 'primary' }]}
+            />
+            <PageHeader title="Liveboards" actions={[{ label: 'Create liveboard', variant: 'primary', icon: 'plus' }]} />
+          </div>
+        );
+      case 'editheader':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div data-demo="editheader" style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8, overflow: 'hidden' }}>
+              <EditHeader
+                title="Sales overview"
+                edited={editHeaderDirty}
+                onReset={() => setEditHeaderDirty(false)}
+                onSave={() => setEditHeaderDirty(false)}
+                onExit={() => setEditHeaderDirty(false)}
+              />
+            </div>
+            <div>
+              <Button variant="secondary" size="small" onClick={() => setEditHeaderDirty(true)}>Make an edit</Button>
+            </div>
+            <div style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8, overflow: 'hidden' }}>
+              <EditHeader
+                title="Retail model"
+                edited
+                tabs={[
+                  { id: 'tables', label: 'Tables' },
+                  { id: 'columns', label: 'Columns' },
+                  { id: 'formulas', label: 'Formulas' },
+                  { id: 'filters', label: 'Filters' },
+                ]}
+                activeTab={editHeaderTab}
+                onTabChange={setEditHeaderTab}
+                onReset={() => {}}
+                onSave={() => {}}
+                onExit={() => {}}
+              />
+            </div>
+          </div>
+        );
+      case 'splitbutton': {
+        const splitItems = [
+          { label: 'Save as copy' },
+          { label: 'Save as template' },
+          { label: 'Export' },
+        ];
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 160 }}>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+              <SplitButton label="Save" items={splitItems} />
+              <SplitButton label="Save" variant="secondary" items={splitItems} />
+              <SplitButton label="Reply" icon="undo" iconOnly items={splitItems} />
+              <SplitButton label="Reply" icon="undo" iconOnly variant="secondary" items={splitItems} />
+            </div>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+              <SplitButton label="Save" mainDisabled items={splitItems} />
+              <SplitButton label="Save" menuDisabled items={splitItems} />
+              <SplitButton label="Save" variant="secondary" disabled items={splitItems} />
+            </div>
+          </div>
+        );
+      }
+      case 'dotloader':
+        return (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 24 }}>
+            <div style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8 }}>
+              <DotLoader />
+            </div>
+            <div style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8 }}>
+              <DotLoader message="We're crunching a lot of numbers. Please be patient. Your answer will be here shortly." />
+            </div>
+          </div>
+        );
+      case 'scrollarea':
+        return (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 24 }}>
+            <div style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8 }}>
+              <ScrollArea maxHeight={200} aria-label="Vertical scroll example">
+                {Array.from({ length: 20 }, (_, i) => (
+                  <div key={i} style={{ padding: '6px 16px', color: sysVar('content-primary') }}>Column {i + 1}</div>
+                ))}
+              </ScrollArea>
+            </div>
+            <div style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8 }}>
+              <ScrollArea orientation="horizontal" aria-label="Horizontal scroll example">
+                <div style={{ display: 'flex', gap: 8, padding: 16, width: 'max-content' }}>
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <Chip key={i} type="attribute" label={`Column ${i + 1}`} />
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+        );
+      case 'token': {
+        const tokenTypes: TokenType[] = ['measure', 'attribute', 'condition', 'date'];
+        const tokenLabels: Record<TokenType, string> = { measure: 'Revenue', attribute: 'Region', condition: 'Status = Active', date: 'Last 30 days' };
+        const row = { display: 'flex', flexWrap: 'wrap' as const, alignItems: 'center', gap: 16 };
+        const caption = { fontSize: 12, color: sysVar('content-secondary'), margin: 0 };
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div data-demo="token" style={row}>
+              {tokenTypes.map((t) => <Token key={t} type={t} label={tokenLabels[t]} />)}
+            </div>
+            <p style={caption}>Read only, warning and error</p>
+            <div style={row}>
+              {tokenTypes.map((t) => <Token key={t} type={t} label={tokenLabels[t]} status="warning" />)}
+            </div>
+            <div style={row}>
+              {tokenTypes.map((t) => <Token key={t} type={t} label={tokenLabels[t]} status="error" />)}
+            </div>
+            <p style={caption}>Editable: hover or focus to remove</p>
+            <div style={{ ...row, paddingTop: 8 }}>
+              {editableTokens.map((t) => (
+                <Token
+                  key={t}
+                  editable
+                  type={t}
+                  label={tokenLabels[t]}
+                  onClick={() => {}}
+                  onRemove={() => setEditableTokens((list) => list.filter((x) => x !== t))}
+                />
+              ))}
+              <Token editable status="error" label="Unknown column" onRemove={() => {}} />
+              {editableTokens.length < 4 && (
+                <Button variant="tertiary" size="small" onClick={() => setEditableTokens(tokenTypes)}>Reset</Button>
+              )}
+            </div>
+            <p style={caption}>Editable, active and disabled</p>
+            <div style={row}>
+              {tokenTypes.map((t) => <Token key={t} editable active type={t} label={tokenLabels[t]} />)}
+              <Token editable active status="error" label="Unknown column" />
+            </div>
+            <div style={row}>
+              {tokenTypes.map((t) => <Token key={t} editable disabled type={t} label={tokenLabels[t]} />)}
+            </div>
+          </div>
+        );
+      }
+      case 'chipidentifier':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div data-demo="chipidentifier" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+              <ChipIdentifier label="Label" />
+              <ChipIdentifier label="Order ID" />
+              <ChipIdentifier label="customer_account_identifier_long_name" maxWidth={160} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: sysVar('content-primary') }}>
+              <span>Primary key</span>
+              <ChipIdentifier label="Customer ID" />
+            </div>
+          </div>
+        );
+      case 'userchip': {
+        const toggleUserChip = (n: string) =>
+          setUserChipSelected((s) => (s.includes(n) ? s.filter((x) => x !== n) : [...s, n]));
+        const row = { display: 'flex', flexWrap: 'wrap' as const, alignItems: 'center', gap: 12 };
+        const caption = { fontSize: 12, color: sysVar('content-secondary'), margin: 0 };
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div data-demo="userchip" style={row}>
+              {userChipPeople.map((n) => (
+                <UserChip
+                  key={n}
+                  name={n}
+                  selected={userChipSelected.includes(n)}
+                  onClick={() => toggleUserChip(n)}
+                  onRemove={() => setUserChipPeople((p) => p.filter((x) => x !== n))}
+                />
+              ))}
+              {userChipPeople.length < 3 && (
+                <Button variant="tertiary" size="small" onClick={() => setUserChipPeople(['Priya Shah', 'Leo Park', 'Ana García'])}>Reset</Button>
+              )}
+            </div>
+            <p style={caption}>Without remove</p>
+            <div style={row}>
+              <UserChip name="Priya Shah" />
+              <UserChip name="Leo Park" selected />
+            </div>
+            <p style={caption}>Disabled</p>
+            <div style={row}>
+              <UserChip name="Priya Shah" onRemove={() => {}} disabled />
+              <UserChip name="Leo Park" selected onRemove={() => {}} disabled />
+            </div>
+          </div>
+        );
+      }
+      case 'breadcrumb':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div data-demo="breadcrumb">
+              <Breadcrumb
+                items={[{ label: 'Previous page title', onClick: () => {} }, { label: 'Page title' }]}
+                showCurrent={false}
+              />
+            </div>
+            <Breadcrumb
+              items={[
+                { label: 'Data', onClick: () => {} },
+                { label: 'Connections', onClick: () => {} },
+                { label: 'Snowflake prod' },
+              ]}
+            />
+            <Breadcrumb
+              showBackButton={false}
+              items={[
+                { label: 'Admin', onClick: () => {} },
+                { label: 'Users and groups', onClick: () => {} },
+                { label: 'Sales analysts' },
+              ]}
+            />
+          </div>
+        );
+      case 'numberinput':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 24, alignItems: 'start' }}>
+              <NumberInput label="Rows" defaultValue={10} min={1} max={100} />
+              <NumberInput label="Step 0.5" defaultValue={2.5} step={0.5} min={0} max={10} helperText="0 to 10" />
+              <NumberInput label="Limit" defaultValue={80} error errorMessage="Enter 50 or less" />
+              <NumberInput label="Disabled" defaultValue={10} disabled />
+              <NumberInput label="Read only" defaultValue={10} readOnly />
+            </div>
+            <RadiantLook>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 24, alignItems: 'start' }}>
+                <NumberInput label="Label" defaultValue={10} />
+                <NumberInput label="Label" defaultValue={10} error />
+                <NumberInput label="Label" defaultValue={10} disabled />
+              </div>
+            </RadiantLook>
+          </div>
+        );
+      case 'inlineedit':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, alignItems: 'flex-start' }}>
+            <InlineEdit defaultValue="Sales overview" aria-label="Liveboard name" />
+            <InlineEdit size="large" defaultValue="Quarterly revenue by region" aria-label="Answer title" required />
+            <InlineEdit placeholder="Add a description" aria-label="Description" />
+            <InlineEdit defaultValue="Locked title" aria-label="Title" disabled />
+          </div>
+        );
+      case 'fileuploader':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 32, maxWidth: 420 }}>
+            <FileUploader label="Data file" helperText="CSV up to 50 MB" accept=".csv" />
+            <FileUploader label="Data file" defaultFiles={[{ id: 'f1', name: 'orders_2026.csv', size: 482000 }]} />
+            <FileUploader label="Data file" error errorMessage="Choose a CSV file" helperText="CSV up to 50 MB" />
+            <FileUploader
+              label="Attachments"
+              multiple
+              defaultFiles={[
+                { id: 'a1', name: 'q3-forecast.xlsx', size: 1240000, status: 'uploading', progress: 45 },
+                { id: 'a2', name: 'regions.csv', size: 38000, status: 'complete' },
+                { id: 'a3', name: 'notes.pdf', size: 9800000, status: 'error', errorMessage: 'File is over 5 MB' },
+              ]}
+            />
+            <FileUploader label="Data file" disabled />
+            <FileUploader label="Data file" readOnly defaultFiles={[{ id: 'r1', name: 'orders_2026.csv' }]} />
+          </div>
+        );
+      case 'daterangepicker':
+        return (
+          <div style={styles.exampleContent}>
+            <DateRangePicker
+              label="Date range"
+              value={dateRange}
+              onChange={setDateRange}
+            />
+            <DateRangePicker
+              label="Prefilled"
+              value={{ start: new Date(2024, 11, 3), end: new Date(2024, 11, 17) }}
+              onChange={() => {}}
+            />
+            <DateRangePicker
+              label="With error"
+              value={{ start: null, end: null }}
+              onChange={() => {}}
+              hasError
+              helperText="Choose a start and an end date"
+            />
+            <DateRangePicker
+              label="Disabled"
+              value={{ start: null, end: null }}
+              onChange={() => {}}
+              disabled
+            />
+            <div style={styles.interactiveBox}>
+              <h4 style={styles.interactiveLabel}>Selected range:</h4>
+              <p style={{ margin: 0, color: sysVar('content-primary') }}>
+                {dateRange.start ? dateRange.start.toLocaleDateString() : 'No start'}
+                {' to '}
+                {dateRange.end ? dateRange.end.toLocaleDateString() : 'No end'}
+              </p>
+            </div>
+          </div>
+        );
+      case 'wizardheader':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div data-demo="wizardheader" style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8, overflow: 'hidden' }}>
+              <WizardHeader
+                eyebrow="Create a connection"
+                title="Choose tables"
+                totalSteps={4}
+                currentStep={wizardHeaderStep}
+                secondaryAction={{ label: 'Back', onClick: () => setWizardHeaderStep((s) => Math.max(1, s - 1)), disabled: wizardHeaderStep === 1 }}
+                primaryAction={{ label: wizardHeaderStep === 4 ? 'Finish' : 'Next', onClick: () => setWizardHeaderStep((s) => Math.min(4, s + 1)) }}
+                onExit={() => setWizardHeaderStep(1)}
+              />
+            </div>
+            <div style={{ border: `1px solid ${sysVar('border-subtle')}`, borderRadius: 8, overflow: 'hidden' }}>
+              <WizardHeader title="Review and publish" totalSteps={3} currentStep={3} primaryAction={{ label: 'Publish' }} />
+            </div>
           </div>
         );
 
@@ -2582,7 +3448,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
                 <Button variant={lbMode === 'view' ? 'primary' : 'secondary'} size="small" onClick={() => { setLbMode('view'); setLbSpotterOpen(false); }}>View mode</Button>
                 <Button variant={lbMode === 'edit' ? 'primary' : 'secondary'} size="small" onClick={() => setLbMode('edit')}>Edit mode</Button>
               </div>
-              <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${referenceColors.gray['20']}` }}>
+              <div style={{ borderRadius: '8px', overflow: 'hidden', border: `1px solid ${sysVar('border-divider')}` }}>
                 <LiveboardHeader
                   mode={lbMode}
                   title="Online retail sales"
@@ -2640,9 +3506,57 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
         </div>
       </section>
 
+      {/* Usage, from the Radiant 3.0 Figma pages */}
+      {doc.usage && (
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>Usage</h2>
+          <div style={styles.usageGrid}>
+            {doc.usage.use && (
+              <div style={styles.usageColumn}>
+                <h3 style={styles.usageHeading}>Do</h3>
+                <ul style={styles.usageList}>
+                  {doc.usage.use.map((rule) => (
+                    <li key={rule} style={styles.usageItem}>
+                      <span style={styles.usageIcon}><Icon name="checkmark" size="s" color={sysVar('content-success')} /></span>
+                      <span>{rule}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {doc.usage.avoid && (
+              <div style={styles.usageColumn}>
+                <h3 style={styles.usageHeading}>Don't</h3>
+                <ul style={styles.usageList}>
+                  {doc.usage.avoid.map((rule) => (
+                    <li key={rule} style={styles.usageItem}>
+                      <span style={styles.usageIcon}><Icon name="cross" size="s" color={sysVar('content-failure')} /></span>
+                      <span>{rule}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Props Table */}
       <section style={styles.section}>
-        <h2 style={styles.sectionTitle}>Props</h2>
+        <div style={styles.propsTitleRow}>
+          <h2 style={{ ...styles.sectionTitle, marginBottom: 0 }}>Props</h2>
+          <Button
+            variant="tertiary"
+            size="small"
+            icon={propsOpen ? 'chevron-up' : 'chevron-down'}
+            iconPosition="trailing"
+            aria-expanded={propsOpen}
+            onClick={() => setOpenPropsFor(propsOpen ? null : componentId)}
+          >
+            {propsOpen ? 'Hide props' : `Show ${doc.props.length} props`}
+          </Button>
+        </div>
+        {propsOpen && (
         <div style={styles.propsTable}>
           <div style={styles.propsHeader}>
             <div style={styles.propName}>Prop</div>
@@ -2665,6 +3579,7 @@ export const ComponentDocPage: React.FC<ComponentDocPageProps> = ({ componentId 
             </div>
           ))}
         </div>
+        )}
       </section>
     </div>
   );
@@ -2691,33 +3606,33 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '16px',
   },
   breadcrumbItem: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
   },
   breadcrumbSeparator: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
-    color: referenceColors.gray['30'],
+    color: sysVar('content-tertiary'),
   },
   breadcrumbCurrent: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     fontWeight: 500,
   },
   title: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '36px',
     fontWeight: 700,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     margin: 0,
   },
   description: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '26px',
     maxWidth: '700px',
   },
@@ -2725,16 +3640,16 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '40px',
   },
   sectionTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '20px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     marginBottom: '16px',
   },
   exampleBox: {
     padding: '32px',
-    background: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    background: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '12px',
   },
   exampleContent: {
@@ -2755,22 +3670,69 @@ const styles: Record<string, React.CSSProperties> = {
   },
   interactiveBox: {
     padding: '20px',
-    background: systemColors.light['background-sunken'],
+    background: sysVar('background-sunken'),
     borderRadius: '8px',
     marginTop: '8px',
   },
   interactiveLabel: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '12px',
-    fontWeight: 600,
-    color: systemColors.light['content-secondary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-secondary'),
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
     marginBottom: '12px',
   },
+  propsTitleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 'var(--spacing-3)',
+    marginBottom: 'var(--spacing-4)',
+  },
+  usageGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gap: 'var(--spacing-4)',
+  },
+  usageColumn: {
+    padding: 'var(--spacing-5)',
+    background: sysVar('background-base'),
+    border: `1px solid ${sysVar('border-subtle')}`,
+    borderRadius: 'var(--radius-lg)',
+  },
+  usageHeading: {
+    margin: '0 0 var(--spacing-3)',
+    fontFamily: 'var(--font-family-primary)',
+    fontSize: 'var(--font-size-sm)',
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
+  },
+  usageList: {
+    margin: 0,
+    padding: 0,
+    listStyle: 'none',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--spacing-3)',
+  },
+  usageItem: {
+    display: 'flex',
+    gap: 'var(--spacing-2)',
+    alignItems: 'flex-start',
+    fontFamily: 'var(--font-family-primary)',
+    fontSize: 'var(--font-size-sm)',
+    lineHeight: 'var(--line-height-md)',
+    color: sysVar('content-secondary'),
+  },
+  usageIcon: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    flexShrink: 0,
+    height: 'var(--line-height-md)',
+  },
   propsTable: {
-    background: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    background: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '12px',
     overflow: 'hidden',
   },
@@ -2778,12 +3740,12 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'grid',
     gridTemplateColumns: '140px 200px 100px 1fr',
     padding: '14px 20px',
-    background: systemColors.light['background-sunken'],
-    borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    background: sysVar('background-sunken'),
+    borderBottom: `1px solid ${sysVar('background-subtle')}`,
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '11px',
-    fontWeight: 600,
-    color: systemColors.light['content-secondary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-secondary'),
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
@@ -2791,36 +3753,36 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'grid',
     gridTemplateColumns: '140px 200px 100px 1fr',
     padding: '14px 20px',
-    borderBottom: `1px solid ${systemColors.light['background-sunken']}`,
+    borderBottom: `1px solid ${sysVar('background-sunken')}`,
     alignItems: 'flex-start',
   },
   propName: {},
   propType: {},
   propDefault: {},
   propDescription: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '20px',
   },
   propCode: {
-    fontFamily: '"SF Mono", Monaco, Inconsolata, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '13px',
     fontWeight: 500,
-    color: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
   },
   typeCode: {
-    fontFamily: '"SF Mono", Monaco, Inconsolata, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
-    color: referenceColors.gray['70'],
-    background: systemColors.light['background-sunken'],
+    color: sysVar('content-primary'),
+    background: sysVar('background-sunken'),
     padding: '2px 6px',
     borderRadius: '4px',
   },
   defaultCode: {
-    fontFamily: '"SF Mono", Monaco, Inconsolata, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
-    color: systemColors.light['content-success'],
+    color: sysVar('content-success'),
   },
 };
 

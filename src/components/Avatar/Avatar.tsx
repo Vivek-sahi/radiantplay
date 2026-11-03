@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styles from './Avatar.module.css';
+import { useRadiantLook } from '../../context/RadiantLookContext';
 
 export type AvatarSize = 'xs' | 's' | 'm' | 'l' | 'xl' | 'xxl';
 export type NamePosition = 'right' | 'bottom';
@@ -125,7 +126,7 @@ export interface AvatarGroupProps {
   avatars: Omit<AvatarProps, 'showName' | 'namePosition' | 'isNameLink' | 'badgeValue' | 'showBadge' | 'onNameClick'>[];
   /**
    * Maximum avatars to display before +N
-   * @default 4
+   * @default 4, or 3 under look: 'radiant-3'
    */
   max?: number;
   /**
@@ -166,11 +167,14 @@ export interface AvatarGroupProps {
  */
 export const AvatarGroup: React.FC<AvatarGroupProps> = ({
   avatars,
-  max = 4,
+  max: maxProp,
   size = 'm',
   spacing = -8,
   className = '',
 }) => {
+  // Radiant 3.0: a group shows one to three avatars (Figma 25122:181508)
+  const look = useRadiantLook();
+  const max = maxProp ?? (look === 'radiant-3' ? 3 : 4);
   const displayedAvatars = avatars.slice(0, max);
   const overflowCount = avatars.length - max;
 

@@ -104,7 +104,7 @@ export function initDME() {
   }
 
   // ── Tables canvas ─────────────────────────────────
-  const MORE_SVG = `<svg width="14" height="4" viewBox="0 0 14 4" fill="none"><circle cx="2" cy="2" r="1.5" fill="#1D232F"/><circle cx="7" cy="2" r="1.5" fill="#1D232F"/><circle cx="12" cy="2" r="1.5" fill="#1D232F"/></svg>`;
+  const MORE_SVG = `<svg width="14" height="4" viewBox="0 0 14 4" fill="none"><circle cx="2" cy="2" r="1.5" fill="var(--rd-sys-color-content-primary)"/><circle cx="7" cy="2" r="1.5" fill="var(--rd-sys-color-content-primary)"/><circle cx="12" cy="2" r="1.5" fill="var(--rd-sys-color-content-primary)"/></svg>`;
 
   function orderTablesForDisplay(tables, joins) {
     if (!tables.length) return [];
@@ -305,7 +305,7 @@ export function initDME() {
 
       const path = document.createElementNS(svgNS, 'path');
       path.setAttribute('d', d);
-      path.setAttribute('stroke', '#1D232F');
+      path.setAttribute('stroke', 'var(--rd-sys-color-content-primary)');
       path.setAttribute('stroke-width', '1.5');
       path.setAttribute('fill', 'none');
       svg.appendChild(path);
@@ -568,13 +568,13 @@ export function initDME() {
   const TC_ICON_STACK = `
     <div class="tc-icon-stack">
       <svg class="tc-ts-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M14.8795 5H5V6.82982H14.8795V5Z" fill="#1D232F"/>
-        <path d="M14.8795 7.43975H11.1257V9.26957H14.8795V7.43975Z" fill="#1D232F"/>
-        <path d="M7.39834 7.43975H5V9.26957H7.39834C8.29442 9.26957 9.02484 9.99999 9.02484 10.8961V14.8795H10.8547V10.8961C10.8547 8.99095 9.30346 7.43975 7.39834 7.43975Z" fill="#1D232F"/>
-        <path d="M13.0045 11.9277C12.1574 11.9277 11.4684 12.6167 11.4684 13.4639C11.4684 14.311 12.1574 15 13.0045 15C13.8516 15 14.5406 14.311 14.5406 13.4639C14.5406 12.6167 13.8516 11.9277 13.0045 11.9277Z" fill="#1D232F"/>
+        <path d="M14.8795 5H5V6.82982H14.8795V5Z" fill="var(--rd-sys-color-content-primary)"/>
+        <path d="M14.8795 7.43975H11.1257V9.26957H14.8795V7.43975Z" fill="var(--rd-sys-color-content-primary)"/>
+        <path d="M7.39834 7.43975H5V9.26957H7.39834C8.29442 9.26957 9.02484 9.99999 9.02484 10.8961V14.8795H10.8547V10.8961C10.8547 8.99095 9.30346 7.43975 7.39834 7.43975Z" fill="var(--rd-sys-color-content-primary)"/>
+        <path d="M13.0045 11.9277C12.1574 11.9277 11.4684 12.6167 11.4684 13.4639C11.4684 14.311 12.1574 15 13.0045 15C13.8516 15 14.5406 14.311 14.5406 13.4639C14.5406 12.6167 13.8516 11.9277 13.0045 11.9277Z" fill="var(--rd-sys-color-content-primary)"/>
       </svg>
       <svg class="tc-spinner-svg" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M18.8889 9.99997C18.8889 14.9092 14.9092 18.8889 9.99998 18.8889C5.09078 18.8889 1.11109 14.9092 1.11109 9.99997C1.11109 5.09077 5.09077 1.11108 9.99997 1.11108" stroke="#2770EF" stroke-width="2.22222" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M18.8889 9.99997C18.8889 14.9092 14.9092 18.8889 9.99998 18.8889C5.09078 18.8889 1.11109 14.9092 1.11109 9.99997C1.11109 5.09077 5.09077 1.11108 9.99997 1.11108" stroke="var(--rd-sys-color-content-brand)" stroke-width="2.22222" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>`;
 
@@ -1270,14 +1270,14 @@ Only include the context field when there is genuinely meaningful content from t
       toast = document.createElement('div');
       toast.id = 'claude-toast';
       toast.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
-        padding:8px 16px;border-radius:8px;font-size:12px;font-family:'Plain',sans-serif;
+        padding:8px 16px;border-radius:8px;font-size:12px;font-family:var(--font-family-primary);
         z-index:9999;transition:opacity 0.4s ease;pointer-events:none;white-space:nowrap;
-        box-shadow:0 2px 8px rgba(0,0,0,0.15);`;
+        box-shadow:var(--rd-sys-color-shadow-menu);`;
       document.body.appendChild(toast);
     }
     toast.textContent = msg;
-    toast.style.background = isError ? '#FDECEA' : '#E0F8EF';
-    toast.style.color   = isError ? '#C0392B' : '#1A8A4A';
+    toast.style.background = isError ? 'var(--rd-sys-color-background-failure)' : 'var(--rd-sys-color-background-success)';
+    toast.style.color   = isError ? 'var(--rd-sys-color-content-failure)' : 'var(--rd-sys-color-content-success)';
     toast.style.opacity = '1';
     clearTimeout(toast._tid);
     toast._tid = setTimeout(() => { toast.style.opacity = '0'; }, 3500);
@@ -1294,29 +1294,29 @@ Only include the context field when there is genuinely meaningful content from t
       position:fixed;bottom:96px;left:50%;
       transform:translateX(-50%) translateY(10px);
       width:311px;
-      background:#32394A;border-radius:6px;
+      background:var(--rd-sys-color-background-inverse);border-radius:6px;
       padding:16px;
       display:flex;align-items:center;justify-content:space-between;gap:12px;
       opacity:0;
       transition:opacity 0.22s ease,transform 0.22s ease;
       z-index:9999;box-sizing:border-box;
-      box-shadow:0 4px 16px rgba(0,0,0,0.28);
+      box-shadow:var(--rd-sys-color-shadow-menu);
     `;
     toast.innerHTML = `
       <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
         <img src="/spotter-assets/checkmark.svg" width="18" height="18" alt="" style="flex-shrink:0;"/>
-        <span style="font-size:14px;font-weight:300;color:#FFFFFF;
-          font-family:'Plain','Helvetica Neue',Arial,sans-serif;line-height:20px;white-space:nowrap;">
+        <span style="font-size:14px;font-weight:300;color:var(--rd-sys-color-content-inverse);
+          font-family:var(--font-family-primary);line-height:20px;white-space:nowrap;">
           Version restored successfully!
         </span>
       </div>
       <button id="vrt-dismiss" style="
-        width:24px;height:24px;border-radius:50%;background:#EAEDF2;
+        width:24px;height:24px;border-radius:50%;background:var(--rd-sys-color-background-secondary-action);
         border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
         flex-shrink:0;padding:0;
       ">
         <svg width="10" height="10" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3.70016 2.60022L2.60022 3.70016L5.90005 7L2.60022 10.2998L3.70016 11.3998L6.99999 8.09994L10.2998 11.3998L11.3998 10.2998L8.09994 7L11.3998 3.70016L10.2998 2.60022L6.99999 5.90005L3.70016 2.60022Z" fill="#1D232F"/>
+          <path d="M3.70016 2.60022L2.60022 3.70016L5.90005 7L2.60022 10.2998L3.70016 11.3998L6.99999 8.09994L10.2998 11.3998L11.3998 10.2998L8.09994 7L11.3998 3.70016L10.2998 2.60022L6.99999 5.90005L3.70016 2.60022Z" fill="var(--rd-sys-color-content-primary)"/>
         </svg>
       </button>
     `;

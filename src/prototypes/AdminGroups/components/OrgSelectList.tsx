@@ -3,7 +3,7 @@ import { Checkbox } from '../../../components/Checkbox';
 import { Toggle } from '../../../components/Toggle';
 import { Icon } from '../../../components/icons';
 import { orgSelectStyles as styles } from '../styles';
-import { systemColors } from '../../../tokens/colors';
+import { sysVar } from '../../../tokens/colors';
 import { Organization } from '../data/mockData';
 
 interface OrgSelectListProps {
@@ -81,7 +81,7 @@ export const OrgSelectList: React.FC<OrgSelectListProps> = ({
               left: '12px',
               top: '50%',
               transform: 'translateY(-50%)',
-              color: systemColors.light['content-tertiary'],
+              color: sysVar('content-tertiary'),
               display: 'flex',
             }}>
             <Icon name="magnifying-glass" size="m" />
@@ -96,11 +96,11 @@ export const OrgSelectList: React.FC<OrgSelectListProps> = ({
               height: '32px',
               paddingLeft: '40px',
               paddingRight: '12px',
-              border: `1px solid ${systemColors.light['border-default']}`,
+              border: `1px solid ${sysVar('border-default')}`,
               borderRadius: '6px',
               fontSize: '14px',
               outline: 'none',
-              fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              fontFamily: 'var(--font-family-primary)',
             }}
           />
         </div>
@@ -136,7 +136,7 @@ export const OrgSelectList: React.FC<OrgSelectListProps> = ({
             <div style={{ 
               textAlign: 'center', 
               padding: '24px',
-              color: systemColors.light['content-tertiary'],
+              color: sysVar('content-tertiary'),
               fontSize: '14px',
             }}>
               {showSelectedOnly ? 'No organizations selected' : 'No organizations found'}

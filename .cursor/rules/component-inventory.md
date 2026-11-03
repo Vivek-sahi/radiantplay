@@ -1,5 +1,5 @@
 ---
-description: Full Radiant component reference with props, code examples, and patterns. For a quick list of all 77 components, see component-summary.md (always loaded). Load this file when you need props, examples, or to verify a component exists.
+description: Full Radiant component reference with props, code examples, and patterns. For a quick list of the components, see component-summary.md. Load this file when you need props, examples, or to verify a component exists.
 globs: ["src/prototypes/**/index.tsx"]
 ---
 
@@ -77,10 +77,12 @@ Use this to quickly find the right component:
 ### For Advanced Inputs
 - **Numeric range / operator filter** → `NumericFilterInput`
 - **Text direction (LTR/RTL)** → `DirectionControl`
-- **Color selection** → `ColorPicker`
+- **Color selection** → `ColorPicker` (`selectorType="menu"` for the Figma trigger and swatch panel)
+- **Bold / italic / strikethrough / underline toggles** → `FontFormatter`
 - **@mention autocomplete** → `InputMentions`
 - **Tag creation and management** → `ManageTags`
 - **Sortable/draggable list** → `List` with `draggable`
+- **Two-level navigable list with selectable rows** → `Accordion variant="list"` with `Accordion.ListItem`
 - **Add/remove list management** → `ManagedList`
 - **Range slider** → `Slider`
 
@@ -110,6 +112,19 @@ Use this to quickly find the right component:
 - **Drag and drop hooks** → `DragDrop` (DragDropProvider + hooks)
 
 ---
+
+## Usage rules from Figma
+
+From the Radiant 3.0 Figma pages. Each component's doc page shows them under Usage.
+
+- **Button:** one Primary per screen. Never Tertiary for Delete or Submit. Don't mix styles in one group unless the hierarchy needs it.
+- **Toast:** confirmations only (saved, shared, copied). Errors and warnings go in an `Alert`, never a toast.
+- **Alert:** a page banner caption stays at 80 characters or fewer.
+- **Avatar:** one to three in a group, overlapping left to right, with a tooltip on hover and focus that repeats the label.
+- **Skeleton (`LoadingIndicator.Skeleton`):** for a loading section (cards, titles, images), not a whole page. Keep radii consistent when combining them.
+- **ExplainerCard:** opened by a click it has a dismiss button; opened by hover it has none. Text is 4 lines at most.
+- **Modal:** M1 394px for confirmations, M2 788px, M3 1182px, M4 full screen. A splash screen introduces a feature once, with one image or a 6 to 11 second video, and at most three steps.
+- **TextInput, TextArea (under `look: 'radiant-3'`):** helper text in brackets beside the label; on an error the label becomes the message, like Please add “Name”.
 
 ## Complete Component Reference
 
@@ -196,19 +211,16 @@ Use this to quickly find the right component:
 
 | Component | When to Use | Key Props |
 |-----------|-------------|-----------|
-| **Icon** | Iconography | `name`, `size`: xs/s/m/l/xl, `color` |
+| **Icon** | Iconography | `name`, `size`: xs/s/m/l (no xl), `color` |
 | **IconGallery** | Icon browsing (dev tool) | N/A |
 
-**Available Icon Names (46 icons):**
+For connector and brand logos use `<ConnectorLogo id="salesforce" />` from `@components/ConnectorLogo` (list in `connectors.ts`, files in `src/assets/logos/connectors/`).
+
+To choose an icon by what it means, use the **Pick by meaning** table and the **No icon for** list in `component-summary.md`. Never draw an icon as inline `<svg>`.
+
+**Available Icon Names (171 icons, from `src/components/icons/registry.ts`):**
 ```
-arrow-up, arrow-down, arrow-left, arrow-right,
-chevron-up, chevron-down, chevron-left, chevron-right,
-plus, minus, cross, checkmark, checkmark-circle, cross-circle,
-exclamation-point-circle, info-circle, question-mark,
-copy, download, upload, save, refresh, pencil, trash-can,
-share, pin, filter, play, pause, eye, eye-undo, clock, cog,
-folder, funnel, lock, magnifying-glass, profile, sort, star,
-tag, expand, fullscreen, hamburger, more, information
+add-user, agenda, ai, ai-star, analyst, answer, answer-stroke, app-switcher, apps, apps-stroke, arrow-down, arrow-down-circle, arrow-left, arrow-left-circle, arrow-right, arrow-right-circle, arrow-up, arrow-up-circle, attribute, bold, book, book-closed, brush, bulb, calendar-cleaned, camera, caret-down, caret-left, caret-right, caret-up, case, chart, checkmark, checkmark-circle, chevron-down, chevron-left, chevron-right, chevron-up, clock, cog, collapse, collection, community, conditional-format, controls, copy, copy-link, cord, create-pinboard, create-worksheet, cross, cross-circle, cross-circle2, curious, data-column, database, delete, delete-stroke, doc, documentation, double-check, download, drag, drill-down, edit-text, embrace, enter, escape, excel, exclamation-point-circle, expand, explore, eye, eye-undo, filter, folder, follow, follow-undo, follow-up, following, formula, fullscreen, fullscreen-undo, funnel, funnel-line, globe, grid-view, group-undo, hamburger, info-circle, information, italic, join-inner, join-left, join-outer, join-right, key, like-undo, list-view, liveboard, liveboard-stroke, lock, lock-undo, magnifying-glass, measure, memory, microphone, minus, model, model-stroke, monitor, more, navigate, new-chat, note, number-format, paper-plane, parameter, pause, pdf, pencil, pin, pinboard, play, plus, ppt, present, profile, question-mark, r-analysis, redo, replay-search, reset, rocket, save, save-worksheet, schema, share, show-underlying-data, sign-out, sort, spotter, star, star-undo, strike-through, styling, sync, tab, table, table-stroke, tag, text, text-undo, thumb-down, thumb-down-undo, thumb-up, thumb-up-undo, trash-folder, trash-folder-stroke, underline, undo, upload, upload-data, verified, video, wrench, zoom-area, search, settings, refresh, trash-can
 ```
 
 ### Layout Primitives
@@ -380,7 +392,7 @@ FormControl + FormBuilder + DynamicForm
 1. An existing component with different props can achieve the result
 2. The pattern is a composition of existing components
 3. The difference is purely styling (use tokens instead)
-4. It's a one-off prototype element (use inline styles)
+4. It's a one-off prototype element (style it with a class in the prototype's CSS Module)
 
 **DO create a new component if:**
 1. The pattern will be reused across 3+ prototypes

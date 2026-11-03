@@ -1,7 +1,7 @@
 #!/bin/bash
 # Post-Compact Convention Recovery Hook
 #
-# Injects the 5 critical Radiant conventions as a system reminder on every
+# Injects the 6 critical Radiant conventions as a system reminder on every
 # UserPromptSubmit. Cost: ~200 tokens per message. Ensures conventions
 # survive compaction without requiring explicit re-reading of CLAUDE.md.
 #
@@ -14,5 +14,6 @@ RADIANT CONVENTIONS (always apply):
 3. LAYOUT PRIMITIVES — Horizontal/Vertical/View not inline flex. Grid/RdGrid not inline grid. AppShell for full pages.
 4. LOCAL COMPONENTS — prototype-specific in src/prototypes/<Name>/components/, never in src/components/.
 5. SENTENCE CASE — all UI text. Imperative verbs for buttons (Create, Add, Delete, Save, Cancel).
+6. ICONS — <Icon name="…"> only, picked from the Pick by meaning table in .cursor/rules/component-summary.md. Never inline <svg>, emoji or icon libraries. Brand logos: <ConnectorLogo id="…">.
 EOF
 exit 0

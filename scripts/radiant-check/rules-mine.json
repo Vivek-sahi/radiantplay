@@ -1,0 +1,5 @@
+{
+  "_readme": "Your own scan exceptions, the designer's counterpart to rules.json. Upstream never edits this file, so it never conflicts on sync. Same format as rules.json: exclude (paths to skip) and allow (path, optional kinds, optional match, reason).",
+  "exclude": [],
+  "allow": []
+}

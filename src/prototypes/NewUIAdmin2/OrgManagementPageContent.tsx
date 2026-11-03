@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { systemColors } from '../../tokens/colors';
+import { sysVar } from '@tokens/colors';
 
-const font = '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-const brand = systemColors.light['content-brand'];
+const font = 'var(--font-family-primary)';
+const brand = sysVar('content-brand');
+const brandFill = sysVar('background-brand');
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 
@@ -94,20 +95,20 @@ const Checkbox: React.FC<{ checked: boolean; indeterminate?: boolean; onChange: 
     onClick={onChange}
     style={{
       width: '16px', height: '16px', borderRadius: '4px', flexShrink: 0,
-      border: checked || indeterminate ? 'none' : '1.5px solid #D1D5DB',
-      backgroundColor: checked || indeterminate ? brand : '#FFFFFF',
+      border: checked || indeterminate ? 'none' : '1.5px solid var(--rd-sys-color-border-bold)',
+      backgroundColor: checked || indeterminate ? brandFill : sysVar('background-base'),
       cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
       transition: 'background-color 0.15s',
     }}
   >
     {indeterminate && !checked && (
       <svg width="8" height="2" viewBox="0 0 8 2" fill="none">
-        <rect width="8" height="2" rx="1" fill="#FFFFFF" />
+        <rect width="8" height="2" rx="1" fill="var(--rd-sys-color-content-inverse)" />
       </svg>
     )}
     {checked && (
       <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-        <path d="M1 3.5L3.5 6L8 1" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M1 3.5L3.5 6L8 1" stroke="var(--rd-sys-color-content-inverse)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     )}
   </button>
@@ -118,17 +119,17 @@ const Checkbox: React.FC<{ checked: boolean; indeterminate?: boolean; onChange: 
 const DotsMenu: React.FC = () => (
   <button style={{
     width: '32px', height: '32px', borderRadius: '50%', border: 'none',
-    backgroundColor: '#F3F4F6', cursor: 'pointer',
+    backgroundColor: sysVar('background-secondary-action'), cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     transition: 'background-color 0.15s',
   }}
-    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#E5E7EB'; }}
-    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#F3F4F6'; }}
+    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = sysVar('background-secondary-action'); }}
+    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = sysVar('background-secondary-action'); }}
   >
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <circle cx="3" cy="7" r="1.2" fill="#6B7280" />
-      <circle cx="7" cy="7" r="1.2" fill="#6B7280" />
-      <circle cx="11" cy="7" r="1.2" fill="#6B7280" />
+      <circle cx="3" cy="7" r="1.2" fill="var(--rd-sys-color-content-secondary)" />
+      <circle cx="7" cy="7" r="1.2" fill="var(--rd-sys-color-content-secondary)" />
+      <circle cx="11" cy="7" r="1.2" fill="var(--rd-sys-color-content-secondary)" />
     </svg>
   </button>
 );
@@ -137,11 +138,11 @@ const DotsMenu: React.FC = () => (
 
 const GroupsCell: React.FC<{ groups: string[]; extra?: number }> = ({ groups, extra }) => {
   if (groups.length === 0) {
-    return <span style={{ color: '#9CA3AF', fontFamily: font, fontSize: '13.5px' }}>-</span>;
+    return <span style={{ color: sysVar('content-tertiary'), fontFamily: font, fontSize: '13.5px' }}>-</span>;
   }
   return (
     <div>
-      <span style={{ fontFamily: font, fontSize: '13.5px', color: '#374151' }}>
+      <span style={{ fontFamily: font, fontSize: '13.5px', color: sysVar('content-primary') }}>
         {groups.join('\u2002,\u2002')}
       </span>
       {extra && extra > 0 && (
@@ -186,8 +187,8 @@ export const OrgManagementPageContent: React.FC = () => {
     fontFamily: font,
     fontSize: '12.5px',
     fontWeight: 500,
-    color: '#6B7280',
-    borderBottom: '1px solid #E5E7EB',
+    color: sysVar('content-secondary'),
+    borderBottom: '1px solid var(--rd-sys-color-border-subtle)',
     width,
     whiteSpace: 'nowrap',
   });
@@ -195,18 +196,18 @@ export const OrgManagementPageContent: React.FC = () => {
   const cellStyle: React.CSSProperties = {
     padding: '16px 16px 16px 0',
     verticalAlign: 'top',
-    borderBottom: '1px solid #F3F4F6',
+    borderBottom: '1px solid var(--rd-sys-color-border-subtle)',
     fontFamily: font,
     fontSize: '13.5px',
-    color: '#374151',
+    color: sysVar('content-primary'),
   };
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: sysVar('background-base') }}>
 
       {/* ── Sticky header ── */}
-      <div style={{ flexShrink: 0, padding: '28px 40px 20px', borderBottom: '1px solid #E5E7EB', backgroundColor: '#FFFFFF' }}>
-        <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: '#0F172A', fontFamily: font, letterSpacing: '-0.3px' }}>
+      <div style={{ flexShrink: 0, padding: '28px 40px 20px', borderBottom: '1px solid var(--rd-sys-color-border-subtle)', backgroundColor: sysVar('background-base') }}>
+        <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: sysVar('content-primary'), fontFamily: font, letterSpacing: '-0.3px' }}>
           Org management
         </h1>
       </div>
@@ -222,20 +223,20 @@ export const OrgManagementPageContent: React.FC = () => {
               {/* Search */}
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ position: 'absolute', left: '10px' }}>
-                  <circle cx="6" cy="6" r="4.5" stroke="#9CA3AF" strokeWidth="1.4" />
-                  <line x1="9.5" y1="9.5" x2="12.5" y2="12.5" stroke="#9CA3AF" strokeWidth="1.4" strokeLinecap="round" />
+                  <circle cx="6" cy="6" r="4.5" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.4" />
+                  <line x1="9.5" y1="9.5" x2="12.5" y2="12.5" stroke="var(--rd-sys-color-content-tertiary)" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
                 <input
                   type="text"
                   placeholder="Search"
                   style={{
                     width: '200px', height: '36px', paddingLeft: '32px', paddingRight: '12px',
-                    border: '1px solid #D1D5DB', borderRadius: '8px',
-                    fontFamily: font, fontSize: '13px', color: '#111827',
-                    outline: 'none', backgroundColor: '#FFFFFF',
+                    border: '1px solid var(--rd-sys-color-border-bold)', borderRadius: '8px',
+                    fontFamily: font, fontSize: '13px', color: sysVar('content-primary'),
+                    outline: 'none', backgroundColor: sysVar('background-base'),
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px ${brand}22`; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.boxShadow = 'none'; }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = brand; e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, ${brand} 13%, transparent)`; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = sysVar('border-bold'); e.currentTarget.style.boxShadow = 'none'; }}
                 />
               </div>
 
@@ -258,8 +259,8 @@ export const OrgManagementPageContent: React.FC = () => {
               display: 'flex', alignItems: 'center', gap: '6px',
               height: '36px', padding: '0 20px',
               border: 'none', borderRadius: '999px',
-              backgroundColor: brand, cursor: 'pointer',
-              fontFamily: font, fontSize: '13px', fontWeight: 600, color: '#FFFFFF',
+              backgroundColor: brandFill, cursor: 'pointer',
+              fontFamily: font, fontSize: '13px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-inverse'),
               transition: 'opacity 0.15s',
             }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.9'; }}
@@ -280,7 +281,7 @@ export const OrgManagementPageContent: React.FC = () => {
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                     Org name
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M6 2v8M3 7l3 3 3-3" stroke="#6B7280" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M6 2v8M3 7l3 3 3-3" stroke="var(--rd-sys-color-content-secondary)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </span>
                 </th>
@@ -304,7 +305,7 @@ export const OrgManagementPageContent: React.FC = () => {
                       {org.name}
                     </div>
                     {org.description && (
-                      <div style={{ fontSize: '12px', color: '#9CA3AF', lineHeight: 1.4 }}>
+                      <div style={{ fontSize: '12px', color: sysVar('content-tertiary'), lineHeight: 1.4 }}>
                         {org.description}
                       </div>
                     )}
@@ -334,13 +335,13 @@ export const OrgManagementPageContent: React.FC = () => {
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             gap: '8px', marginTop: '32px',
-            fontFamily: font, fontSize: '13.5px', fontWeight: 600, color: '#111827',
+            fontFamily: font, fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: sysVar('content-primary'),
           }}>
             1-20 of 500
             <button style={{
               display: 'inline-flex', alignItems: 'center', gap: '2px',
               background: 'none', border: 'none', cursor: 'pointer',
-              fontFamily: font, fontSize: '13.5px', fontWeight: 600, color: brand,
+              fontFamily: font, fontSize: '13.5px', fontWeight: 'var(--font-weight-emphasis)', color: brand,
               padding: '0 4px',
             }}>
               Next

@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
 import { Icon } from '../icons';
+import { Button } from '../Button';
 import styles from './SearchInput.module.css';
 
 export interface SearchInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
@@ -11,6 +12,10 @@ export interface SearchInputProps extends Omit<React.InputHTMLAttributes<HTMLInp
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   /** Whether the input is disabled */
   disabled?: boolean;
+  /** Shows a clear button while there's a value, and calls this when it's clicked */
+  onClear?: () => void;
+  /** Outlined (a bordered field) or underlined (a 40px row with a bottom border, for menus and panels) */
+  variant?: 'outlined' | 'underlined';
   /** Additional CSS class name */
   className?: string;
 }
@@ -18,7 +23,8 @@ export interface SearchInputProps extends Omit<React.InputHTMLAttributes<HTMLInp
 /**
  * SearchInput Component
  * 
- * A search input field with a leading search icon.
+ * A search input field with a leading search icon. Pass `onClear` to get a
+ * clear button while the field has a value.
  * 
  * @example
  * ```tsx
@@ -30,11 +36,14 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
   value,
   onChange,
   disabled = false,
+  onClear,
+  variant = 'outlined',
   className,
   ...props
 }, ref) => {
   const containerClasses = [
     styles.container,
+    variant === 'underlined' && styles.underlined,
     disabled && styles.disabled,
     className,
   ].filter(Boolean).join(' ');
@@ -60,6 +69,11 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(({
         disabled={disabled}
         {...props}
       />
+      {onClear && value && !disabled && (
+        <Button variant="tertiary" size="xs" iconOnly icon="cross" onClick={onClear} className={styles.clear}>
+          Clear search
+        </Button>
+      )}
     </div>
   );
 });

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Sidebar, NavItem } from './components/Sidebar';
 import { HomePage } from './pages/HomePage';
 import { RadiantHomePage } from './pages/RadiantHomePage';
 import { SpotterShowcase } from './pages/SpotterShowcase';
+import { RadianceGuide } from './pages/RadianceGuide';
 import { SpotterShellPage } from './pages/SpotterShellPage';
 import { SpotterShellFullscreen } from './pages/SpotterShellPage/SpotterShellFullscreen';
 import { AppShellFullscreen } from './pages/Fullscreen/AppShellFullscreen';
@@ -23,8 +24,14 @@ const DataStudioV2Playground = React.lazy(() =>
   import('./prototypes/DataStudioV2/Playground').then(m => ({ default: m.PlaygroundNav }))
 );
 
-import { systemColors } from './tokens/colors';
-import { getCurrentVersion } from './data/versionHistory';
+import { sysVar, shadowVar } from './tokens/colors';
+import { useTheme } from './context/ThemeContext';
+import { ThemeSwitch } from './components/ThemeSwitch';
+import { OnThisPage, onThisPageFrame } from './app-chrome/OnThisPage/OnThisPage';
+import { SectionSwitcher } from './app-chrome/SectionSwitcher/SectionSwitcher';
+import frame from './app-chrome/AppFrame/AppFrame.module.css';
+import { AppLogo } from './app-chrome/AppLogo/AppLogo';
+import { HelpMenu } from './app-chrome/HelpMenu/HelpMenu';
 import { getIconCount } from './data/componentRegistry';
 
 // Navigation icons
@@ -109,6 +116,7 @@ const ROUTES = {
   registry: '/radiant/registry',
   changelog: '/radiant/changelog',
   'spotter-showcase': '/radiant/spotter',
+  'radiance-guide': '/radiant/radiance',
   spottershell: '/radiant/components/spottershell',
   // Widgets
   liveboardheader: '/radiant/components/liveboardheader',
@@ -173,6 +181,7 @@ const ROUTES = {
   numericfilterinput: '/radiant/components/numericfilterinput',
   directioncontrol: '/radiant/components/directioncontrol',
   colorpicker: '/radiant/components/colorpicker',
+  fontformatter: '/radiant/components/fontformatter',
   inputmentions: '/radiant/components/inputmentions',
   filtermodal: '/radiant/components/filtermodal',
   // Interaction
@@ -201,8 +210,16 @@ const ROUTES = {
 
 // Layout component with sidebar for Radiant section
 const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const contentRef = useRef<HTMLDivElement>(null);
+  // The content panel scrolls, not the window, so its frame stays put
+  const panelRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // A new page starts at the top of the panel (links to a section keep their place)
+  useEffect(() => {
+    if (!location.hash) panelRef.current?.scrollTo(0, 0);
+  }, [location.pathname, location.hash]);
 
   // Get active page ID from current path
   const getActiveId = (): string => {
@@ -234,6 +251,7 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       'registry': '/radiant/registry',
       'changelog': '/radiant/changelog',
       'spotter-showcase': '/radiant/spotter',
+      'radiance-guide': '/radiant/radiance',
       'spottershell': '/radiant/components/spottershell',
       // 'roadmap': '/radiant/roadmap',
       // Widgets
@@ -261,6 +279,20 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       'popover': '/radiant/components/popover',
       'loadingindicator': '/radiant/components/loadingindicator',
       'progressbar': '/radiant/components/progressbar',
+      'wizardheader': '/radiant/components/wizardheader',
+      'daterangepicker': '/radiant/components/daterangepicker',
+      'fileuploader': '/radiant/components/fileuploader',
+      'inlineedit': '/radiant/components/inlineedit',
+      'numberinput': '/radiant/components/numberinput',
+      'breadcrumb': '/radiant/components/breadcrumb',
+      'userchip': '/radiant/components/userchip',
+      'chipidentifier': '/radiant/components/chipidentifier',
+      'token': '/radiant/components/token',
+      'scrollarea': '/radiant/components/scrollarea',
+      'dotloader': '/radiant/components/dotloader',
+      'splitbutton': '/radiant/components/splitbutton',
+      'editheader': '/radiant/components/editheader',
+      'pageheader': '/radiant/components/pageheader',
       // Data Display
       'table': '/radiant/components/table',
       'chip': '/radiant/components/chip',
@@ -297,6 +329,7 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       'numericfilterinput': '/radiant/components/numericfilterinput',
       'directioncontrol': '/radiant/components/directioncontrol',
       'colorpicker': '/radiant/components/colorpicker',
+      'fontformatter': '/radiant/components/fontformatter',
       'inputmentions': '/radiant/components/inputmentions',
       'filtermodal': '/radiant/components/filtermodal',
       // Interaction
@@ -333,15 +366,16 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { id: 'surfaces', label: 'Surfaces', icon: <SurfacesIcon />, type: 'item' },
     { id: 'registry', label: 'Component Registry', icon: <TableIcon />, type: 'item' },
     { id: 'changelog', label: 'Changelog', icon: <ChangelogIcon />, type: 'item' },
-    { id: 'spotter-showcase', label: 'Spotter DS', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    // { id: 'roadmap', label: 'Roadmap', icon: <RoadmapIcon />, type: 'item', badge: 'New' },
+    { id: 'spotter-showcase', label: 'Spotter DS', icon: <ComponentIcon />, type: 'item' },
+    { id: 'radiance-guide', label: 'Radiance', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    // { id: 'roadmap', label: 'Roadmap', icon: <RoadmapIcon />, type: 'item' },
     { id: 'divider0', label: '', type: 'divider' },
     { id: 'widgets-section', label: 'Widgets', type: 'section' },
     { id: 'liveboardheader', label: 'LiveboardHeader', icon: <ComponentIcon />, type: 'item' },
     { id: 'globalheader', label: 'GlobalHeader', icon: <ComponentIcon />, type: 'item' },
     { id: 'appsidebar', label: 'AppSidebar', icon: <ComponentIcon />, type: 'item' },
     { id: 'appshell', label: 'AppShell', icon: <ComponentIcon />, type: 'item' },
-    { id: 'spottershell', label: 'SpotterShell', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'spottershell', label: 'SpotterShell', icon: <ComponentIcon />, type: 'item' },
     { id: 'divider1', label: '', type: 'divider' },
     { id: 'components-section', label: 'Selection Controls', type: 'section' },
     { id: 'button', label: 'Button', icon: <ComponentIcon />, type: 'item', badge: '3' },
@@ -351,127 +385,155 @@ const RadiantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { id: 'divider2', label: '', type: 'divider' },
     { id: 'inputs-section', label: 'Inputs', type: 'section' },
     { id: 'textinput', label: 'TextInput', icon: <ComponentIcon />, type: 'item' },
-    { id: 'textarea', label: 'TextArea', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'textarea', label: 'TextArea', icon: <ComponentIcon />, type: 'item' },
     { id: 'searchinput', label: 'SearchInput', icon: <ComponentIcon />, type: 'item' },
     { id: 'select', label: 'Select', icon: <ComponentIcon />, type: 'item' },
-    { id: 'datepicker', label: 'DatePicker', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'segmentedcontrol', label: 'SegmentedControl', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'datepicker', label: 'DatePicker', icon: <ComponentIcon />, type: 'item' },
+    { id: 'segmentedcontrol', label: 'SegmentedControl', icon: <ComponentIcon />, type: 'item' },
+    { id: 'splitbutton', label: 'SplitButton', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'numberinput', label: 'NumberInput', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'inlineedit', label: 'InlineEdit', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'fileuploader', label: 'FileUploader', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'daterangepicker', label: 'DateRangePicker', icon: <ComponentIcon />, type: 'item', badge: 'New' },
     { id: 'divider3', label: '', type: 'divider' },
     { id: 'feedback-section', label: 'Feedback', type: 'section' },
     { id: 'alert', label: 'Alert', icon: <ComponentIcon />, type: 'item', badge: '5' },
-    { id: 'toast', label: 'Toast', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'toast', label: 'Toast', icon: <ComponentIcon />, type: 'item' },
     { id: 'modal', label: 'Modal', icon: <ComponentIcon />, type: 'item' },
     { id: 'tooltip', label: 'Tooltip', icon: <ComponentIcon />, type: 'item' },
     { id: 'popover', label: 'Popover', icon: <ComponentIcon />, type: 'item' },
-    { id: 'loadingindicator', label: 'LoadingIndicator', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'progressbar', label: 'ProgressBar', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'loadingindicator', label: 'LoadingIndicator', icon: <ComponentIcon />, type: 'item' },
+    { id: 'progressbar', label: 'ProgressBar', icon: <ComponentIcon />, type: 'item' },
+    { id: 'wizardheader', label: 'WizardHeader', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'dotloader', label: 'DotLoader', icon: <ComponentIcon />, type: 'item', badge: 'New' },
     { id: 'divider4', label: '', type: 'divider' },
     { id: 'data-section', label: 'Data Display', type: 'section' },
     { id: 'table', label: 'Table', icon: <ComponentIcon />, type: 'item' },
     { id: 'chip', label: 'Chip', icon: <ComponentIcon />, type: 'item', badge: '4' },
-    { id: 'avatar', label: 'Avatar', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'avatar', label: 'Avatar', icon: <ComponentIcon />, type: 'item' },
+    { id: 'token', label: 'Token', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'chipidentifier', label: 'ChipIdentifier', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'userchip', label: 'UserChip', icon: <ComponentIcon />, type: 'item', badge: 'New' },
     { id: 'divider5', label: '', type: 'divider' },
     { id: 'navigation-section', label: 'Navigation', type: 'section' },
     { id: 'tabs', label: 'Tabs', icon: <ComponentIcon />, type: 'item' },
-    { id: 'link', label: 'Link', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'menu', label: 'Menu', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'pagination', label: 'Pagination', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'stepper', label: 'Stepper', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'link', label: 'Link', icon: <ComponentIcon />, type: 'item' },
+    { id: 'menu', label: 'Menu', icon: <ComponentIcon />, type: 'item' },
+    { id: 'pagination', label: 'Pagination', icon: <ComponentIcon />, type: 'item' },
+    { id: 'stepper', label: 'Stepper', icon: <ComponentIcon />, type: 'item' },
+    { id: 'pageheader', label: 'PageHeader', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'editheader', label: 'EditHeader', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'breadcrumb', label: 'Breadcrumb', icon: <ComponentIcon />, type: 'item', badge: 'New' },
     { id: 'divider6', label: '', type: 'divider' },
     { id: 'layout-section', label: 'Layout', type: 'section' },
-    { id: 'card', label: 'Card', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'accordion', label: 'Accordion', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'divider', label: 'Divider', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'card', label: 'Card', icon: <ComponentIcon />, type: 'item' },
+    { id: 'accordion', label: 'Accordion', icon: <ComponentIcon />, type: 'item' },
+    { id: 'divider', label: 'Divider', icon: <ComponentIcon />, type: 'item' },
+    { id: 'scrollarea', label: 'ScrollArea', icon: <ComponentIcon />, type: 'item', badge: 'New' },
     { id: 'divider7', label: '', type: 'divider' },
     // ── Layout Primitives ─────────────────────────────────────────────────
     { id: 'layout-primitives-section', label: 'Layout Primitives', type: 'section' },
-    { id: 'horizontal', label: 'Horizontal', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'vertical', label: 'Vertical', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'view', label: 'View', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'grid', label: 'Grid / RdGrid', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'splitpane', label: 'SplitPane', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'horizontal', label: 'Horizontal', icon: <ComponentIcon />, type: 'item' },
+    { id: 'vertical', label: 'Vertical', icon: <ComponentIcon />, type: 'item' },
+    { id: 'view', label: 'View', icon: <ComponentIcon />, type: 'item' },
+    { id: 'grid', label: 'Grid / RdGrid', icon: <ComponentIcon />, type: 'item' },
+    { id: 'splitpane', label: 'SplitPane', icon: <ComponentIcon />, type: 'item' },
     { id: 'divider8', label: '', type: 'divider' },
     // ── Display & Content ─────────────────────────────────────────────────
     { id: 'display-section', label: 'Display & Content', type: 'section' },
-    { id: 'nodata', label: 'NoData', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'explainercard', label: 'ExplainerCard', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'image', label: 'Image', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'illustration', label: 'Illustration', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'legend', label: 'Legend', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'safehtml', label: 'SafeHTML', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'overlayloading', label: 'OverlayLoading', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'nodata', label: 'NoData', icon: <ComponentIcon />, type: 'item' },
+    { id: 'explainercard', label: 'ExplainerCard', icon: <ComponentIcon />, type: 'item' },
+    { id: 'image', label: 'Image', icon: <ComponentIcon />, type: 'item' },
+    { id: 'illustration', label: 'Illustration', icon: <ComponentIcon />, type: 'item' },
+    { id: 'legend', label: 'Legend', icon: <ComponentIcon />, type: 'item' },
+    { id: 'safehtml', label: 'SafeHTML', icon: <ComponentIcon />, type: 'item' },
+    { id: 'overlayloading', label: 'OverlayLoading', icon: <ComponentIcon />, type: 'item' },
     { id: 'divider9', label: '', type: 'divider' },
     // ── Form Extensions ───────────────────────────────────────────────────
     { id: 'form-extensions-section', label: 'Form Extensions', type: 'section' },
-    { id: 'formcontrol', label: 'FormControl', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'searchbar', label: 'SearchBar', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'numericfilterinput', label: 'NumericFilterInput', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'directioncontrol', label: 'DirectionControl', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'colorpicker', label: 'ColorPicker', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'inputmentions', label: 'InputMentions', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'filtermodal', label: 'FilterModal', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'formcontrol', label: 'FormControl', icon: <ComponentIcon />, type: 'item' },
+    { id: 'searchbar', label: 'SearchBar', icon: <ComponentIcon />, type: 'item' },
+    { id: 'numericfilterinput', label: 'NumericFilterInput', icon: <ComponentIcon />, type: 'item' },
+    { id: 'directioncontrol', label: 'DirectionControl', icon: <ComponentIcon />, type: 'item' },
+    { id: 'colorpicker', label: 'ColorPicker', icon: <ComponentIcon />, type: 'item' },
+    { id: 'fontformatter', label: 'FontFormatter', icon: <ComponentIcon />, type: 'item' },
+    { id: 'inputmentions', label: 'InputMentions', icon: <ComponentIcon />, type: 'item' },
+    { id: 'filtermodal', label: 'FilterModal', icon: <ComponentIcon />, type: 'item' },
     { id: 'divider10', label: '', type: 'divider' },
     // ── Interaction ───────────────────────────────────────────────────────
     { id: 'interaction-section', label: 'Interaction', type: 'section' },
-    { id: 'actionmenu', label: 'ActionMenu', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'verticalstepper', label: 'VerticalStepper', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'list', label: 'List', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'slider', label: 'Slider', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'managedlist', label: 'ManagedList', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'trending', label: 'Trending', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'nestedcheckbox', label: 'NestedCheckbox', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'managetags', label: 'ManageTags', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'actionmenu', label: 'ActionMenu', icon: <ComponentIcon />, type: 'item' },
+    { id: 'verticalstepper', label: 'VerticalStepper', icon: <ComponentIcon />, type: 'item' },
+    { id: 'list', label: 'List', icon: <ComponentIcon />, type: 'item' },
+    { id: 'slider', label: 'Slider', icon: <ComponentIcon />, type: 'item' },
+    { id: 'managedlist', label: 'ManagedList', icon: <ComponentIcon />, type: 'item' },
+    { id: 'trending', label: 'Trending', icon: <ComponentIcon />, type: 'item' },
+    { id: 'nestedcheckbox', label: 'NestedCheckbox', icon: <ComponentIcon />, type: 'item' },
+    { id: 'managetags', label: 'ManageTags', icon: <ComponentIcon />, type: 'item' },
     { id: 'divider11', label: '', type: 'divider' },
     // ── Data Visualization ────────────────────────────────────────────────
     { id: 'dataviz-section', label: 'Data Visualization', type: 'section' },
-    { id: 'tree', label: 'Tree', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'treetable', label: 'TreeTable', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'formatters', label: 'Formatters', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'tree', label: 'Tree', icon: <ComponentIcon />, type: 'item' },
+    { id: 'treetable', label: 'TreeTable', icon: <ComponentIcon />, type: 'item' },
+    { id: 'formatters', label: 'Formatters', icon: <ComponentIcon />, type: 'item' },
     { id: 'divider12', label: '', type: 'divider' },
     // ── Advanced ──────────────────────────────────────────────────────────
     { id: 'advanced-section', label: 'Advanced', type: 'section' },
-    { id: 'tour', label: 'Tour', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'richtexteditor', label: 'RichTextEditor', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'dragdrop', label: 'DragDrop', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'formbuilder', label: 'FormBuilder', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'dynamicform', label: 'DynamicForm', icon: <ComponentIcon />, type: 'item', badge: 'New' },
-    { id: 'facetsortbar', label: 'FacetSortBar', icon: <ComponentIcon />, type: 'item', badge: 'New' },
+    { id: 'tour', label: 'Tour', icon: <ComponentIcon />, type: 'item' },
+    { id: 'richtexteditor', label: 'RichTextEditor', icon: <ComponentIcon />, type: 'item' },
+    { id: 'dragdrop', label: 'DragDrop', icon: <ComponentIcon />, type: 'item' },
+    { id: 'formbuilder', label: 'FormBuilder', icon: <ComponentIcon />, type: 'item' },
+    { id: 'dynamicform', label: 'DynamicForm', icon: <ComponentIcon />, type: 'item' },
+    { id: 'facetsortbar', label: 'FacetSortBar', icon: <ComponentIcon />, type: 'item' },
   ];
 
-  const SidebarHeader = () => (
-    <div style={styles.sidebarHeader}>
-      <div 
-        style={styles.logoWrapper}
-        onClick={() => navigate('/')}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && navigate('/')}
-      >
-        <div style={styles.logo}>R</div>
-        <div style={styles.logoText}>
-          <div style={styles.logoTitleRow}>
-            <span style={styles.logoTitle}>Radiant</span>
-            <span style={styles.logoVersion}>{getCurrentVersion()}</span>
-          </div>
-          <span style={styles.logoSubtitle}>Design System</span>
-        </div>
-      </div>
-    </div>
-  );
 
   return (
-    <div style={styles.app}>
-      <Sidebar
-        items={navItems}
-        activeId={getActiveId()}
-        onSelect={handleNavigate}
-        header={<SidebarHeader />}
-      />
-      <main style={styles.main}>
-        <div style={styles.content}>
-          {children}
+    <div style={styles.app} className={frame.surfaces}>
+      {/* Left pane like the playground's: the sidebar sits on the sunken page with no fill or dividers of its
+          own, and the content is a raised panel. Structural selectors, since Sidebar takes no className. */}
+      <style>{`
+        .rp-ds-pane > aside { background: transparent; border-right: none; }
+        .rp-ds-pane > aside > div:first-child { border-bottom: none; padding: var(--spacing-6) var(--spacing-3) var(--spacing-2); }
+        .rp-ds-pane > aside > div:last-of-type { border-top: none; }
+        .rp-ds-pane > aside > div:last-of-type > div:first-child:not(:last-child) { padding: var(--spacing-2) var(--spacing-3) var(--spacing-3); }
+        .rp-ds-pane > aside > div:last-of-type > div:first-child:not(:last-child)::before { content: ''; display: block; height: 1px; margin: 0 var(--spacing-3) var(--spacing-2); background: var(--rd-sys-color-background-subtle); } /* inset line above Help, as in the playground */
+        .rp-ds-pane > aside > div:last-of-type > div:last-child:not(:first-child) { display: none; } /* the version button: Help, What's new covers it */
+        .rp-ds-pane > aside > nav { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+        .rp-ds-pane > aside > nav:hover { scrollbar-color: var(--rd-sys-color-border-default) transparent; }
+        .rp-ds-pane > aside > nav::-webkit-scrollbar-thumb { background: transparent; }
+        .rp-ds-pane > aside > nav:hover::-webkit-scrollbar-thumb { background: var(--rd-sys-color-border-default); }
+      `}</style>
+      <div className="rp-ds-pane">
+        <Sidebar
+          items={navItems}
+          activeId={getActiveId()}
+          onSelect={handleNavigate}
+          header={<AppLogo />} // the same logo as the playground's left pane
+          footerContent={<HelpMenu />}
+          showInspect={false}
+        />
+      </div>
+      <div style={styles.column}>
+      {/* Section switcher and theme icon on the page surface, outside the content panel, as on the
+          playground; the row stays put while the window scrolls */}
+      <header className={frame.topRow}>
+        <span aria-hidden="true" />
+        <SectionSwitcher active="design-system" />
+        <div className={frame.topRowEnd}>
+          <ThemeSwitch variant="icon" />
         </div>
+      </header>
+      <main ref={panelRef} style={styles.main} className={frame.scrollArea}>
+        {/* Content starts after the sidebar on every page; the room on the right holds the section list */}
+        <div className={onThisPageFrame}>
+          <div ref={contentRef} style={styles.content}>
+            {children}
+          </div>
+        </div>
+        <OnThisPage contentRef={contentRef} scrollRef={panelRef} />
       </main>
+      </div>
     </div>
   );
 };
@@ -530,6 +592,18 @@ const RadiantHomePageWrapper: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  // Ctrl+D switches between light and dark anywhere in the app, and the choice is saved.
+  const { toggle: toggleTheme } = useTheme();
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.key.toLowerCase() !== 'd') return;
+      e.preventDefault();
+      toggleTheme();
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [toggleTheme]);
+
   return (
     <Routes>
       {/* Prototyping gallery — default landing page */}
@@ -546,6 +620,7 @@ const App: React.FC = () => {
       <Route path="/radiant/registry" element={<RadiantLayout><ComponentRegistryPage /></RadiantLayout>} />
       <Route path="/radiant/changelog" element={<RadiantLayout><VersionHistoryPage /></RadiantLayout>} />
       <Route path="/radiant/spotter" element={<RadiantLayout><SpotterShowcase /></RadiantLayout>} />
+      <Route path="/radiant/radiance" element={<RadiantLayout><RadianceGuide /></RadiantLayout>} />
       <Route path="/radiant/components/spottershell" element={<RadiantLayout><SpotterShellPage /></RadiantLayout>} />
 
       {/* Fullscreen preview routes — no RadiantLayout chrome */}
@@ -584,6 +659,20 @@ const App: React.FC = () => {
       <Route path="/radiant/components/popover" element={<RadiantLayout><ComponentDocPage componentId="popover" /></RadiantLayout>} />
       <Route path="/radiant/components/loadingindicator" element={<RadiantLayout><ComponentDocPage componentId="loadingindicator" /></RadiantLayout>} />
       <Route path="/radiant/components/progressbar" element={<RadiantLayout><ComponentDocPage componentId="progressbar" /></RadiantLayout>} />
+      <Route path="/radiant/components/wizardheader" element={<RadiantLayout><ComponentDocPage componentId="wizardheader" /></RadiantLayout>} />
+      <Route path="/radiant/components/daterangepicker" element={<RadiantLayout><ComponentDocPage componentId="daterangepicker" /></RadiantLayout>} />
+      <Route path="/radiant/components/fileuploader" element={<RadiantLayout><ComponentDocPage componentId="fileuploader" /></RadiantLayout>} />
+      <Route path="/radiant/components/inlineedit" element={<RadiantLayout><ComponentDocPage componentId="inlineedit" /></RadiantLayout>} />
+      <Route path="/radiant/components/numberinput" element={<RadiantLayout><ComponentDocPage componentId="numberinput" /></RadiantLayout>} />
+      <Route path="/radiant/components/breadcrumb" element={<RadiantLayout><ComponentDocPage componentId="breadcrumb" /></RadiantLayout>} />
+      <Route path="/radiant/components/userchip" element={<RadiantLayout><ComponentDocPage componentId="userchip" /></RadiantLayout>} />
+      <Route path="/radiant/components/chipidentifier" element={<RadiantLayout><ComponentDocPage componentId="chipidentifier" /></RadiantLayout>} />
+      <Route path="/radiant/components/token" element={<RadiantLayout><ComponentDocPage componentId="token" /></RadiantLayout>} />
+      <Route path="/radiant/components/scrollarea" element={<RadiantLayout><ComponentDocPage componentId="scrollarea" /></RadiantLayout>} />
+      <Route path="/radiant/components/dotloader" element={<RadiantLayout><ComponentDocPage componentId="dotloader" /></RadiantLayout>} />
+      <Route path="/radiant/components/splitbutton" element={<RadiantLayout><ComponentDocPage componentId="splitbutton" /></RadiantLayout>} />
+      <Route path="/radiant/components/editheader" element={<RadiantLayout><ComponentDocPage componentId="editheader" /></RadiantLayout>} />
+      <Route path="/radiant/components/pageheader" element={<RadiantLayout><ComponentDocPage componentId="pageheader" /></RadiantLayout>} />
       
       {/* Component documentation pages - Data Display */}
       <Route path="/radiant/components/table" element={<RadiantLayout><ComponentDocPage componentId="table" /></RadiantLayout>} />
@@ -624,6 +713,7 @@ const App: React.FC = () => {
       <Route path="/radiant/components/numericfilterinput" element={<RadiantLayout><ComponentDocPage componentId="numericfilterinput" /></RadiantLayout>} />
       <Route path="/radiant/components/directioncontrol" element={<RadiantLayout><ComponentDocPage componentId="directioncontrol" /></RadiantLayout>} />
       <Route path="/radiant/components/colorpicker" element={<RadiantLayout><ComponentDocPage componentId="colorpicker" /></RadiantLayout>} />
+      <Route path="/radiant/components/fontformatter" element={<RadiantLayout><ComponentDocPage componentId="fontformatter" /></RadiantLayout>} />
       <Route path="/radiant/components/inputmentions" element={<RadiantLayout><ComponentDocPage componentId="inputmentions" /></RadiantLayout>} />
       <Route path="/radiant/components/filtermodal" element={<RadiantLayout><ComponentDocPage componentId="filtermodal" /></RadiantLayout>} />
 
@@ -685,80 +775,40 @@ const App: React.FC = () => {
 };
 
 const styles: Record<string, React.CSSProperties> = {
+  // A fixed frame: the window doesn't scroll, the content panel does
   app: {
     display: 'flex',
-    minHeight: '100vh',
-    backgroundColor: systemColors.light['background-sunken'],
+    height: '100vh',
+    overflow: 'hidden',
   },
+  // Right of the fixed sidebar: the top row, then the content panel
+  column: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: '260px',
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 0,
+  },
+  // A raised panel beside the sunken left pane, as on the playground. The window still scrolls.
   main: {
     flex: 1,
-    marginLeft: '260px',
-    minHeight: '100vh',
+    margin: '0 var(--spacing-2) var(--spacing-2) 0',
+    minHeight: 0,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
+    borderRadius: '16px',
+    boxShadow: shadowVar('surface'),
+    // The panel is the scroll container, so its rounded frame stays put; in-page section links stick to it.
     overflowY: 'auto',
+    overflowX: 'hidden',
+    minWidth: 0,
   },
   content: {
     minHeight: '100%',
-    padding: '32px',
-    maxWidth: '1200px',
-    margin: '0 auto',
-  },
-  sidebarHeader: {
-    display: 'flex',
-    alignItems: 'center',
-  },
-  logoWrapper: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    cursor: 'pointer',
-  },
-  logo: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '10px',
-    background: 'linear-gradient(135deg, #2770EF 0%, #1E5BBB 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    fontSize: '18px',
-    fontWeight: 700,
-    color: '#ffffff',
-    boxShadow: '0 2px 8px rgba(39, 112, 239, 0.4)',
-  },
-  logoText: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-  },
-  logoTitleRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  logoTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    fontSize: '16px',
-    fontWeight: 600,
-    color: '#ffffff',
-    letterSpacing: '-0.3px',
-  },
-  logoVersion: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    fontSize: '10px',
-    fontWeight: 500,
-    color: 'rgba(255, 255, 255, 0.45)',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    padding: '1px 6px',
-    borderRadius: '10px',
-    letterSpacing: '0.2px',
-  },
-  logoSubtitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    fontSize: '11px',
-    fontWeight: 400,
-    color: 'rgba(255, 255, 255, 0.5)',
-    letterSpacing: '0.2px',
+    padding: 'var(--spacing-10) 32px 32px calc(var(--spacing-24) + var(--spacing-8))',
+    maxWidth: '1296px',
+    margin: '0',
   },
 };
 

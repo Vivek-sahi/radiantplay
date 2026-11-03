@@ -1,12 +1,64 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { systemColors, referenceColors } from '../tokens/colors';
+import { sysVar, compVar, shadowVar } from '../tokens/colors';
 import { spacing } from '../tokens/spacing';
-import { getAllProjects, ProjectMeta } from '../prototypes/registry';
-import { getCurrentVersion } from '../data/versionHistory';
+import { getAllProjects, myRegistry, ProjectMeta } from '../prototypes/registry';
+import { isLightOnly } from '../prototypes/registry-theme';
 import { Icon } from '../components/icons';
+import { ThemeSwitch } from '../components/ThemeSwitch';
+import { ActionMenu } from '../components/ActionMenu';
+import { Button } from '../components/Button';
+import { InlineEdit } from '../components/InlineEdit';
+import { Table, TableColumn } from '../components/Table';
+import { TextInput } from '../components/TextInput';
+import { GalleryNote } from './GalleryNote';
+import { GalleryAnnouncement } from './GalleryAnnouncement';
+import { useIsDarkMode } from '../context/ThemeContext';
+import { RadianceBackground } from '../app-chrome/RadianceBackground/RadianceBackground';
+import { SectionSwitcher } from '../app-chrome/SectionSwitcher/SectionSwitcher';
+import { AppLogo } from '../app-chrome/AppLogo/AppLogo';
+import { HelpMenu } from '../app-chrome/HelpMenu/HelpMenu';
+import frame from '../app-chrome/AppFrame/AppFrame.module.css';
+import gallery from './PlaygroundGallery.module.css';
+// The view switch matches the Playground / Design system switcher above it
+import switcher from '../app-chrome/SectionSwitcher/SectionSwitcher.module.css';
+import { GalleryGroupPicker } from './GalleryGroupPicker';
+import { suggestGroups, suggestionPrompt, GroupSuggestion } from './gallerySuggestGroups';
+import {
+  canSaveLocally,
+  saveRegistryChange,
+  stashToast,
+  takeStashedToast,
+  thumbnailState,
+  ThumbnailState,
+  groupPrompt,
+  RegistryChange,
+  SavedToast,
+} from './galleryRegistryWrite';
 
-type SectionId = 'prototypes' | 'archived';
+const THUMBS_DISMISSED_KEY = 'radiantplay:thumbnails-note-dismissed';
+const THUMBS_TOLD_KEY = 'radiantplay:thumbnails-announced';
+// Group suggestions the designer dismissed, by suggestion key; kept across visits
+const SUGGESTIONS_DISMISSED_KEY = 'radiantplay:group-suggestions-dismissed';
+
+function loadDismissedSuggestions(): Set<string> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SUGGESTIONS_DISMISSED_KEY) ?? '[]');
+    return new Set(Array.isArray(parsed) ? parsed.filter((v) => typeof v === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
+// Shown under every toast for a change saved to registry-mine.ts
+const SAVED_DETAIL = 'Saved here. Your shared link updates after you push your changes.';
+
+/** Make an inline thumbnail SVG fill its card, cropping like object-fit: cover. */
+const fitSvg = (svg: string): string =>
+  svg.replace(/<svg\b([^>]*)>/, (_, attrs: string) =>
+    `<svg${attrs.replace(/\s(width|height|preserveAspectRatio)="[^"]*"/g, '')} width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style="display:block">`);
+
+type SectionId = 'prototypes' | 'archived' | 'samples';
 type Override = 'archived' | 'restored';
 type Overrides = Record<string, Override>;
 
@@ -59,6 +111,15 @@ const ArchiveIcon: React.FC = () => (
   </svg>
 );
 
+const SamplesIcon: React.FC = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" />
+    <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
+
 const MoreIcon: React.FC = () => (
   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="3.5" cy="8" r="1.2" fill="currentColor" />
@@ -78,22 +139,38 @@ interface SideNavItem {
 
 interface Toast {
   message: string;
+  detail?: string;
   undo?: () => void;
 }
 
 export const PlaygroundGallery: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const initial = (searchParams.get('section') as SectionId) || 'prototypes';
+  const initial = searchParams.get('section');
   const [activeSection, setActiveSectionState] = useState<SectionId>(
-    initial === 'archived' ? 'archived' : 'prototypes'
+    initial === 'archived' || initial === 'samples' ? initial : 'prototypes'
   );
 
   const [overrides, setOverrides] = useState<Overrides>(() => loadOverrides());
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [groupPickerId, setGroupPickerIdState] = useState<string | null>(null);
+  const setGroupPickerId = (id: string | null) => {
+    pickerAnchor.current = id ? lastPointer.current : null;
+    setGroupPickerIdState(id);
+  };
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropNav, setDropNav] = useState<SectionId | null>(null);
+  const [thumbs, setThumbs] = useState<ThumbnailState | null>(null);
+  const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(() => loadDismissedSuggestions());
+  const [thumbsDismissed, setThumbsDismissed] = useState(() => {
+    try { return sessionStorage.getItem(THUMBS_DISMISSED_KEY) === '1'; } catch { return false; }
+  });
   const toastTimer = useRef<number | null>(null);
+  // Where the last click landed, so the group picker opens next to the menu that opened it
+  const lastPointer = useRef<{ x: number; y: number } | null>(null);
+  const pickerAnchor = useRef<{ x: number; y: number } | null>(null);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -127,7 +204,123 @@ export const PlaygroundGallery: React.FC = () => {
   const showToast = useCallback((t: Toast) => {
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
     setToast(t);
-    toastTimer.current = window.setTimeout(() => setToast(null), 5000);
+    toastTimer.current = window.setTimeout(() => setToast(null), t.detail ? 7000 : 5000);
+  }, []);
+
+  // Save one change to registry-mine.ts through the dev server, then toast it.
+  // The toast is stashed first: if Vite reloads the page to pick up the new
+  // registry, the reloaded gallery shows it (see the effect below).
+  const commitLocal = useCallback(async function commit(change: RegistryChange, saved: SavedToast) {
+    setOpenMenuId(null);
+    stashToast(saved);
+    const ok = await saveRegistryChange(change);
+    if (!ok) {
+      takeStashedToast();
+      showToast({ message: "Couldn't save to registry-mine.ts.", detail: 'Is npm run dev still running? Nothing was changed.' });
+      return;
+    }
+    showSaved(saved);
+    // No reload came, so drop the stash rather than show it again later
+    window.setTimeout(() => takeStashedToast(), 1500);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showToast]);
+
+  const showSaved = (saved: SavedToast) => {
+    showToast({
+      message: saved.message,
+      detail: saved.detail,
+      undo: saved.undo
+        ? () => {
+            setToast(null);
+            commitLocal(saved.undo!, { message: 'Undone.', detail: SAVED_DETAIL });
+          }
+        : undefined,
+    });
+  };
+
+  // Announce captures this tab hasn't mentioned yet. Wiring a thumbnail rewrites
+  // registry-mine.ts, which can reload the page, so the count lives in sessionStorage.
+  const announceThumbs = useCallback((state: ThumbnailState) => {
+    if (state.status !== 'idle') return;
+    let told = 0;
+    try { told = Number(sessionStorage.getItem(THUMBS_TOLD_KEY)) || 0; } catch { /* start from 0 */ }
+    const total = state.done.length + state.failed.length;
+    if (total <= told) return;
+    const n = state.done.length - Math.min(told, state.done.length);
+    const failed = total - told - n;
+    try { sessionStorage.setItem(THUMBS_TOLD_KEY, String(total)); } catch { /* may repeat once */ }
+    showToast({
+      message: failed
+        ? `Captured ${n} thumbnail${n === 1 ? '' : 's'}; ${failed} didn't work.`
+        : `Captured ${n} thumbnail${n === 1 ? '' : 's'}.`,
+      detail: SAVED_DETAIL,
+    });
+  }, [showToast]);
+
+  // Thumbnails: ask the dev server which prototypes have none (nothing on a deployed site)
+  useEffect(() => {
+    thumbnailState().then((state) => {
+      setThumbs(state);
+      if (state) announceThumbs(state);
+    });
+  }, [announceThumbs]);
+
+  // While a capture runs, check on it; when it ends, say how it went
+  useEffect(() => {
+    if (thumbs?.status !== 'running') return;
+    const timer = window.setInterval(async () => {
+      const next = await thumbnailState();
+      if (!next) return;
+      setThumbs(next);
+      announceThumbs(next);
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [thumbs?.status, announceThumbs]);
+
+  const captureThumbnails = async () => {
+    if (!thumbs) return;
+    const next = await thumbnailState(thumbs.missing);
+    if (next) setThumbs(next);
+  };
+
+  const dismissSuggestion = (s: GroupSuggestion) => {
+    const next = new Set(dismissedSuggestions).add(s.key);
+    setDismissedSuggestions(next);
+    try { localStorage.setItem(SUGGESTIONS_DISMISSED_KEY, JSON.stringify([...next])); } catch { /* shows again next visit */ }
+  };
+
+  // Group the suggested prototypes in one write, so a single Undo puts them back
+  const applySuggestion = (s: GroupSuggestion) => {
+    const n = s.members.length;
+    if (s.members.every((m) => canSaveLocally({ id: m.id } as ProjectMeta))) {
+      commitLocal(
+        { batch: s.members.map((m) => ({ id: m.id, group: s.group, ...(m.newName ? { name: m.newName } : {}) })) },
+        {
+          message: s.joins
+            ? `Added ${n} prototype${n === 1 ? '' : 's'} to ${s.group}.`
+            : `Grouped ${n} prototypes as ${s.group}.`,
+          detail: SAVED_DETAIL,
+          undo: { batch: s.members.map((m) => ({ id: m.id, group: null, ...(m.newName ? { name: m.name } : {}) })) },
+        },
+      );
+      return;
+    }
+    navigator.clipboard?.writeText(suggestionPrompt(s)).then(
+      () => showToast({ message: 'Copied a prompt for Claude.', detail: 'Paste it into Claude to group these prototypes.' }),
+      () => showToast({ message: "Couldn't copy the prompt.", detail: suggestionPrompt(s) }),
+    );
+  };
+
+  const dismissThumbs = () => {
+    setThumbsDismissed(true);
+    try { sessionStorage.setItem(THUMBS_DISMISSED_KEY, '1'); } catch { /* stays dismissed until reload */ }
+  };
+
+  // A save that made Vite reload the page left its toast behind
+  useEffect(() => {
+    const saved = takeStashedToast();
+    if (saved) showSaved(saved);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Apply an override. If the resulting state matches the registry default,
@@ -151,6 +344,14 @@ export const PlaygroundGallery: React.FC = () => {
 
   const archiveProject = (project: ProjectMeta) => {
     setOpenMenuId(null);
+    if (canSaveLocally(project)) {
+      dropOverride(project);
+      commitLocal(
+        { id: project.id, section: 'archived' },
+        { message: `Moved "${project.name}" to archive.`, detail: SAVED_DETAIL, undo: { id: project.id, section: 'mine' } },
+      );
+      return;
+    }
     const prev = applyOverride(project, 'archived');
     showToast({
       message: `Moved "${project.name}" to archive.`,
@@ -164,6 +365,14 @@ export const PlaygroundGallery: React.FC = () => {
 
   const restoreProject = (project: ProjectMeta) => {
     setOpenMenuId(null);
+    if (canSaveLocally(project)) {
+      dropOverride(project);
+      commitLocal(
+        { id: project.id, section: 'mine' },
+        { message: `Restored "${project.name}".`, detail: SAVED_DETAIL, undo: { id: project.id, section: 'archived' } },
+      );
+      return;
+    }
     const prev = applyOverride(project, 'restored');
     showToast({
       message: `Restored "${project.name}".`,
@@ -175,7 +384,61 @@ export const PlaygroundGallery: React.FC = () => {
     });
   };
 
+  // A saved change makes any session override for that prototype stale
+  const dropOverride = (project: ProjectMeta) => {
+    if (!overrides[project.id]) return;
+    const next = { ...overrides };
+    delete next[project.id];
+    setOverrides(next);
+    saveOverrides(next);
+  };
+
+  const groupUndo = (project: ProjectMeta): RegistryChange => ({ id: project.id, group: project.group?.trim() || null });
+
+  // From the group picker, or from dropping a card on a heading (null: Other)
+  const moveToGroup = (project: ProjectMeta, group: string | null) => {
+    setGroupPickerId(null);
+    if ((project.group?.trim() || null)?.toLowerCase() === group?.toLowerCase()) return;
+    if (canSaveLocally(project)) {
+      commitLocal(
+        { id: project.id, group },
+        {
+          message: group ? `Moved "${project.name}" to ${group}.` : `Took "${project.name}" out of its group.`,
+          detail: SAVED_DETAIL,
+          undo: groupUndo(project),
+        },
+      );
+      return;
+    }
+    navigator.clipboard?.writeText(groupPrompt(project, group)).then(
+      () => showToast({ message: 'Copied a prompt for Claude.', detail: 'Paste it into Claude to move this prototype.' }),
+      () => showToast({ message: "Couldn't copy the prompt.", detail: groupPrompt(project, group) }),
+    );
+  };
+
+  const renameGroup = (from: string, to: string) => {
+    commitLocal(
+      { renameGroup: { from, to } },
+      { message: `Renamed "${from}" to "${to}".`, detail: SAVED_DETAIL, undo: { renameGroup: { from: to, to: from } } },
+    );
+  };
+  const allSaveLocally = (items: ProjectMeta[]) => items.every(canSaveLocally);
+
   const allProjects = getAllProjects();
+
+  // Groups the picker offers: those used in the same registry as the prototype, so a
+  // designer's own prototype isn't offered the sample groups. First spelling wins.
+  const groupsLike = (project: ProjectMeta) => {
+    const mine = myRegistry.some((p) => p.id === project.id);
+    return [...new Map(
+      allProjects
+        .filter((p) => myRegistry.some((m) => m.id === p.id) === mine)
+        .map((p) => p.group?.trim() || '').filter(Boolean).reverse()
+        .map((g) => [g.toLowerCase(), g] as const),
+    ).values()].sort((a, b) => a.localeCompare(b));
+  };
+  const groupPickerProject = groupPickerId ? allProjects.find((p) => p.id === groupPickerId) : undefined;
+  const draggingProject = draggingId ? allProjects.find((p) => p.id === draggingId) : undefined;
 
   // Effective section: override wins if present. 'restored' on a registry-
   // archived entry falls back to 'sample' since that's where most code-archived
@@ -205,16 +468,12 @@ export const PlaygroundGallery: React.FC = () => {
     navigate(`/playground/${projectId}`);
   };
 
-  const handleBackToHome = () => {
-    navigate('/home');
-  };
-
   const navItems: SideNavItem[] = [
     {
       id: 'prototypes',
       label: 'Prototypes',
       icon: <FolderIcon />,
-      count: myProjects.length + sampleProjects.length,
+      count: myProjects.length,
     },
     {
       id: 'archived',
@@ -222,70 +481,87 @@ export const PlaygroundGallery: React.FC = () => {
       icon: <ArchiveIcon />,
       count: archivedProjects.length,
     },
+    {
+      id: 'samples',
+      label: 'Samples',
+      icon: <SamplesIcon />,
+      count: sampleProjects.length,
+    },
   ];
 
-  return (
-    <div style={styles.container}>
-      {/* Top header — full width */}
-      <header style={styles.header}>
-        <button
-          style={styles.logoBtn}
-          onClick={handleBackToHome}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-        >
-          <div style={styles.logoMark}>R</div>
-          <div style={styles.logoTextStack}>
-            <span style={styles.logoTitle}>Radiant Play</span>
-            <span
-              style={{ ...styles.logoVersion, cursor: 'pointer' }}
-              onClick={(e) => { e.stopPropagation(); navigate('/radiant/changelog'); }}
-              title="View changelog"
-            >{getCurrentVersion()}</span>
-          </div>
-        </button>
-        <div style={styles.headerTitle}>
-          <h1 style={styles.title}>Playground</h1>
-        </div>
-        <div style={styles.headerActions}>
-          {[
-            { label: 'Getting started', href: '/home' },
-            { label: 'How it works', href: '/how-it-works.html' },
-            { label: 'Design system', href: '/radiant' },
-            { label: 'Claude setup & skills', href: '/cursor-to-claude-setup.html' },
-          ].map(({ label, href }) => (
-            <a
-              key={href}
-              href={href}
-              style={styles.navLink}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#D6E8FF';
-                e.currentTarget.style.borderColor = '#2770EF';
-                e.currentTarget.style.color = '#2770EF';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#EBF2FF';
-                e.currentTarget.style.borderColor = '#C3D9FF';
-                e.currentTarget.style.color = systemColors.light['content-primary'];
-              }}
-            >{label}</a>
-          ))}
-        </div>
-      </header>
+  const dragProps = (project: ProjectMeta) =>
+    canSaveLocally(project)
+      ? { onDragStart: () => setDraggingId(project.id), onDragEnd: () => { setDraggingId(null); setDropNav(null); } }
+      : {};
 
-      {/* Sidebar + main body */}
-      <div style={styles.split}>
-        <nav style={styles.sidebar} aria-label="Sections">
+  const renderRowActions = (project: ProjectMeta) => {
+    const archived = effectiveSection(project) === 'archived';
+    return (
+      <ActionMenu
+        placement="bottom-end"
+        trigger={<Button variant="tertiary" size="small" icon="more" iconOnly aria-label={`Actions for ${project.name}`}>Actions</Button>}
+      >
+        <ActionMenu.Item label="Move to group" icon={<FolderIcon />} onClick={() => setGroupPickerId(project.id)} />
+        {archived
+          ? <ActionMenu.Item label="Restore from archive" icon={<FolderIcon />} onClick={() => restoreProject(project)} />
+          : <ActionMenu.Item label="Move to archive" icon={<ArchiveIcon />} onClick={() => archiveProject(project)} />}
+      </ActionMenu>
+    );
+  };
+
+  const renderCard = (project: ProjectMeta) => (
+    <ProjectCard
+      key={project.id}
+      project={project}
+      onClick={() => handleOpenProject(project.id)}
+      menuOpen={openMenuId === project.id}
+      onMenuToggle={(open) => setOpenMenuId(open ? project.id : null)}
+      onArchive={() => archiveProject(project)}
+      onMoveToGroup={() => { setOpenMenuId(null); setGroupPickerId(project.id); }}
+      {...dragProps(project)}
+    />
+  );
+
+  // Where a dragged card can land in the left pane: Archived archives it, Prototypes restores it
+  const navAccepts = (id: SectionId) => {
+    if (!draggingProject) return false;
+    const archived = effectiveSection(draggingProject) === 'archived';
+    return (id === 'archived' && !archived) || (id === 'prototypes' && archived);
+  };
+  const dropOnNav = (id: SectionId) => {
+    setDropNav(null);
+    if (!draggingProject || !navAccepts(id)) return;
+    if (id === 'archived') archiveProject(draggingProject);
+    else restoreProject(draggingProject);
+    setDraggingId(null);
+  };
+
+  return (
+    <div
+      style={styles.container}
+      className={frame.surfaces}
+      onPointerDownCapture={(e) => { lastPointer.current = { x: e.clientX, y: e.clientY }; }}
+    >
+      {/* Left pane: the app's logo and its sections, full height */}
+      <nav style={styles.sidebar} aria-label="Sections">
+        <div style={styles.logoWrap}>
+          <AppLogo />
+        </div>
           {navItems.map((item) => {
             const isActive = activeSection === item.id;
+            const accepts = navAccepts(item.id);
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => setActiveSection(item.id)}
                 style={{ ...styles.navItem, ...(isActive ? styles.navItemActive : {}) }}
+                className={accepts ? `${gallery.dropTarget} ${dropNav === item.id ? gallery.dropTargetOver : ''}` : undefined}
+                onDragOver={accepts ? (e) => { e.preventDefault(); setDropNav(item.id); } : undefined}
+                onDragLeave={accepts ? () => setDropNav(null) : undefined}
+                onDrop={accepts ? (e) => { e.preventDefault(); dropOnNav(item.id); } : undefined}
                 onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.background = systemColors.light['background-sunken'];
+                  if (!isActive) e.currentTarget.style.background = navHover;
                 }}
                 onMouseLeave={(e) => {
                   if (!isActive) e.currentTarget.style.background = 'transparent';
@@ -302,14 +578,17 @@ export const PlaygroundGallery: React.FC = () => {
             );
           })}
 
+
+          {/* Bottom of the pane: Save to code when there are changes, then Help after a line */}
+          <div style={styles.paneBottom}>
           {totalUnsavedChanges > 0 && (
             <div style={styles.sidebarFooter}>
               <button
                 type="button"
                 onClick={() => setSaveModalOpen(true)}
                 style={styles.saveBtn}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#1E5BBB'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#2770EF'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = compVar('button-primary-hover'); }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = sysVar('background-brand'); }}
               >
                 Save to code
                 <span style={styles.saveBtnBadge}>{totalUnsavedChanges}</span>
@@ -327,70 +606,139 @@ export const PlaygroundGallery: React.FC = () => {
               </div>
             </div>
           )}
+            <div style={styles.paneBottomLine} role="separator" />
+            <HelpMenu />
+          </div>
         </nav>
 
-        <main style={styles.main}>
-          {activeSection === 'prototypes' && (
-            <>
-              {myProjects.length > 0 && (
-                <>
-                  <h2 style={styles.sectionHeader}>My prototypes</h2>
-                  <div style={styles.grid}>
-                    {myProjects.map((project) => (
-                      <ProjectCard
-                        key={project.id}
-                        project={project}
-                        onClick={() => handleOpenProject(project.id)}
-                        menuOpen={openMenuId === project.id}
-                        onMenuToggle={(open) => setOpenMenuId(open ? project.id : null)}
-                        onArchive={() => archiveProject(project)}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
+        <div style={styles.column}>
+        {/* Section switcher and theme icon on the page surface, outside the content canvas */}
+        <header className={frame.topRow}>
+          <span aria-hidden="true" />
+          <SectionSwitcher active="playground" />
+          <div className={frame.topRowEnd}>
+            <ThemeSwitch variant="icon" />
+          </div>
+        </header>
+        {/* Projects: a raised panel with the Radiance wash and the cards */}
+        <div style={styles.panel}>
+        <RadianceBackground heroHeight={440} />
+        <main style={styles.main} className={frame.scrollArea}>
+        <CapturingContext.Provider value={new Set(thumbs?.capturing ?? [])}>
+          {activeSection === 'prototypes' && (() => {
+            // One suggestion at a time; the next shows once this one is used or dismissed
+            const s = suggestGroups(myProjects).find((x) => !dismissedSuggestions.has(x.key));
+            if (!s) return null;
+            const n = s.members.length;
+            return (
+              <div className={gallery.note}>
+                <GalleryNote
+                  icon="folder"
+                  actionLabel={s.joins ? 'Add to group' : 'Group them'}
+                  onAction={() => applySuggestion(s)}
+                  onDismiss={() => dismissSuggestion(s)}
+                >
+                  {s.joins
+                    ? <>{n} prototype{n === 1 ? ' looks' : 's look'} like part of <strong>{s.group}</strong>.</>
+                    : <>{n} prototypes look like one project: <strong>{s.group}</strong>.</>}
+                </GalleryNote>
+              </div>
+            );
+          })()}
 
-              {sampleProjects.length > 0 && (
-                <>
-                  <h2 style={{ ...styles.sectionHeader, ...(myProjects.length > 0 ? { marginTop: `${spacing.H}px` } : {}) }}>Sample prototypes</h2>
-                  <div style={styles.grid}>
-                    {sampleProjects.map((project) => (
-                      <ProjectCard
-                        key={project.id}
-                        project={project}
-                        onClick={() => handleOpenProject(project.id)}
-                        menuOpen={openMenuId === project.id}
-                        onMenuToggle={(open) => setOpenMenuId(open ? project.id : null)}
-                        onArchive={() => archiveProject(project)}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </>
+          {activeSection === 'prototypes' && thumbs && (() => {
+            const running = thumbs.status === 'running';
+            const n = thumbs.missing.length;
+            if (running) {
+              const left = thumbs.capturing.length;
+              return (
+                <div className={gallery.note}>
+                  <GalleryNote icon="camera">Capturing thumbnails, {left} left…</GalleryNote>
+                </div>
+              );
+            }
+            if (!n || thumbsDismissed || thumbs.setup === 'declined') return null;
+            const which = `${n} ${n === 1 ? 'prototype has' : 'prototypes have'} no thumbnail yet`;
+            return (
+              <div className={gallery.note}>
+                {thumbs.setup === 'ready' ? (
+                  <GalleryNote icon="camera" actionLabel="Capture thumbnails" onAction={captureThumbnails} onDismiss={dismissThumbs}>
+                    {which}.
+                  </GalleryNote>
+                ) : (
+                  <GalleryNote icon="camera" onDismiss={dismissThumbs}>
+                    {which}. Ask Claude to &ldquo;set up thumbnails&rdquo; to capture them.
+                  </GalleryNote>
+                )}
+              </div>
+            );
+          })()}
+
+          {activeSection === 'prototypes' && (
+            myProjects.length > 0 ? (
+              <GroupedProjects
+                key="prototypes"
+                scope="mine"
+                title="My prototypes"
+                projects={myProjects}
+                renderCard={renderCard}
+                draggingProject={draggingProject}
+                onDropOnHeading={(project, group) => { setDraggingId(null); moveToGroup(project, group); }}
+                onRenameGroup={renameGroup}
+                canRename={allSaveLocally}
+                onOpen={(p) => handleOpenProject(p.id)}
+                renderRowActions={renderRowActions}
+              />
+            ) : (
+              <div style={styles.emptyState}>
+                <p style={styles.emptyTitle}>No prototypes yet</p>
+                <p style={styles.emptySubtitle}>
+                  Ask Claude to run /rp-new-prototype to start one. Built-in examples are under Samples.
+                </p>
+              </div>
+            )
+          )}
+
+          {activeSection === 'samples' && (
+            <GroupedProjects
+              key="samples"
+              scope="sample"
+              title="Sample prototypes"
+              projects={sampleProjects}
+              renderCard={renderCard}
+              onOpen={(p) => handleOpenProject(p.id)}
+              renderRowActions={renderRowActions}
+            />
           )}
 
           {activeSection === 'archived' && (
             <>
               {archivedProjects.length > 0 ? (
-                <>
-                  <h2 style={styles.sectionHeader}>Archived prototypes</h2>
-                  <div style={styles.grid}>
-                    {archivedProjects.map((project) => {
-                      return (
-                        <ProjectCard
-                          key={project.id}
-                          project={project}
-                          onClick={() => handleOpenProject(project.id)}
-                          archived
-                          menuOpen={openMenuId === project.id}
-                          onMenuToggle={(open) => setOpenMenuId(open ? project.id : null)}
-                          onRestore={() => restoreProject(project)}
-                        />
-                      );
-                    })}
-                  </div>
-                </>
+                <GroupedProjects
+                  key="archived"
+                  scope="archived"
+                  title="Archived prototypes"
+                  projects={archivedProjects}
+                  renderCard={(project) => (
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                      onClick={() => handleOpenProject(project.id)}
+                      archived
+                      menuOpen={openMenuId === project.id}
+                      onMenuToggle={(open) => setOpenMenuId(open ? project.id : null)}
+                      onRestore={() => restoreProject(project)}
+                      onMoveToGroup={() => { setOpenMenuId(null); setGroupPickerId(project.id); }}
+                      {...dragProps(project)}
+                    />
+                  )}
+                  draggingProject={draggingProject}
+                  onDropOnHeading={(project, group) => { setDraggingId(null); moveToGroup(project, group); }}
+                  onRenameGroup={renameGroup}
+                  canRename={allSaveLocally}
+                  onOpen={(p) => handleOpenProject(p.id)}
+                  renderRowActions={renderRowActions}
+                />
               ) : (
                 <div style={styles.emptyState}>
                   <p style={styles.emptyTitle}>No archived prototypes yet</p>
@@ -401,19 +749,35 @@ export const PlaygroundGallery: React.FC = () => {
               )}
             </>
           )}
+        </CapturingContext.Provider>
         </main>
-      </div>
+        </div>
+        </div>
 
       {/* Toast */}
       {toast && (
-        <div style={styles.toast}>
-          <span style={styles.toastMsg}>{toast.message}</span>
+        <div style={styles.toast} role="status">
+          <span className={gallery.toastText}>
+            <span style={styles.toastMsg}>{toast.message}</span>
+            {toast.detail && <span className={gallery.toastDetail}>{toast.detail}</span>}
+          </span>
           {toast.undo && (
             <button type="button" onClick={toast.undo} style={styles.toastUndo}>
               Undo
             </button>
           )}
         </div>
+      )}
+
+      {groupPickerProject && (
+        <GalleryGroupPicker
+          project={groupPickerProject}
+          knownGroups={groupsLike(groupPickerProject)}
+          anchor={pickerAnchor.current}
+          savesLocally={canSaveLocally(groupPickerProject)}
+          onSave={(group) => moveToGroup(groupPickerProject, group)}
+          onClose={() => setGroupPickerId(null)}
+        />
       )}
 
       {/* Save to code modal */}
@@ -423,6 +787,399 @@ export const PlaygroundGallery: React.FC = () => {
           removals={archivedRemovals}
           onClose={() => setSaveModalOpen(false)}
         />
+      )}
+
+      {/* Shows once per browser, to introduce gallery groups */}
+      <GalleryAnnouncement />
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Groups. Each prototype's `group` comes from its registry entry, so everyone
+// opening the site sees the same headings. Group names match without case, so
+// "Spotter" and "spotter" are one group; the first spelling seen is shown.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const COLLAPSED_KEY = 'radiantplay:gallery-collapsed';
+const SORT_KEY = 'radiantplay:gallery-sort';
+const UNGROUPED = 'Other';
+// Drop-target id for the new-group area; not a real group name
+const NEW_GROUP = '\u0000new';
+
+type SortId = 'recent' | 'name' | 'group';
+const SORT_LABELS: Record<SortId, string> = { recent: 'Recent', name: 'Name', group: 'Group' };
+type ViewId = 'grid' | 'list';
+const VIEW_KEY = 'radiantplay:gallery-view';
+
+function loadCollapsed(): Set<string> {
+  try {
+    const raw = localStorage.getItem(COLLAPSED_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(parsed) ? parsed.filter((v) => typeof v === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function loadSort(): SortId {
+  try {
+    const v = localStorage.getItem(SORT_KEY);
+    return v === 'name' || v === 'group' ? v : 'recent';
+  } catch {
+    return 'recent';
+  }
+}
+
+const GROUPED_KEY = 'radiantplay:gallery-grouping';
+
+function loadGrouped(): boolean {
+  try {
+    return localStorage.getItem(GROUPED_KEY) !== 'all';
+  } catch {
+    return true;
+  }
+}
+
+function loadView(): ViewId {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid';
+  } catch {
+    return 'grid';
+  }
+}
+
+function store(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // storage unavailable: the choice just resets next visit
+  }
+}
+
+const groupOf = (p: ProjectMeta) => p.group?.trim() || '';
+const sameGroup = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+// Undated prototypes sort after dated ones
+const modifiedTime = (p: ProjectMeta) => {
+  const t = p.lastModified ? Date.parse(p.lastModified) : NaN;
+  return Number.isNaN(t) ? -Infinity : t;
+};
+
+const GroupedProjects: React.FC<{
+  /** Keeps collapse state apart per section */
+  scope: string;
+  title: string;
+  projects: ProjectMeta[];
+  renderCard: (project: ProjectMeta) => React.ReactNode;
+  /** The card being dragged, when it can be saved; headings then accept it */
+  draggingProject?: ProjectMeta;
+  /** `group` is null for Other, which takes the card out of its group */
+  onDropOnHeading?: (project: ProjectMeta, group: string | null) => void;
+  /** Renames a group on every prototype in it; offered when all of them can be saved */
+  onRenameGroup?: (from: string, to: string) => void;
+  canRename?: (items: ProjectMeta[]) => boolean;
+  /** List view: open a prototype, and the actions at the end of its row */
+  onOpen: (project: ProjectMeta) => void;
+  renderRowActions?: (project: ProjectMeta) => React.ReactNode;
+}> = ({ scope, title, projects, renderCard, draggingProject, onDropOnHeading, onRenameGroup, canRename, onOpen, renderRowActions }) => {
+  const [dropHeading, setDropHeading] = useState<string | null>(null);
+  const [newGroupFor, setNewGroupFor] = useState<ProjectMeta | null>(null);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => loadCollapsed());
+  const [storedSort, setSort] = useState<SortId>(() => loadSort());
+  const [view, setView] = useState<ViewId>(() => loadView());
+  const [grouped, setGrouped] = useState<boolean>(() => loadGrouped());
+  // Group is a list-view sort; the grid already sorts into groups
+  const sort: SortId = view === 'grid' && storedSort === 'group' ? 'recent' : storedSort;
+  const sortOptions = (Object.keys(SORT_LABELS) as SortId[]).filter((id) => view === 'list' || id !== 'group');
+
+  // Recent: newest first, ties keep registry order (newest added first). Name: A to Z.
+  // Group: A to Z by group, prototypes without one last, then by name.
+  const visible = [...projects].sort((a, b) => {
+    if (sort === 'name') return a.name.localeCompare(b.name);
+    if (sort === 'group') {
+      const ga = groupOf(a);
+      const gb = groupOf(b);
+      if (!ga !== !gb) return ga ? -1 : 1;
+      return ga.localeCompare(gb) || a.name.localeCompare(b.name);
+    }
+    return modifiedTime(b) - modifiedTime(a);
+  });
+
+  // Headings follow the sort: by their newest prototype, or by name.
+  // Prototypes without a group go last, under Other.
+  const headings = new Map<string, ProjectMeta[]>();
+  for (const p of visible) {
+    const group = groupOf(p);
+    const name = group ? [...headings.keys()].find((k) => sameGroup(k, group)) ?? group : UNGROUPED;
+    if (!headings.has(name)) headings.set(name, []);
+    headings.get(name)!.push(p);
+  }
+  const ordered = [...headings.entries()]
+    .filter(([name]) => name !== UNGROUPED)
+    .sort((a, b) => (sort === 'name' ? a[0].localeCompare(b[0]) : 0));
+  if (headings.has(UNGROUPED)) ordered.push([UNGROUPED, headings.get(UNGROUPED)!]);
+  const hasGroups = projects.some((p) => groupOf(p));
+
+  const changeSort = (next: SortId) => {
+    setSort(next);
+    store(SORT_KEY, next);
+  };
+
+  const changeGrouped = (next: boolean) => {
+    setGrouped(next);
+    store(GROUPED_KEY, next ? 'groups' : 'all');
+  };
+
+  const changeView = (next: ViewId) => {
+    setView(next);
+    store(VIEW_KEY, next);
+  };
+
+  const columns: TableColumn<ProjectMeta>[] = [
+    {
+      key: 'name',
+      label: 'Name',
+      render: (_v, p) => (
+        <span className={gallery.listName}>
+          <span className={gallery.listTitle}>{p.name}</span>
+          {p.description && <span className={gallery.listDescription}>{p.description}</span>}
+        </span>
+      ),
+    },
+    {
+      key: 'group',
+      label: 'Group',
+      width: '180px',
+      render: (_v, p) => (groupOf(p) ? <span className={gallery.listGroup}>{groupOf(p)}</span> : <span className={gallery.listMuted}>None</span>),
+    },
+    { key: 'author', label: 'Author', width: '140px', render: (_v, p) => p.author ?? <span className={gallery.listMuted}>None</span> },
+    {
+      key: 'lastModified',
+      label: 'Last modified',
+      width: '130px',
+      render: (_v, p) => (p.lastModified
+        ? <span className={gallery.listDate}>{new Date(p.lastModified).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+        : <span className={gallery.listMuted}>None</span>),
+    },
+    ...(renderRowActions
+      ? [{
+          key: 'actions',
+          label: '',
+          width: '56px',
+          align: 'right' as const,
+          // The menu sits inside a clickable row, so its clicks stop here
+          render: (_v: unknown, p: ProjectMeta) => (
+            <span onClick={(e) => e.stopPropagation()} className={gallery.listActions}>{renderRowActions(p)}</span>
+          ),
+        }]
+      : []),
+  ];
+
+  const toggleHeading = (name: string) => {
+    const id = `${scope}:${name}`;
+    const next = new Set(collapsed);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setCollapsed(next);
+    store(COLLAPSED_KEY, JSON.stringify([...next]));
+  };
+
+  // Cards keep one order in the page (by id) and CSS `order` places them. Re-sorting then
+  // moves nothing in the page, so cards (and their images) aren't rebuilt.
+  const renderGrid = (items: ProjectMeta[]) => (
+    <div style={styles.grid}>
+      {[...items].sort((a, b) => a.id.localeCompare(b.id)).map((p) => (
+        <div key={p.id} className={gallery.cardSlot} style={{ order: items.indexOf(p) }}>
+          {renderCard(p)}
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className={gallery.content}>
+      <div className={gallery.titleRow}>
+        <h2 style={{ ...styles.sectionHeader, margin: 0 }}>{title}</h2>
+        <div className={gallery.titleControls}>
+        {projects.length > 1 && (
+          <ActionMenu
+            placement="bottom-end"
+            trigger={
+              <button type="button" className={gallery.sortTrigger} aria-label="Sort prototypes">
+                <span className={gallery.sortLabel}>Sort:</span> {SORT_LABELS[sort]}
+                <Icon name="chevron-down" size="xs" />
+              </button>
+            }
+          >
+            <ActionMenu.Group label="Sort by">
+              {sortOptions.map((id) => (
+                <ActionMenu.Item
+                  key={id}
+                  label={SORT_LABELS[id]}
+                  icon={<span className={gallery.sortCheck}>{sort === id && <Icon name="checkmark" size="s" />}</span>}
+                  onClick={() => changeSort(id)}
+                />
+              ))}
+            </ActionMenu.Group>
+            {view === 'grid' && hasGroups && (
+              <ActionMenu.Group label="Show">
+                {([['groups', 'In groups'], ['all', 'All in one grid']] as const).map(([id, label]) => (
+                  <ActionMenu.Item
+                    key={id}
+                    label={label}
+                    icon={<span className={gallery.sortCheck}>{(grouped ? 'groups' : 'all') === id && <Icon name="checkmark" size="s" />}</span>}
+                    onClick={() => changeGrouped(id === 'groups')}
+                  />
+                ))}
+              </ActionMenu.Group>
+            )}
+          </ActionMenu>
+        )}
+          <div className={switcher.switcher} role="group" aria-label="View">
+            {([['grid', 'grid-view', 'Grid view'], ['list', 'list-view', 'List view']] as const).map(([id, icon, label]) => (
+              <button
+                key={id}
+                type="button"
+                className={`${switcher.item} ${gallery.viewItem} ${view === id ? switcher.active : ''}`}
+                aria-pressed={view === id}
+                aria-label={label}
+                title={label}
+                onClick={() => changeView(id)}
+              >
+                <Icon name={icon} size="s" />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {view === 'list' ? (
+        <div className={gallery.list}>
+          {/* Table isn't generic at the JSX level, so its rows are typed as plain records here */}
+          <Table
+            columns={columns as unknown as TableColumn[]}
+            data={visible as unknown as Record<string, unknown>[]}
+            rowKey="id"
+            hoverable
+            onRowClick={(row) => onOpen(row as unknown as ProjectMeta)}
+          />
+        </div>
+      ) : !hasGroups || !grouped ? (
+        renderGrid(visible)
+      ) : (
+        <div className={gallery.groups}>
+        {[...ordered].sort((a, b) => a[0].localeCompare(b[0])).map(([name, items]) => {
+          const position = ordered.findIndex(([n]) => n === name);
+          const isCollapsed = collapsed.has(`${scope}:${name}`);
+          const current = draggingProject ? groupOf(draggingProject) : '';
+          const accepts = Boolean(draggingProject && onDropOnHeading
+            && (name === UNGROUPED ? current !== '' : !sameGroup(current, name)));
+          const editable = name !== UNGROUPED && Boolean(onRenameGroup) && Boolean(canRename?.(items));
+          const toggle = (
+            <button
+              type="button"
+              className={gallery.groupToggle}
+              aria-expanded={!isCollapsed}
+              aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${name}`}
+              onClick={() => toggleHeading(name)}
+            >
+              <span className={`${gallery.groupChevron} ${isCollapsed ? gallery.groupChevronCollapsed : ''}`}>
+                <Icon name="chevron-down" size="s" />
+              </span>
+            </button>
+          );
+          return (
+            <section
+              key={name}
+              style={{ order: position }}
+              className={`${gallery.group} ${position === 0 ? gallery.groupFirst : ''} ${isCollapsed ? gallery.groupCollapsed : ''} ${accepts ? gallery.dropTarget : ''} ${accepts && dropHeading === name ? gallery.dropTargetOver : ''}`}
+              onDragOver={accepts ? (e) => { e.preventDefault(); setDropHeading(name); } : undefined}
+              onDragLeave={accepts ? (e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropHeading(null);
+              } : undefined}
+              onDrop={accepts ? (e) => {
+                e.preventDefault();
+                setDropHeading(null);
+                onDropOnHeading!(draggingProject!, name === UNGROUPED ? null : name);
+              } : undefined}
+            >
+              {/* Same row either way: chevron, name, count, and when collapsed what's inside */}
+              <div className={gallery.groupHeader}>
+                {toggle}
+                {editable ? (
+                  // Hover shows an outline; click to type, Enter saves, Escape cancels
+                  <InlineEdit
+                    key={name}
+                    size="large"
+                    defaultValue={name}
+                    required
+                    aria-label="Group name"
+                    className={gallery.groupNameEdit}
+                    onChange={(next) => {
+                      const to = next.trim().slice(0, 60);
+                      if (to && to !== name) onRenameGroup!(name, to);
+                    }}
+                  />
+                ) : (
+                  <button type="button" className={gallery.groupName} onClick={() => toggleHeading(name)}>
+                    {name}
+                  </button>
+                )}
+                <span className={gallery.groupCount}>{items.length}</span>
+                {isCollapsed && (
+                  <span className={gallery.groupPeek}>{items.map((p) => p.name).join(', ')}</span>
+                )}
+              </div>
+              {!isCollapsed && renderGrid(items)}
+            </section>
+          );
+        })}
+
+        {/* While a card is dragged: drop it here, name the group, press Enter */}
+        {(draggingProject || newGroupFor) && onDropOnHeading && (
+          <section
+            style={{ order: ordered.length }}
+            className={`${gallery.newGroup} ${dropHeading === NEW_GROUP ? gallery.dropTargetOver : ''}`}
+            onDragOver={draggingProject ? (e) => { e.preventDefault(); setDropHeading(NEW_GROUP); } : undefined}
+            onDragLeave={draggingProject ? () => setDropHeading(null) : undefined}
+            onDrop={draggingProject ? (e) => {
+              e.preventDefault();
+              setDropHeading(null);
+              setNewGroupFor(draggingProject);
+            } : undefined}
+          >
+            {newGroupFor ? (
+              <div className={gallery.newGroupForm}>
+                <TextInput
+                  label={`New group for ${newGroupFor.name}`}
+                  placeholder="Group name"
+                  value={newGroupName}
+                  maxLength={60}
+                  autoFocus
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newGroupName.trim()) {
+                      onDropOnHeading(newGroupFor, newGroupName.trim());
+                      setNewGroupFor(null);
+                      setNewGroupName('');
+                    } else if (e.key === 'Escape') {
+                      setNewGroupFor(null);
+                      setNewGroupName('');
+                    }
+                  }}
+                />
+                <span className={gallery.newGroupHint}>Press Enter to create it, Escape to cancel.</span>
+              </div>
+            ) : (
+              <span className={gallery.newGroupLabel}>
+                <Icon name="plus" size="s" />
+                Drop here to start a new group
+              </span>
+            )}
+          </section>
+        )}
+        </div>
       )}
     </div>
   );
@@ -576,7 +1333,92 @@ interface ProjectCardProps {
   onMenuToggle?: (open: boolean) => void;
   onArchive?: () => void;
   onRestore?: () => void;
+  onMoveToGroup?: () => void;
+  /** Set when the card can be dragged onto a heading or the left pane */
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 }
+
+// Ids whose thumbnails are being captured right now, so their placeholders say so
+const CapturingContext = React.createContext<ReadonlySet<string>>(new Set());
+
+/**
+ * No thumbnail yet: the prototype's initial on a Radiance-style wash. A live preview used to
+ * run here, but each one is a whole prototype, which made a long gallery heavy.
+ */
+// Radiance's glow hues (pink, mint, violet, amber, blue) as the nearest Radiant accents,
+// so the washes follow light and dark mode
+const RADIANCE_HUES = ['red', 'green', 'purple', 'yellow', 'blue'].map((h) => `var(--rd-sys-color-content-accent-${h})`);
+
+/** Small stable hash, so a prototype keeps the same wash every time */
+const hashOf = (text: string) => {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return h >>> 0;
+};
+
+/** Two hues and where their glows sit, picked from the prototype's id */
+const washFor = (id: string): React.CSSProperties => {
+  const h = hashOf(id);
+  const first = h % RADIANCE_HUES.length;
+  const second = (first + 1 + ((h >>> 3) % (RADIANCE_HUES.length - 1))) % RADIANCE_HUES.length;
+  const third = (second + 1 + ((h >>> 6) % (RADIANCE_HUES.length - 1))) % RADIANCE_HUES.length;
+  return {
+    '--wash-a': RADIANCE_HUES[first],
+    '--wash-b': RADIANCE_HUES[second],
+    '--wash-c': RADIANCE_HUES[third],
+    '--wash-ax': `${10 + ((h >>> 9) % 35)}%`,
+    '--wash-ay': `${5 + ((h >>> 13) % 40)}%`,
+    '--wash-bx': `${55 + ((h >>> 17) % 40)}%`,
+    '--wash-by': `${45 + ((h >>> 21) % 50)}%`,
+  } as React.CSSProperties;
+};
+
+const CardPlaceholder: React.FC<{ project: ProjectMeta }> = ({ project }) => {
+  const capturing = React.useContext(CapturingContext).has(project.id);
+  return (
+    <div
+      className={gallery.placeholder}
+      style={washFor(project.id)}
+      role="img"
+      aria-label={`${project.name}, no thumbnail yet`}
+    >
+      <span className={gallery.placeholderInitial} aria-hidden>{project.name.trim().charAt(0).toUpperCase()}</span>
+      {capturing && <span className={gallery.placeholderNote}>Capturing thumbnail…</span>}
+    </div>
+  );
+};
+
+/**
+ * Card image, in order of preference: a captured light/dark screenshot, an inline
+ * SVG (theme tokens), a single image URL, then a placeholder.
+ */
+const CardThumbnail: React.FC<{ project: ProjectMeta }> = ({ project }) => {
+  const isDark = useIsDarkMode();
+  const thumb = project.thumbnail;
+  if (thumb && typeof thumb === 'object') {
+    const src = isDark && thumb.dark && !isLightOnly(project) ? thumb.dark : thumb.light;
+    return <img src={src} alt={project.name} style={styles.cardImage} />;
+  }
+  if (thumb?.trimStart().startsWith('<svg')) {
+    // Inline SVG from the repo, so its theme tokens resolve against the page
+    return (
+      <div
+        role="img"
+        aria-label={project.name}
+        style={styles.cardImage}
+        dangerouslySetInnerHTML={{ __html: fitSvg(thumb) }}
+      />
+    );
+  }
+  if (thumb) return <img src={thumb} alt={project.name} style={styles.cardImage} />;
+  // Vivek's branch: prototypes without a thumbnail keep the gradient tile with their initial.
+  return (
+    <div style={getCardTileStyle(project.id)}>
+      <span style={styles.cardTileInitial}>{project.name.charAt(0).toUpperCase()}</span>
+    </div>
+  );
+};
 
 const ProjectCard: React.FC<ProjectCardProps> = ({
   project,
@@ -586,6 +1428,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   onMenuToggle,
   onArchive,
   onRestore,
+  onMoveToGroup,
+  onDragStart,
+  onDragEnd,
 }) => {
   const [hovered, setHovered] = useState(false);
 
@@ -595,24 +1440,31 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       onClick={onClick}
       onMouseEnter={(e) => {
         setHovered(true);
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)';
-        e.currentTarget.style.borderColor = referenceColors.brand['40'];
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.boxShadow = cardShadowHover;
+        e.currentTarget.style.borderColor = `color-mix(in srgb, ${sysVar('border-brand')} 40%, transparent)`;
         e.currentTarget.style.opacity = '1';
       }}
       onMouseLeave={(e) => {
         setHovered(false);
         e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)';
-        e.currentTarget.style.borderColor = systemColors.light['background-subtle'];
+        e.currentTarget.style.boxShadow = cardShadow;
+        e.currentTarget.style.borderColor = 'var(--rp-card-border)'; // back to the rest border: none in light, a hairline in dark
         e.currentTarget.style.opacity = archived ? '0.78' : '1';
       }}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter') onClick(); }}
+      draggable={Boolean(onDragStart)}
+      onDragStart={onDragStart ? (e) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', project.id);
+        onDragStart();
+      } : undefined}
+      onDragEnd={onDragEnd}
     >
       {/* 3-dot menu — visible on hover or when open */}
-      {(onArchive || onRestore) && (
+      {(onArchive || onRestore || onMoveToGroup) && (
         <div style={{ ...styles.cardMenuWrapper, opacity: hovered || menuOpen ? 1 : 0 }}>
           <button
             type="button"
@@ -628,6 +1480,16 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
           </button>
           {menuOpen && (
             <div data-card-menu style={styles.cardMenu}>
+              {onMoveToGroup && (
+                <button
+                  type="button"
+                  style={styles.cardMenuItem}
+                  onClick={(e) => { e.stopPropagation(); onMoveToGroup(); }}
+                >
+                  <FolderIcon />
+                  <span>Move to group</span>
+                </button>
+              )}
               {onArchive && (
                 <button
                   type="button"
@@ -654,13 +1516,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       )}
 
       <div style={styles.cardThumbnail}>
-        {project.thumbnail ? (
-          <img src={project.thumbnail} alt={project.name} style={styles.cardImage} />
-        ) : (
-          <div style={getCardTileStyle(project.id)}>
-            <span style={styles.cardTileInitial}>{project.name.charAt(0).toUpperCase()}</span>
-          </div>
-        )}
+        <CardThumbnail project={project} />
       </div>
 
       <div style={styles.cardContent}>
@@ -702,128 +1558,46 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Brand tint mixed from theme tokens so it follows light and dark mode.
+const brandTintSubtle = `color-mix(in srgb, ${sysVar('background-information')} 40%, ${sysVar('background-base')})`;
+// Nav item hover, as in the design system's Sidebar
+const navHover = sysVar('background-ghost-hover');
+
+// Card shadows: the surface shadow token at rest, a brand glow on hover.
+const cardShadow = shadowVar('surface');
+const cardShadowHover = `0 20px 48px color-mix(in srgb, ${sysVar('content-brand')} 18%, transparent), 0 0 0 1px color-mix(in srgb, ${sysVar('content-brand')} 8%, transparent)`;
+
 const styles: Record<string, React.CSSProperties> = {
   container: {
     height: '100vh',
     display: 'flex',
-    flexDirection: 'column',
-    backgroundColor: systemColors.light['background-sunken'],
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    flexDirection: 'row',
+    fontFamily: 'var(--font-family-primary)',
   },
 
   // Top header — full width
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: `${spacing.D}px ${spacing.H}px`,
-    backgroundColor: systemColors.light['background-base'],
-    borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
-    flexShrink: 0,
+  // The shared logo; with the pane's padding it sits where the design system's does
+  logoWrap: {
+    margin: `0 0 ${spacing.E}px`,
   },
-  logoBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    background: 'none',
-    border: 'none',
-    padding: '4px',
-    cursor: 'pointer',
-    transition: 'opacity .18s',
-    // Match the sidebar width below so the "Playground" title (which starts where this ends)
-    // aligns vertically with the content area.
-    width: '188px',
-    flexShrink: 0,
-  },
-  logoMark: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '10px',
-    background: 'linear-gradient(135deg, #2770EF 0%, #1E5BBB 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    fontSize: '18px',
-    fontWeight: 700,
-    color: '#ffffff',
-    boxShadow: '0 2px 8px rgba(39, 112, 239, 0.3)',
-    flexShrink: 0,
-  },
-  logoTextStack: {
+  paneBottom: {
+    marginTop: 'auto',
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'flex-start',
-    gap: '2px',
-    minWidth: 0,
+    gap: `${spacing.A}px`,
   },
-  logoTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    fontSize: '15px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
-    letterSpacing: '-0.3px',
-    lineHeight: '18px',
-    whiteSpace: 'nowrap',
-  },
-  logoVersion: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    fontSize: '10px',
-    fontWeight: 500,
-    color: systemColors.light['content-secondary'],
-    backgroundColor: systemColors.light['background-subtle'],
-    padding: `1px ${spacing.B}px`,
-    borderRadius: '10px',
-    letterSpacing: '0.2px',
-    lineHeight: '14px',
-    whiteSpace: 'nowrap',
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'left',
-    paddingLeft: `${spacing.H}px`, // 32px — matches main content padding so title aligns with content body
-  },
-  title: {
-    fontSize: '24px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
-    margin: 0,
-  },
-  headerActions: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: `${spacing.D}px`,
-    justifyContent: 'flex-end',
-    minWidth: '220px',
-  },
-  navLink: {
-    fontSize: '13px',
-    fontWeight: 500,
-    color: '#2770EF',
-    textDecoration: 'none',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    padding: '5px 14px',
-    borderRadius: '100px',
-    border: '1px solid #C3D9FF',
-    background: '#EBF2FF',
-    transition: 'all 0.15s',
+  paneBottomLine: {
+    height: '1px',
+    background: sysVar('background-subtle'),
+    margin: `${spacing.B}px ${spacing.C}px`,
   },
 
-  // Body split — sidebar + main
-  split: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'row',
-    minHeight: 0,
-  },
-
-  // Light sidebar
+  // Left pane on the sunken page. 260px, the design system's Sidebar width, so the content panel and its
+  // section switcher sit in the same place on both pages.
   sidebar: {
-    width: '220px',
+    width: '260px',
     flexShrink: 0,
-    backgroundColor: systemColors.light['background-base'],
-    borderRight: `1px solid ${systemColors.light['background-subtle']}`,
-    padding: `${spacing.C}px ${spacing.B}px`,
+    padding: `${spacing.F}px ${spacing.C}px ${spacing.C}px`,
     display: 'flex',
     flexDirection: 'column',
     gap: `${spacing.A}px`,
@@ -832,22 +1606,25 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: `${spacing.C}px`,
-    padding: `${spacing.B}px ${spacing.C}px`,
+    padding: `10px ${spacing.C}px`, // the design system Sidebar's item padding
     background: 'transparent',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
     fontWeight: 500,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     textAlign: 'left',
     width: '100%',
     transition: 'background 120ms ease, color 120ms ease',
+    textDecoration: 'none',
+    boxSizing: 'border-box',
   },
+  // Same states as the design system's Sidebar, so both left panes behave alike
   navItemActive: {
-    background: '#EBF2FF',
-    color: '#2770EF',
+    background: sysVar('background-ghost-highlight'),
+    color: sysVar('content-brand'),
   },
   navItemIcon: {
     display: 'flex',
@@ -862,24 +1639,22 @@ const styles: Record<string, React.CSSProperties> = {
   },
   navItemBadge: {
     fontSize: '11px',
-    fontWeight: 600,
-    color: systemColors.light['content-secondary'],
-    background: systemColors.light['background-sunken'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-secondary'),
+    background: sysVar('background-sunken'),
     padding: '2px 8px',
     borderRadius: '10px',
     minWidth: '20px',
     textAlign: 'center',
   },
   navItemBadgeActive: {
-    color: '#2770EF',
-    background: '#FFFFFF',
+    color: sysVar('content-brand'),
+    background: sysVar('background-information'),
   },
 
   // Sidebar footer — Save to code button
   sidebarFooter: {
-    marginTop: 'auto',
     padding: `${spacing.C}px ${spacing.B}px ${spacing.B}px`,
-    borderTop: `1px solid ${systemColors.light['background-subtle']}`,
     display: 'flex',
     flexDirection: 'column',
     gap: `${spacing.B}px`,
@@ -890,21 +1665,21 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
     gap: `${spacing.B}px`,
     padding: `${spacing.B}px ${spacing.C}px`,
-    background: '#2770EF',
+    background: sysVar('background-brand'),
     border: 'none',
     borderRadius: '8px',
-    color: '#FFFFFF',
+    color: sysVar('content-alternate'),
     fontSize: '13px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     cursor: 'pointer',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     transition: 'background 120ms ease',
   },
   saveBtnBadge: {
     fontSize: '11px',
-    fontWeight: 600,
-    background: 'rgba(255,255,255,0.2)',
-    color: '#FFFFFF',
+    fontWeight: 'var(--font-weight-emphasis)',
+    background: `color-mix(in srgb, ${sysVar('content-alternate')} 20%, transparent)`,
+    color: sysVar('content-alternate'),
     padding: '1px 6px',
     borderRadius: '8px',
     minWidth: '18px',
@@ -926,23 +1701,48 @@ const styles: Record<string, React.CSSProperties> = {
     width: 6,
     height: 6,
     borderRadius: '50%',
-    background: systemColors.light['content-failure'],
-    boxShadow: '0 0 0 3px rgba(226, 43, 61, 0.15)',
+    background: sysVar('content-failure'),
+    boxShadow: `0 0 0 3px color-mix(in srgb, ${sysVar('content-failure')} 15%, transparent)`,
     flexShrink: 0,
   },
   sidebarFooterHintStrong: {
     fontSize: '11px',
-    color: systemColors.light['content-failure'],
-    fontWeight: 600,
+    color: sysVar('content-failure'),
+    fontWeight: 'var(--font-weight-emphasis)',
   },
   sidebarFooterHintMuted: {
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     fontWeight: 400,
     fontSize: '10px',
   },
 
+  // The projects panel: raised from the sunken page like the content area in a desktop app.
+  // Parent for the Radiance home pattern (position relative, isolation isolate).
+  // Right of the left pane: the top row, then the content panel
+  column: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  panel: {
+    position: 'relative',
+    isolation: 'isolate',
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    margin: `0 ${spacing.B}px ${spacing.B}px 0`,
+    borderRadius: '16px',
+    backgroundColor: 'var(--rp-panel)',
+    overflow: 'hidden',
+    boxShadow: shadowVar('surface'),
+  },
+
   // Main scrollable body
   main: {
+    position: 'relative',
+    isolation: 'isolate',
     flex: 1,
     overflowY: 'auto',
     padding: `${spacing.H}px`,
@@ -951,17 +1751,16 @@ const styles: Record<string, React.CSSProperties> = {
 
   // Section header
   sectionHeader: {
-    fontSize: '14px',
-    fontWeight: 600,
-    color: systemColors.light['content-secondary'],
-    marginBottom: `${spacing.D}px`,
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
+    fontSize: '18px',
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
+    margin: `0 0 ${spacing.D}px`,
+    letterSpacing: '-0.2px',
   },
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-    gap: `${spacing.E}px`,
+    gap: `${spacing.F}px`,
     maxWidth: '1200px',
   },
 
@@ -974,20 +1773,20 @@ const styles: Record<string, React.CSSProperties> = {
   },
   emptyTitle: {
     fontSize: '16px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     margin: `0 0 ${spacing.B}px 0`,
   },
   emptySubtitle: {
     fontSize: '14px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     margin: 0,
     lineHeight: '20px',
   },
   code: {
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
-    background: systemColors.light['background-subtle'],
+    background: sysVar('background-subtle'),
     padding: '1px 6px',
     borderRadius: '4px',
   },
@@ -997,13 +1796,13 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'relative',
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
-    borderRadius: `${spacing.C}px`,
+    backgroundColor: 'var(--rp-card)',
+    border: '1px solid var(--rp-card-border)',
+    borderRadius: '20px',
     overflow: 'hidden',
     cursor: 'pointer',
-    transition: 'all 200ms ease',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+    transition: 'transform 200ms ease, box-shadow 200ms ease',
+    boxShadow: cardShadow,
     textAlign: 'left',
   },
   cardArchived: {
@@ -1020,13 +1819,13 @@ const styles: Record<string, React.CSSProperties> = {
     width: 28,
     height: 28,
     borderRadius: 6,
-    background: 'rgba(255,255,255,0.95)',
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    background: `color-mix(in srgb, ${sysVar('background-base')} 95%, transparent)`,
+    border: `1px solid ${sysVar('background-subtle')}`,
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     padding: 0,
     boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
   },
@@ -1034,8 +1833,8 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'absolute',
     top: 32,
     right: 0,
-    background: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    background: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: 8,
     padding: 4,
     boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
@@ -1055,18 +1854,17 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 4,
     cursor: 'pointer',
     fontSize: '13px',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    color: systemColors.light['content-primary'],
+    fontFamily: 'var(--font-family-primary)',
+    color: sysVar('content-primary'),
     textAlign: 'left',
     width: '100%',
   },
   cardThumbnail: {
     height: '120px',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
   },
   cardImage: {
     width: '100%',
@@ -1074,7 +1872,7 @@ const styles: Record<string, React.CSSProperties> = {
     objectFit: 'cover',
   },
   cardPlaceholder: {
-    color: systemColors.light['border-default'],
+    color: sysVar('border-default'),
   },
   cardTile: {
     width: '100%',
@@ -1097,14 +1895,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   cardTitle: {
     fontSize: '15px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     marginBottom: `${spacing.B}px`,
   },
   cardDescription: {
     fontSize: '13px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '20px',
     marginBottom: `${spacing.C}px`,
     display: '-webkit-box',
@@ -1120,12 +1918,12 @@ const styles: Record<string, React.CSSProperties> = {
   cardAuthor: {
     fontSize: '12px',
     fontWeight: 500,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
   },
   cardDate: {
     fontSize: '12px',
     fontWeight: 400,
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
   },
   cardPills: {
     display: 'flex',
@@ -1140,16 +1938,14 @@ const styles: Record<string, React.CSSProperties> = {
     gap: `${spacing.A}px`,
     fontSize: '12px',
     fontWeight: 500,
-    color: systemColors.light['content-brand'],
-    background: referenceColors.blue['10'],
+    color: sysVar('content-brand'),
+    background: brandTintSubtle,
     padding: `3px ${spacing.B}px`,
     borderRadius: `${spacing.A}px`,
-    border: `1px solid ${systemColors.light['background-information']}`,
   },
   cardPillCustom: {
-    color: '#8B5CF6',
-    background: 'rgba(139, 92, 246, 0.08)',
-    borderColor: 'rgba(139, 92, 246, 0.2)',
+    color: sysVar('content-accent-purple'),
+    background: `color-mix(in srgb, ${sysVar('content-accent-purple')} 8%, transparent)`,
   },
 
   // Toast
@@ -1158,31 +1954,31 @@ const styles: Record<string, React.CSSProperties> = {
     bottom: 24,
     left: '50%',
     transform: 'translateX(-50%)',
-    background: '#1D232F',
-    color: '#FFFFFF',
+    background: sysVar('background-base-inverse'),
+    color: sysVar('content-primary-inverse'),
     padding: '10px 14px 10px 16px',
     borderRadius: 8,
     display: 'flex',
     alignItems: 'center',
     gap: 12,
     fontSize: '13px',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     boxShadow: '0 8px 24px rgba(0,0,0,0.24)',
     zIndex: 1000,
   },
   toastMsg: {
-    color: '#FFFFFF',
+    color: sysVar('content-primary-inverse'),
   },
   toastUndo: {
     background: 'transparent',
     border: 'none',
-    color: '#71A1F4',
+    color: sysVar('content-brand-inverse'),
     cursor: 'pointer',
     fontSize: '13px',
-    fontWeight: 600,
+    fontWeight: 'var(--font-weight-emphasis)',
     padding: '4px 8px',
     borderRadius: 4,
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
   },
 
   // Modal
@@ -1197,7 +1993,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 24,
   },
   modal: {
-    background: systemColors.light['background-base'],
+    background: sysVar('background-base'),
     borderRadius: 12,
     padding: 24,
     maxWidth: 600,
@@ -1208,7 +2004,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: 16,
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
   },
   modalHeader: {
     display: 'flex',
@@ -1218,14 +2014,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   modalTitle: {
     fontSize: '18px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     margin: 0,
     marginBottom: 4,
   },
   modalSubtitle: {
     fontSize: '13px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     margin: 0,
     lineHeight: '18px',
   },
@@ -1233,20 +2029,20 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'transparent',
     border: 'none',
     cursor: 'pointer',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     padding: 4,
     borderRadius: 4,
     flexShrink: 0,
   },
   modalSnippet: {
-    background: '#F6F8FA',
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    background: sysVar('background-sunken'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: 8,
     padding: 16,
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '12px',
     lineHeight: '18px',
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     margin: 0,
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
@@ -1260,29 +2056,29 @@ const styles: Record<string, React.CSSProperties> = {
   },
   modalSecondaryBtn: {
     padding: '8px 16px',
-    background: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['border-default']}`,
+    background: sysVar('background-base'),
+    border: `1px solid ${sysVar('border-default')}`,
     borderRadius: 6,
     cursor: 'pointer',
     fontSize: '13px',
     fontWeight: 500,
-    color: systemColors.light['content-primary'],
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    color: sysVar('content-primary'),
+    fontFamily: 'var(--font-family-primary)',
   },
   modalPrimaryBtn: {
     padding: '8px 16px',
-    background: '#2770EF',
+    background: sysVar('background-brand'),
     border: 'none',
     borderRadius: 6,
     cursor: 'pointer',
     fontSize: '13px',
-    fontWeight: 600,
-    color: '#FFFFFF',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-alternate'),
+    fontFamily: 'var(--font-family-primary)',
   },
   modalHint: {
     fontSize: '13px',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     margin: 0,
     lineHeight: '18px',
   },

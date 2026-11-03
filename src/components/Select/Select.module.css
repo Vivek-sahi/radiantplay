@@ -19,6 +19,18 @@
   margin-bottom: var(--spacing-2);
 }
 
+.helperInline {
+  font-weight: var(--font-weight-regular);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.labelError {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  color: var(--rd-sys-color-content-failure);
+}
+
 /* Trigger Button */
 .trigger {
   display: flex;
@@ -41,7 +53,7 @@
 
 .trigger:focus-visible {
   border-color: var(--rd-sys-color-border-brand);
-  box-shadow: 0 0 0 2px rgba(39, 112, 239, 0.2);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rd-sys-color-border-brand) 20%, transparent);
 }
 
 /* Size variants */
@@ -71,7 +83,7 @@
 
 .error:focus-visible {
   border-color: var(--rd-sys-color-border-failure);
-  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rd-sys-color-border-failure) 20%, transparent);
 }
 
 .disabled {
@@ -83,6 +95,25 @@
 }
 
 /* Value and Placeholder */
+/* The selected option's own icon, in the trigger. SelectOption has carried an
+   `icon` for a while and nothing rendered it. */
+.valueIcon {
+  flex-shrink: 0;
+  color: var(--rd-sys-color-content-primary);
+}
+
+.optionLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+
+.optionIcon {
+  flex-shrink: 0;
+  color: var(--rd-sys-color-content-primary);
+}
+
 .value {
   flex: 1;
   text-align: left;
@@ -122,7 +153,7 @@
   background-color: var(--rd-sys-color-background-base);
   border: 1px solid var(--rd-sys-color-border-divider);
   border-radius: var(--radius-md);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--rd-sys-color-shadow-menu);
   z-index: 1000;
   overflow: hidden;
 }
@@ -225,4 +256,89 @@
 
 .errorText {
   color: var(--rd-sys-color-content-failure);
+}
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   ============================================ */
+
+:global([data-rd-look="radiant-3"]) .label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-sm);
+  margin-bottom: var(--spacing-1);
+  transition: color var(--duration-fast) var(--easing-standard);
+}
+
+/* Label line: "Label (helper text)", and on error the label turns red with an
+   icon and reads Please choose “Label”. Nothing goes under the field */
+:global([data-rd-look="radiant-3"]) .label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+:global([data-rd-look="radiant-3"]) .container:focus-within .label,
+:global([data-rd-look="radiant-3"]) .container:has(.open) .label {
+  color: var(--rd-sys-color-content-brand);
+}
+
+:global([data-rd-look="radiant-3"]) .trigger {
+  padding: 0 var(--spacing-3) 0 var(--spacing-4);
+  border-radius: var(--radius-md);
+}
+
+:global([data-rd-look="radiant-3"]) .trigger:hover:not(.disabled):not(.open):not(.error) {
+  border-color: var(--rd-sys-color-border-bold-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .trigger:focus-visible,
+:global([data-rd-look="radiant-3"]) .error:focus-visible {
+  box-shadow: none;
+}
+
+/* Disabled: label and field at 40% on Background/Base */
+:global([data-rd-look="radiant-3"]) .container:has(.disabled) {
+  opacity: 0.4;
+}
+
+:global([data-rd-look="radiant-3"]) .disabled {
+  opacity: 1;
+  background-color: var(--rd-sys-color-background-base);
+  border-color: var(--rd-sys-color-border-default);
+}
+
+/* Popup: Raised, no border, radius 6, list padding 8/0, 32px items */
+:global([data-rd-look="radiant-3"]) .dropdown {
+  background-color: var(--rd-sys-color-background-raised);
+  border: none;
+  border-radius: var(--radius-md);
+}
+
+:global([data-rd-look="radiant-3"]) .optionsList {
+  padding: var(--spacing-2) 0;
+}
+
+:global([data-rd-look="radiant-3"]) .option {
+  gap: var(--spacing-3);
+  min-height: var(--spacing-8);
+  padding: 0 var(--spacing-4);
+  line-height: var(--line-height-md);
+  box-sizing: border-box;
+}
+
+:global([data-rd-look="radiant-3"]) .option:hover,
+:global([data-rd-look="radiant-3"]) .highlighted {
+  background-color: var(--rd-sys-color-background-ghost-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .optionDisabled:hover {
+  background-color: transparent;
+}
+
+/* Selected option: Ghost Highlight with brand text */
+:global([data-rd-look="radiant-3"]) .selected,
+:global([data-rd-look="radiant-3"]) .selected:hover {
+  background-color: var(--rd-sys-color-background-ghost-highlight);
+  color: var(--rd-sys-color-content-brand);
 }

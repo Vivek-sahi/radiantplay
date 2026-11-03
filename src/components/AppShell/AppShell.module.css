@@ -65,7 +65,7 @@
 }
 
 .sidebarOverlayBackdrop {
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--rd-sys-color-background-overlay);
   border: 0;
   cursor: pointer;
   flex: 1;
@@ -73,7 +73,7 @@
 }
 
 .sidebarOverlayBackdrop:focus-visible {
-  outline: 2px solid #2770ef;
+  outline: 2px solid var(--rd-sys-color-border-brand);
   outline-offset: -2px;
 }
 

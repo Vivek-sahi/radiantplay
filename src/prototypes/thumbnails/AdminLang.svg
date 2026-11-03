@@ -1,50 +1,50 @@
 <svg width="800" height="450" viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="800" height="450" fill="#F6F8FA"/>
+  <rect width="800" height="450" style="fill: var(--rd-sys-color-background-sunken)"/>
   <!-- Header -->
-  <rect x="0" y="0" width="800" height="52" fill="white"/>
-  <rect x="20" y="18" width="140" height="14" rx="4" fill="#EAEDF2"/>
+  <rect x="0" y="0" width="800" height="52" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="20" y="18" width="140" height="14" rx="4" style="fill: var(--rd-sys-color-background-secondary-action)"/>
   <!-- Page title area -->
-  <rect x="20" y="68" width="180" height="16" rx="4" fill="#C0C6CF"/>
-  <rect x="20" y="92" width="280" height="10" rx="3" fill="#A5ACB9"/>
+  <rect x="20" y="68" width="180" height="16" rx="4" style="fill: var(--rd-sys-color-background-inset)"/>
+  <rect x="20" y="92" width="280" height="10" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
   <!-- Tabs -->
-  <rect x="20" y="120" width="800" height="36" fill="white"/>
-  <rect x="20" y="120" width="800" height="1" fill="#EAEDF2"/>
-  <rect x="20" y="155" width="800" height="1" fill="#EAEDF2"/>
-  <rect x="28" y="132" width="80" height="12" rx="3" fill="#8AAEE8"/>
-  <rect x="28" y="153" width="80" height="2" fill="#8AAEE8"/>
-  <rect x="124" y="132" width="100" height="12" rx="3" fill="#A5ACB9"/>
-  <rect x="240" y="132" width="90" height="12" rx="3" fill="#A5ACB9"/>
+  <rect x="20" y="120" width="800" height="36" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="20" y="120" width="800" height="1" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="20" y="155" width="800" height="1" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="28" y="132" width="80" height="12" rx="3" style="fill: color-mix(in srgb, var(--rd-sys-color-content-brand) 55%, var(--rd-sys-color-background-base))"/>
+  <rect x="28" y="153" width="80" height="2" style="fill: color-mix(in srgb, var(--rd-sys-color-content-brand) 55%, var(--rd-sys-color-background-base))"/>
+  <rect x="124" y="132" width="100" height="12" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="240" y="132" width="90" height="12" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
   <!-- Upload area -->
-  <rect x="20" y="170" width="420" height="120" rx="8" fill="white"/>
-  <rect x="20" y="170" width="420" height="120" rx="8" stroke="#C0C6CF" stroke-width="1.5" stroke-dasharray="6 4"/>
-  <rect x="170" y="198" width="40" height="40" rx="8" fill="#F6F8FA"/>
-  <rect x="182" y="208" width="16" height="20" rx="2" fill="#A5ACB9"/>
-  <rect x="192" y="218" width="10" height="10" rx="1" fill="#EAEDF2"/>
-  <rect x="175" y="250" width="130" height="10" rx="3" fill="#C0C6CF"/>
-  <rect x="195" y="268" width="90" height="8" rx="3" fill="#A5ACB9"/>
+  <rect x="20" y="170" width="420" height="120" rx="8" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="20" y="170" width="420" height="120" rx="8" stroke-width="1.5" stroke-dasharray="6 4" style="stroke: var(--rd-sys-color-border-bold)"/>
+  <rect x="170" y="198" width="40" height="40" rx="8" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <rect x="182" y="208" width="16" height="20" rx="2" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="192" y="218" width="10" height="10" rx="1" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="175" y="250" width="130" height="10" rx="3" style="fill: var(--rd-sys-color-background-inset)"/>
+  <rect x="195" y="268" width="90" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
   <!-- Language selector panel -->
-  <rect x="456" y="170" width="324" height="120" rx="8" fill="white"/>
-  <rect x="472" y="186" width="80" height="10" rx="3" fill="#A5ACB9"/>
-  <rect x="472" y="206" width="292" height="28" rx="6" fill="#F6F8FA"/>
-  <rect x="484" y="216" width="100" height="8" rx="3" fill="#C0C6CF"/>
-  <rect x="472" y="244" width="80" height="10" rx="3" fill="#A5ACB9"/>
-  <rect x="472" y="262" width="292" height="20" rx="6" fill="#F6F8FA"/>
+  <rect x="456" y="170" width="324" height="120" rx="8" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="472" y="186" width="80" height="10" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="472" y="206" width="292" height="28" rx="6" style="fill: var(--rd-sys-color-background-sunken)"/>
+  <rect x="484" y="216" width="100" height="8" rx="3" style="fill: var(--rd-sys-color-background-inset)"/>
+  <rect x="472" y="244" width="80" height="10" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="472" y="262" width="292" height="20" rx="6" style="fill: var(--rd-sys-color-background-sunken)"/>
   <!-- Object table -->
-  <rect x="20" y="306" width="760" height="32" rx="0" fill="white"/>
-  <rect x="20" y="306" width="760" height="1" fill="#EAEDF2"/>
-  <rect x="36" y="318" width="60" height="8" rx="3" fill="#A5ACB9"/>
-  <rect x="220" y="318" width="80" height="8" rx="3" fill="#A5ACB9"/>
-  <rect x="420" y="318" width="60" height="8" rx="3" fill="#A5ACB9"/>
-  <rect x="600" y="318" width="80" height="8" rx="3" fill="#A5ACB9"/>
-  <rect x="20" y="338" width="760" height="1" fill="#EAEDF2"/>
-  <rect x="36" y="350" width="100" height="8" rx="3" fill="#C0C6CF"/>
-  <rect x="220" y="350" width="70" height="8" rx="3" fill="#A5ACB9"/>
+  <rect x="20" y="306" width="760" height="32" rx="0" style="fill: var(--rd-sys-color-background-base)"/>
+  <rect x="20" y="306" width="760" height="1" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="36" y="318" width="60" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="220" y="318" width="80" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="420" y="318" width="60" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="600" y="318" width="80" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
+  <rect x="20" y="338" width="760" height="1" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="36" y="350" width="100" height="8" rx="3" style="fill: var(--rd-sys-color-background-inset)"/>
+  <rect x="220" y="350" width="70" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
   <rect x="420" y="348" width="50" height="12" rx="4" fill="rgba(114,201,168,0.15)"/>
   <rect x="428" y="350" width="34" height="8" rx="3" fill="#72C9A8"/>
-  <rect x="20" y="370" width="760" height="1" fill="#EAEDF2"/>
-  <rect x="36" y="382" width="80" height="8" rx="3" fill="#C0C6CF"/>
-  <rect x="220" y="382" width="90" height="8" rx="3" fill="#A5ACB9"/>
+  <rect x="20" y="370" width="760" height="1" style="fill: var(--rd-sys-color-background-secondary-action)"/>
+  <rect x="36" y="382" width="80" height="8" rx="3" style="fill: var(--rd-sys-color-background-inset)"/>
+  <rect x="220" y="382" width="90" height="8" rx="3" style="fill: var(--rd-sys-color-content-tertiary)"/>
   <rect x="420" y="380" width="50" height="12" rx="4" fill="rgba(224,138,146,0.15)"/>
   <rect x="428" y="382" width="34" height="8" rx="3" fill="#E08A92"/>
-  <text x="400" y="430" fill="#64748B" font-family="system-ui" font-size="13" text-anchor="middle" font-weight="400">Admin language settings</text>
+  <text x="400" y="430" font-family="system-ui" font-size="13" text-anchor="middle" font-weight="400" style="fill: var(--rd-sys-color-content-secondary)">Admin language settings</text>
 </svg>

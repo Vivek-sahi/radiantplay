@@ -7,13 +7,13 @@
   border-radius: var(--radius-md);
   overflow: hidden;
   font-family: var(--font-family-primary);
-  background-color: var(--rd-sys-color-background-surface);
+  background-color: var(--rd-sys-color-background-raised);
   transition: border-color var(--duration-fast) var(--easing-standard);
 }
 
 .wrapper:focus-within {
   border-color: var(--rd-sys-color-border-focus);
-  box-shadow: 0 0 0 2px rgba(var(--rd-sys-color-background-brand-rgb, 59, 130, 246), 0.15);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rd-sys-color-border-brand) 15%, transparent);
 }
 
 /* ─── Toolbar ─────────────────────────────────────────────────────────── */
@@ -44,7 +44,7 @@
 }
 
 .toolbarButton:hover {
-  background-color: var(--rd-sys-color-background-muted);
+  background-color: var(--rd-sys-color-background-sunken);
   color: var(--rd-sys-color-content-primary);
 }
 
@@ -74,13 +74,13 @@
 
 .editor:empty::before {
   content: attr(data-placeholder);
-  color: var(--rd-sys-color-content-placeholder);
+  color: var(--rd-sys-color-content-tertiary);
   pointer-events: none;
 }
 
 .editor h2 {
   font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-primary);
   margin: var(--spacing-3) 0 var(--spacing-2);
 }

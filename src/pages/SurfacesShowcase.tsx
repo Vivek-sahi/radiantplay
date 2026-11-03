@@ -10,7 +10,7 @@ import {
 } from '../components/Modal';
 import { Button } from '../components/Button';
 import { LastUpdated } from '../components/LastUpdated';
-import { systemColors, referenceColors } from '../tokens/colors';
+import { sysVar, shadowVar } from '../tokens/colors';
 import { spacing } from '../tokens/spacing';
 
 type ModalDemo = {
@@ -191,12 +191,12 @@ export const SurfacesShowcase: React.FC = () => {
               style={styles.card}
               onClick={() => setActiveModal(modal)}
               onMouseOver={(e) => {
-                e.currentTarget.style.borderColor = systemColors.light['content-brand'];
-                e.currentTarget.style.boxShadow = `0 4px 12px ${systemColors.light['background-information']}`;
+                e.currentTarget.style.borderColor = sysVar('content-brand');
+                e.currentTarget.style.boxShadow = `0 4px 12px ${sysVar('background-information')}`;
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.borderColor = systemColors.light['background-subtle'];
-                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+                e.currentTarget.style.borderColor = sysVar('background-subtle');
+                e.currentTarget.style.boxShadow = shadowVar('surface');
               }}
             >
               <div style={styles.cardHeader}>
@@ -228,12 +228,12 @@ export const SurfacesShowcase: React.FC = () => {
               style={styles.card}
               onClick={() => setActiveModal(modal)}
               onMouseOver={(e) => {
-                e.currentTarget.style.borderColor = systemColors.light['content-brand'];
-                e.currentTarget.style.boxShadow = `0 4px 12px ${systemColors.light['background-information']}`;
+                e.currentTarget.style.borderColor = sysVar('content-brand');
+                e.currentTarget.style.boxShadow = `0 4px 12px ${sysVar('background-information')}`;
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.borderColor = systemColors.light['background-subtle'];
-                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+                e.currentTarget.style.borderColor = sysVar('background-subtle');
+                e.currentTarget.style.boxShadow = shadowVar('surface');
               }}
             >
               <div style={styles.cardHeader}>
@@ -443,40 +443,40 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 40,
   },
   pageTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 36,
     fontWeight: 700,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     marginBottom: 12,
   },
   pageDescription: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 16,
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '26px',
     maxWidth: 700,
   },
 
   // Sections
   section: {
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: 12,
     padding: spacing.F,
     marginBottom: spacing.F,
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    boxShadow: shadowVar('surface'),
   },
   sectionTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 20,
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     marginBottom: spacing.B,
   },
   sectionDescription: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 14,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     marginBottom: spacing.D,
   },
 
@@ -491,13 +491,13 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     alignItems: 'stretch',
     padding: spacing.D,
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: 8,
     cursor: 'pointer',
     textAlign: 'left',
     transition: 'all 150ms ease',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    boxShadow: shadowVar('surface'),
   },
   cardHeader: {
     display: 'flex',
@@ -506,33 +506,33 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: spacing.B,
   },
   cardTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 16,
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
   },
   cardBadge: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 11,
     fontWeight: 500,
-    color: systemColors.light['content-brand'],
-    backgroundColor: referenceColors.blue['10'],
+    color: sysVar('content-brand'),
+    backgroundColor: sysVar('background-information'),
     padding: '2px 8px',
     borderRadius: 4,
   },
   cardTypeBadge: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 11,
     fontWeight: 500,
-    color: referenceColors.purple['60'],
-    backgroundColor: referenceColors.purple['10'],
+    color: sysVar('content-accent-purple'),
+    backgroundColor: sysVar('background-accent-purple-subtle'),
     padding: '2px 8px',
     borderRadius: 4,
   },
   cardDescription: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 13,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     margin: 0,
   },
   cardPreview: {
@@ -544,14 +544,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   miniModal: {
     height: 30,
-    backgroundColor: systemColors.light['background-subtle'],
+    backgroundColor: sysVar('background-subtle'),
     borderRadius: 3,
-    border: `1px solid ${referenceColors.gray['30']}`,
+    border: `1px solid ${sysVar('border-subtle-hover')}`,
   },
 
   // Code Block
   codeBlock: {
-    backgroundColor: systemColors.light['content-primary'],
+    backgroundColor: 'var(--rd-ref-color-dark-gray-00)', // code blocks stay dark in both themes
     borderRadius: 8,
     overflow: 'hidden',
   },
@@ -560,17 +560,17 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '12px 16px',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    backgroundColor: 'color-mix(in srgb, var(--rd-ref-color-dark-gray-90) 5%, transparent)',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 12,
     fontWeight: 500,
-    color: systemColors.light['border-default'],
+    color: 'var(--rd-ref-color-dark-gray-80)',
   },
   copyButton: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 11,
     fontWeight: 500,
-    color: referenceColors.brand['40'],
+    color: 'var(--rd-ref-color-dark-gray-80)',
     backgroundColor: 'transparent',
     border: 'none',
     cursor: 'pointer',
@@ -578,10 +578,10 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 4,
   },
   code: {
-    fontFamily: '"SF Mono", Monaco, Inconsolata, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 13,
     lineHeight: '22px',
-    color: '#e5e5e5',
+    color: 'var(--rd-ref-color-dark-gray-90)',
     padding: 16,
     margin: 0,
     overflowX: 'auto',
@@ -595,14 +595,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   specCard: {
     padding: spacing.D,
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: 8,
   },
   specTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 14,
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     marginBottom: spacing.C,
     marginTop: 0,
   },
@@ -613,14 +613,14 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: spacing.B,
   },
   specLabel: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 12,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
   },
   specValue: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: 12,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
   },
 
   // Footer Demo
@@ -635,10 +635,10 @@ const styles: Record<string, React.CSSProperties> = {
     gap: spacing.D,
   },
   footerDemoLabel: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 13,
     fontWeight: 500,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     width: 120,
     flexShrink: 0,
   },
@@ -648,7 +648,7 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: `${spacing.C}px ${spacing.D}px`,
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     borderRadius: 6,
   },
   primaryGroup: {
@@ -657,24 +657,24 @@ const styles: Record<string, React.CSSProperties> = {
     marginLeft: 'auto',
   },
   tertiaryDemo: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 12,
-    color: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
   },
   secondaryDemo: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 12,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     padding: '4px 12px',
-    backgroundColor: systemColors.light['background-subtle'],
+    backgroundColor: sysVar('background-subtle'),
     borderRadius: 16,
   },
   primaryDemo: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 12,
-    color: systemColors.light['content-alternate'],
+    color: sysVar('content-alternate'),
     padding: '4px 12px',
-    backgroundColor: systemColors.light['content-brand'],
+    backgroundColor: sysVar('content-brand'),
     borderRadius: 16,
   },
 
@@ -685,34 +685,34 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.F,
-    backgroundColor: referenceColors.purple['20'],
+    backgroundColor: sysVar('background-accent-purple-subtle'),
     borderRadius: 6,
     minHeight: 120,
   },
   sampleContentText: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 14,
     fontWeight: 500,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     margin: 0,
   },
   sampleContentSubtext: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: 12,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     margin: 0,
     marginTop: 4,
   },
   splashMediaArea: {
     width: '100%',
     height: '100%',
-    backgroundColor: referenceColors.purple['20'],
+    backgroundColor: sysVar('background-accent-purple-subtle'),
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     fontSize: 14,
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
   },
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { systemColors, referenceColors } from '../tokens/colors';
+import { sysVar } from '../tokens/colors';
 
 interface ChangelogEntry {
   version: string;
@@ -24,6 +24,61 @@ interface Highlight {
 }
 
 const HIGHLIGHTS: Highlight[] = [
+  // v26.10, in the order the teaser film tells it.
+  {
+    title: 'Dark mode, everywhere',
+    description: 'Every page, shared component and sample prototype works in light and dark: press Ctrl+D or use the theme icon. Every new prototype is dark ready, and /rp-migrate-prototype moves your own prototypes across when you are ready.',
+    version: '26.10.1b',
+    date: '2026-10-12',
+  },
+  {
+    title: 'Describe it, get a working prototype',
+    description: 'Type /rp-new-prototype and a name in Claude, and it scaffolds the prototype, registers it in registry-mine.ts and opens it in the playground, dark ready from the start.',
+    version: '26.10.1b',
+    date: '2026-10-12',
+  },
+  {
+    title: 'Spotter DS in the design system',
+    description: 'The Spotter design system sits in the design system left panel: chat surfaces, blocks, icons and tokens, with every component previewed.',
+    version: '26.10.2e',
+    date: '2026-10-12',
+  },
+  {
+    title: 'Meet Radiance, ThoughtSpot\'s AI identity',
+    description: 'The Radiance wash comes to the playground, the home page and the design system, and new Spotter, SpotterX, Liveboard and sign up prototypes get their official pattern automatically. Its guide, with patterns, rules and a template builder, is in the design system left panel.',
+    version: '26.10.2e',
+    date: '2026-10-12',
+  },
+  {
+    title: 'Skills, built in: type /rp-',
+    description: 'Every RadiantPlay command starts with rp-, so typing /rp- in Claude lists them all: new prototype, migrate, Radiant check, sync, project canvas and Coolify deploy.',
+    version: '26.10.1b',
+    date: '2026-10-12',
+  },
+  {
+    title: 'Share any branch',
+    description: '/rp-coolify-deploy puts your fork live on Coolify at its own URL, and every push redeploys it.',
+    version: '26.9.1a',
+    date: '2026-10-12',
+  },
+  {
+    title: 'See your work at a glance',
+    description: 'Run /rp-project-canvas for your next steps, sync state, your site, your branches and every prototype with its dark and Geist readiness.',
+    version: '26.10.2a',
+    date: '2026-10-12',
+  },
+  {
+    title: 'Radiant matches Figma',
+    description: 'Tokens come from Figma (400 of them), type is set in Geist, and components take their Radiant 3.0 Figma shape: Toggle, Toast, Stepper, Tabs, new variants and a Wizard header, with Figma sizes as an opt-in look.',
+    version: '26.10.2e',
+    date: '2026-10-12',
+  },
+  {
+    title: 'Spotter Refresh blocks in the shared Spotter DS',
+    description: "Devanshi's Reasoning timeline, UserMessage bubble, PromptBar composer and ToolIcon now live in src/spotter/chat/. ReasoningBlock and UserBubble stay as adapters, so existing prototypes pick up the new look without changes. Front door on /radiant/spotter.",
+    version: '26.9.1a',
+    date: '2026-09-03',
+  },
   {
     title: 'Spotter prototype',
     description: 'AnalystLandingPage, AnalystListPage, and the right-pane state machine landed. Prompt bar rebuilt with a mode toggle, hideable data-model picker, and a new PromptSuggestionsPanel. 12 IA polish corrections across analyst selection, recency-sorted chats, panel restructure, and chat naming. The Liveboard template SpotterViz side panel was also rebuilt to match the Figma design.',
@@ -94,6 +149,411 @@ const HIGHLIGHTS: Highlight[] = [
 
 const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '26.10.3j',
+    date: '2026-10-14',
+    title: 'Claude Code reads the tier rules again',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Claude guidance', items: [
+        'CLAUDE.md tells Claude to read _orchestration.md before UI or prototype work, with the tier table naming the rule files. New prototypes and shared component work now read the rules.',
+        'The Requirements Gate hook also covers new Data Model Editor and Spotter prototypes.',
+        'Claude keeps replies short and plain by default.',
+      ] },
+      { category: 'fixed', label: 'Rule files', items: [
+        'Removed claims that the rules load on their own in Claude Code. The icon list has all 151 icons, and the Data Model Editor gate uses rp-prototype-model instead of old model ids.',
+      ] },
+    ],
+  },
+  {
+    version: '26.10.3i',
+    date: '2026-10-14',
+    title: 'Changelog highlights for v26.10',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Documentation', items: [
+        'Six short highlights for v26.10: dark mode, Geist, components updated to Radiant 3.0, a new look for Radiant Play, design system updates, and one item for everything else. The page shows the first six highlights instead of everything from the last 60 days.',
+      ] },
+    ],
+  },
+  {
+    version: '26.10.3h',
+    date: '2026-10-14',
+    title: 'Security fix for a build dependency',
+    type: 'patch',
+    changes: [
+      { category: 'fixed', label: 'Tooling', items: [
+        'source-map-js moves to 1.2.2, closing a high-severity Dependabot alert: a crafted source map could stall the build. It only runs during development and builds, never in the site.',
+      ] },
+    ],
+  },
+  {
+    version: '26.10.3g',
+    date: '2026-10-14',
+    title: 'One frame for the playground and design system',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Navigation', items: [
+        'The playground and the design system share one frame: a left pane with the new Radiant Play logo, a Playground / Design system switcher at the top, and the content on a raised panel. Light mode separates surfaces by fill instead of hairlines.',
+        'Help at the bottom of both left panes opens What\'s new, with the current version, and the three guides, which open in a new tab.',
+        'Design system pages scroll inside their panel, and section titles no longer jump when a page opens.',
+      ] },
+      { category: 'changed', label: 'Documentation', items: [
+        'Getting started, How it works and Claude setup and skills follow light and dark mode, in Radiant colours and Geist.',
+      ] },
+      { category: 'fixed', label: 'Components', items: [
+        'ActionMenu closes once you choose an item, and Escape and Tab always close it (from Sneharsh Damani). Tour follows scrolling inside a panel.',
+      ] },
+    ],
+  },
+  {
+    version: '26.10.3f',
+    date: '2026-10-13',
+    title: 'No more Cursor references',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Documentation', items: [
+        'New prototypes start from a README that uses /rp-new-prototype and Claude. The UX writing rules say they are shared with Claude, and the Cursor model guide and video script moved to the archive.',
+      ] },
+    ],
+  },
+  {
+    version: '26.10.3e',
+    date: '2026-10-13',
+    title: 'Set up with the Claude desktop app',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Documentation', items: [
+        'The getting started guide, the Claude setup page and the onboarding docs set up Radiant Play in the Claude desktop app with a Galaxy fork, and start the first prototype with /rp-new-prototype. The guide gives the Galaxy repo URL.',
+        'The docs said Node 18+, but the project needs Node 22 or newer (20.19+ also works). They say so now.',
+      ] },
+      { category: 'changed', label: 'Tooling', items: [
+        'On the maintainer machine, one git push now reaches both GitHub and galaxy. Designer forks are unchanged.',
+      ] },
+    ],
+  },
+  {
+    version: '26.10.3d',
+    date: '2026-10-13',
+    title: 'Thumbnail setup works again',
+    type: 'patch',
+    changes: [
+      { category: 'fixed', label: 'Tooling', items: [
+        'Thumbnail setup failed on every machine. It now installs the screenshot tool cleanly, and the capture can wait longer for slow screens (--wait).',
+      ] },
+    ],
+  },
+  {
+    version: '26.10.3c',
+    date: '2026-10-13',
+    title: 'Coolify only',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Documentation', items: ['RadiantPlay runs on Coolify only, and Vercel is switched off. The docs and the project canvas list Coolify sites only; forks still on Vercel keep working.'] },
+    ],
+  },
+  {
+    version: '26.10.3b',
+    date: '2026-10-13',
+    title: 'Thirteen Figma components and a tidier design system',
+    type: 'patch',
+    changes: [
+      { category: 'added', label: 'Components', items: [
+        'PageHeader, EditHeader, Breadcrumb, SplitButton, NumberInput, InlineEdit, FileUploader, DateRangePicker, Token, ChipIdentifier, UserChip, DotLoader and ScrollArea, built from Figma.',
+        'GlobalHeader, AppSidebar and DatePicker use tokens wherever one has the same value. Nothing changes on screen.',
+      ] },
+      { category: 'changed', label: 'Design system', items: [
+        'The theme icon sits at the top right, and longer pages list their sections on the right once you scroll.',
+        'One heading style and the same left spacing on every page; section links are blue pills.',
+        'The Radiance guide opens on its template builder, which hands you a prompt for Claude. The Colours page follows the theme.',
+      ] },
+    ],
+  },
+  {
+    version: '26.10.3a',
+    date: '2026-10-13',
+    title: 'A faster project canvas',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Tooling', items: [
+        '/rp-project-canvas opens in seconds. /rp-project-canvas full also refreshes forks and the prototype census in the background, in under 10 minutes, and replaces /rp-prototype-census.',
+        'Skills Claude loads on its own (Radiance, prototype model, thumbnails) no longer crowd the / menu.',
+      ] },
+    ],
+  },
+  {
+    version: '26.10.2e',
+    date: '2026-10-12',
+    title: 'Figma variants, WizardHeader and the Radiance guide',
+    type: 'patch',
+    changes: [
+      { category: 'added', label: 'Components', items: [
+        'Accordion variant="card", ExplainerCard appearance="raised" with media, dismiss and actions, NoData layout="horizontal" with statuses, and Tour tone="brand". Every default looks as before.',
+        'WizardHeader: the Figma wizard as a page header with Exit and a segmented progress bar.',
+      ] },
+      { category: 'added', label: 'Documentation', items: ['The Radiance guide at /radiant/radiance: the product patterns live, a template builder, the rules, and how Radiance reaches prototypes.'] },
+    ],
+  },
+  {
+    version: '26.10.2d',
+    date: '2026-10-12',
+    title: 'Figma sizes, opt-in',
+    type: 'patch',
+    changes: [
+      { category: 'added', label: 'Components', items: [
+        'Add look: \'radiant-3\' to a prototype\'s registry entry for Figma\'s sizes: 32px fields, menus without borders, 48 and 32px tabs and more. New prototypes get it; existing ones keep their look until they opt in, and /rp-migrate-prototype offers it.',
+        'TextInput gains readOnly, helperText and trailingIcon; Tabs gain size; Button gains size="xs".',
+      ] },
+    ],
+  },
+  {
+    version: '26.10.2c',
+    date: '2026-10-12',
+    title: 'Toggle, Toast and Stepper match Figma',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Components', items: [
+        'Toggle has a thin track with an overhanging thumb, in the same box.',
+        'Toast is dark with a white action button; it is 8px taller.',
+        'Stepper shows done steps in green and the current step outlined.',
+        'Tabs turn blue on hover with no fill; small primary buttons have 16px corners.',
+      ] },
+    ],
+  },
+  {
+    version: '26.10.2b',
+    date: '2026-10-12',
+    title: 'Figma colours, one theme icon, Radiance built in',
+    type: 'patch',
+    changes: [
+      { category: 'changed', label: 'Components', items: ['Button, Checkbox, Radio, Tooltip, SegmentedControl, Alert, Modal and ProgressBar pick up Figma\'s colours and tokens. Nothing changes size.'] },
+      { category: 'changed', label: 'Playground', items: ['The theme control at the top right of the playground is one icon: click to go light, dark, system. Ctrl+D works as before.'] },
+      { category: 'added', label: 'Radiance', items: ['RadiantPlay ships Radiance, updated by the maintainer and brought to forks by /rp-sync-upstream. New Spotter, SpotterX, Liveboard and sign up prototypes get their pattern automatically; npm run radiance:lint checks a prototype.'] },
+    ],
+  },
+  {
+    version: '26.10.2a',
+    date: '2026-10-12',
+    title: 'Radiance on the playground, and your project canvas',
+    type: 'patch',
+    changes: [
+      { category: 'added', label: 'Radiance', items: ['The Radiance wash sits behind the playground and the home page, and the design system page opens on a light hero card with it.'] },
+      { category: 'added', label: 'Tooling', items: ['/rp-project-canvas on a designer fork shows your own work: next steps, prototypes, updates, branches and your site.'] },
+    ],
+  },
+  {
+    version: '26.10.1b',
+    date: '2026-10-12',
+    title: 'One prefix for every command',
+    type: 'patch',
+    changes: [
+      {
+        category: 'changed',
+        label: 'Tooling',
+        items: [
+          'Every RadiantPlay command now starts with rp-, so typing /rp- lists them all: /rp-new-prototype, /rp-radiant-check, /rp-migrate-prototype, /rp-sync-upstream, /rp-coolify-deploy and more. The old names still work.',
+          'Thumbnails happen as part of other work: /rp-radiant-check captures one after a check, /rp-sync-upstream captures missing ones, /rp-migrate-prototype keeps capturing them. Or ask Claude to update a thumbnail. /thumbnail is gone.',
+          'Ask Claude to switch a prototype\'s AI model; /switch-model still works too. Claude Code\'s own /model is unrelated.',
+          'Your prototypes stay light until you migrate them, so one /rp-sync-upstream is all it takes. /rp-migrate-prototype switches each one to light and dark when it is ready, and new prototypes start in both.',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.10.1a',
+    date: '2026-10-09',
+    title: 'Dark mode, Geist and Figma 3.0 tokens',
+    type: 'major',
+    changes: [
+      {
+        category: 'added',
+        label: 'Dark mode',
+        items: [
+          'Press Ctrl+D anywhere to switch between light and dark. The choice is saved. Shared components, Spotter, the Liveboard tiles, charts and every sample prototype follow the theme.',
+          'A prototype that is not dark ready yet can set theme: light-only in its registry entry and stays light while the rest of the app is dark.',
+        ],
+      },
+      {
+        category: 'synced',
+        label: 'Tokens and type',
+        items: [
+          'Light and dark token values match the Radiant 3.0 Figma design system, with Figma and product names as aliases. Nothing is renamed.',
+          'Type is Geist and Geist Mono, self-hosted, with the 550 emphasis weight for headings and labels.',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Tooling',
+        items: [
+          '/migrate-prototype moves your prototypes onto Geist and dark mode in one pass, and never commits.',
+          '/sync-upstream marks prototypes that are not dark ready as light-only after a merge. On the first sync of this release, run npm run migrate:light-only -- --write once.',
+          '/thumbnail captures light and dark gallery screenshots. Sample prototypes have them already.',
+          'npm run scan:dark reports dark readiness per prototype.',
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'Deployment',
+        items: [
+          'Coolify apps serve HTML with no-cache, so a new deploy shows up without a hard refresh. /coolify-deploy is written for Claude in Chrome and Coolify v4.4.3.',
+          'GlobalHeader and AppSidebar follow the theme by default. Pass theme="dark" for the old always-dark nav.',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.9.1c',
+    date: '2026-09-03',
+    title: 'Guided Coolify setup for designers',
+    type: 'patch',
+    changes: [
+      {
+        category: 'added',
+        label: 'Tooling',
+        items: [
+          '/coolify-deploy walks a designer through putting their fork on Coolify one verified step at a time (deploy key, app, build settings, Node pin, static site and nginx fallback, first deploy, auto-deploy webhook). /coolify-deploy check compares an existing app against the known-good recipe. Reads docs/coolify/ at run time and never types secrets.',
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'Deployment',
+        items: [
+          'Coolify docs now state that every app on one fork must share the same GitHub webhook secret, since Coolify verifies the signature per app and silently skips mismatches.',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.9.1b',
+    date: '2026-09-03',
+    title: 'Dependency security update',
+    type: 'patch',
+    changes: [
+      {
+        category: 'changed',
+        label: 'Dependencies',
+        items: [
+          'npm audit fix clears all 19 Dependabot alerts with no major bumps: react-router-dom 7.13 to 7.18.3, vite 7.3.3 to 7.3.6, plus transitive patches for postcss, browserslist, @babel/core and esbuild. Lockfile stays on the public npm registry.',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.9.1a',
+    date: '2026-09-03',
+    title: 'Spotter Refresh blocks adopted + Coolify deployment consolidated',
+    type: 'minor',
+    changes: [
+      {
+        category: 'added',
+        label: 'Spotter',
+        items: [
+          "Reasoning, UserMessage, PromptBar and ToolIcon (Devanshi Behera) moved from the SpotterComponents prototype into src/spotter/chat/. ReasoningBlock and UserBubble became adapters over them, so existing prototypes are unchanged; PromptBar ships alongside SpotterPrompt until the composer decision.",
+          'Refresh blocks front door on /radiant/spotter with usage rules; Spotter roadmap updated.',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Deployment',
+        items: [
+          'docs/coolify/ gathers the designer deploy guide, an operations sheet (apps, webhook, recipe, quirks) and an index. docker/nginx.conf carries the SPA fallback every Coolify app uses; a Dockerfile covers the no-git path.',
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'Repository',
+        items: [
+          'faris replaces the retired personal branch in CLAUDE.md and the pre-push hook; each branch lists its Coolify URL beside its Vercel one. push-faris.sh pushes a branch to origin and galaxy in one step.',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.7.1b',
+    date: '2026-07-01',
+    title: 'SegmentedControl — Radiant 3.0 visual alignment',
+    type: 'patch',
+    changes: [
+      {
+        category: 'changed',
+        label: 'Components',
+        items: [
+          'SegmentedControl aligned to the Radiant 3.0 Figma: pill-shaped track and segments, brand-blue active label, Elevation/100 shadow, lighter font weight, unified disabled opacity. CSS-only; propagates everywhere SegmentedControl is used.',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.7.1a',
+    date: '2026-07-01',
+    title: 'Prototype census + chart color override + tooling cleanup',
+    type: 'minor',
+    changes: [
+      {
+        category: 'added',
+        label: 'Tooling',
+        items: [
+          'Prototype census (/prototype-census) counts prototypes across every fork (folders + registry entries by section, per creator, archived included), with API-based fork auto-discovery. Surfaced in the local status dashboard, refreshed only on demand.',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Tiles',
+        items: [
+          'Optional per-tile chart color override on AnswerTile and the chart renderer. AreaChart and ColumnChart use it, falling back to the default sequential palette. Additive and backward-compatible.',
+        ],
+      },
+      {
+        category: 'changed',
+        label: 'Dependencies',
+        items: [
+          'Removed the Vercel Analytics dependency and its inject() wiring in main.tsx.',
+          'Bumped echarts to 6.1.',
+        ],
+      },
+      {
+        category: 'fixed',
+        label: 'Public release',
+        items: [
+          'public-strip.sh now omits .claude/settings.json and the post-compact hook, avoiding the liveboard-gate.sh hook error on public clones.',
+        ],
+      },
+      {
+        category: 'removed',
+        label: 'Repository',
+        items: [
+          'Removed the personal Revefi talk deck from main; it now lives on the personal branch (dated).',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.5.4b',
+    date: '2026-05-27',
+    title: 'Repository housekeeping + public-release groundwork',
+    type: 'patch',
+    changes: [
+      {
+        category: 'changed',
+        label: 'Repository structure',
+        items: [
+          'Archived stale root files (old HTML exports, a duplicate page, the superseded root backlog) to internal/archive/ with a manifest.',
+          'Consolidated onboarding: SETUP-GUIDE.md and getting-started/ merged into GETTING_STARTED.md.',
+          'Grouped maintainer-only scripts under internal/scripts/.',
+          'Dropped a redundant build-time cp of cursor-to-claude-setup.html.',
+          'Stopped tracking the 11 MB Notion export (kept on disk, gitignored).',
+        ],
+      },
+      {
+        category: 'added',
+        label: 'Tooling',
+        items: [
+          'public-strip.sh produces a clean public snapshot (omits internal files, scrubs strings, grep-gates the result).',
+          'housekeeping-check.sh runs the reorg pre-merge checks in one command.',
+        ],
+      },
+    ],
+  },
+  {
     version: '26.5.4a',
     date: '2026-05-26',
     title: 'Spotter prototype + Liveboard Styling panel + AdminUI 2.0 + Playground archive',
@@ -103,7 +563,7 @@ const CHANGELOG: ChangelogEntry[] = [
         category: 'added',
         label: 'Prototypes',
         items: [
-          'Liveboard - Styling panel (StylingPanel) — restored after the original PR #14 revert. Per-tile drawer with density, color theme, corner style, spacing, and highlight overrides. Shared tile CSS variables added to AnswerTile, NoteTile, GroupTile. Authored by Devanshi Behara.',
+          'Liveboard - Styling panel (StylingPanel) — restored after the original PR #14 revert. Per-tile drawer with density, color theme, corner style, spacing, and highlight overrides. Shared tile CSS variables added to AnswerTile, NoteTile, GroupTile. Authored by Devanshi Behera.',
           'AdminUI 2.0 (NewUIAdmin2) — Application Settings screen added to the shared sample registry. Cluster settings, administration toggles, downloads and schedules, version control, AI settings. Lands via PR #19.',
         ],
       },
@@ -713,17 +1173,17 @@ const CHANGELOG: ChangelogEntry[] = [
 ];
 
 const categoryColors = {
-  added: { bg: systemColors.light['background-success'], text: systemColors.light['content-success'], label: 'Added' },
-  changed: { bg: systemColors.light['background-warning'], text: systemColors.light['content-warning'], label: 'Changed' },
-  fixed: { bg: systemColors.light['background-information'], text: systemColors.light['content-information'], label: 'Fixed' },
-  removed: { bg: systemColors.light['background-failure'], text: systemColors.light['content-failure'], label: 'Removed' },
-  synced: { bg: systemColors.light['background-information'], text: systemColors.light['content-information'], label: 'Synced' },
+  added: { bg: sysVar('background-accent-green'), text: sysVar('content-accent-green'), label: 'Added' },
+  changed: { bg: sysVar('background-accent-yellow'), text: sysVar('content-accent-yellow'), label: 'Changed' },
+  fixed: { bg: sysVar('background-accent-blue'), text: sysVar('content-accent-blue'), label: 'Fixed' },
+  removed: { bg: sysVar('background-accent-red'), text: sysVar('content-accent-red'), label: 'Removed' },
+  synced: { bg: sysVar('background-accent-blue'), text: sysVar('content-accent-blue'), label: 'Synced' },
 };
 
 const typeColors = {
-  major: systemColors.light['content-failure'],
-  minor: systemColors.light['content-brand'],
-  patch: systemColors.light['content-tertiary'],
+  major: sysVar('content-failure'),
+  minor: sysVar('content-brand'),
+  patch: sysVar('content-tertiary'),
 };
 
 // Visible highlights: items from the last 60 days, OR the most recent 6 if
@@ -792,10 +1252,10 @@ export const ChangelogPage: React.FC = () => {
                     style={{
                       ...styles.categoryBadge,
                       backgroundColor: change.label
-                        ? systemColors.light['background-subtle']
+                        ? sysVar('background-subtle')
                         : categoryColors[change.category].bg,
                       color: change.label
-                        ? systemColors.light['content-secondary']
+                        ? sysVar('content-secondary')
                         : categoryColors[change.category].text,
                     }}
                   >
@@ -829,17 +1289,17 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '40px',
   },
   title: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '36px',
     fontWeight: 700,
-    color: systemColors.light['content-primary'],
+    color: sysVar('content-primary'),
     marginBottom: '12px',
   },
   description: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '16px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '26px',
     maxWidth: '700px',
   },
@@ -850,9 +1310,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   entry: {
     position: 'relative',
-    backgroundColor: systemColors.light['background-base'],
+    backgroundColor: sysVar('background-base'),
     borderRadius: '12px',
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    border: `1px solid ${sysVar('background-subtle')}`,
     padding: '24px',
   },
   entryHeader: {
@@ -871,21 +1331,21 @@ const styles: Record<string, React.CSSProperties> = {
   versionBadge: {
     padding: '6px 12px',
     borderRadius: '6px',
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '13px',
-    fontWeight: 600,
-    color: systemColors.light['background-base'],
+    fontWeight: 550,
+    color: sysVar('content-alternate'),
   },
   entryTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '18px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 550,
+    color: sysVar('content-primary'),
   },
   entryDate: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
   },
   changesContainer: {
     display: 'flex',
@@ -901,9 +1361,9 @@ const styles: Record<string, React.CSSProperties> = {
     alignSelf: 'flex-start',
     padding: '4px 10px',
     borderRadius: '4px',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '11px',
-    fontWeight: 600,
+    fontWeight: 550,
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
@@ -915,25 +1375,25 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '8px',
   },
   changeItem: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '14px',
-    color: referenceColors.gray['70'],
+    color: sysVar('content-primary'),
     lineHeight: '22px',
   },
   hero: {
-    backgroundColor: systemColors.light['background-subtle'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-subtle'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '12px',
     padding: '24px 28px',
     marginBottom: '40px',
   },
   heroLabel: {
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '11px',
     fontWeight: 700,
     letterSpacing: '0.16em',
     textTransform: 'uppercase',
-    color: systemColors.light['content-brand'],
+    color: sysVar('content-brand'),
     marginBottom: '16px',
   },
   heroList: {
@@ -945,8 +1405,8 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '16px',
   },
   heroItem: {
-    backgroundColor: systemColors.light['background-base'],
-    border: `1px solid ${systemColors.light['background-subtle']}`,
+    backgroundColor: sysVar('background-base'),
+    border: `1px solid ${sysVar('background-subtle')}`,
     borderRadius: '8px',
     padding: '14px 16px',
     display: 'flex',
@@ -960,29 +1420,29 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '12px',
   },
   heroTitle: {
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '15px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 550,
+    color: sysVar('content-primary'),
     lineHeight: '20px',
   },
   heroVersion: {
     flexShrink: 0,
     padding: '2px 8px',
     borderRadius: '4px',
-    fontFamily: '"SF Mono", Monaco, monospace',
+    fontFamily: 'var(--font-family-mono)',
     fontSize: '11px',
-    fontWeight: 600,
+    fontWeight: 550,
     letterSpacing: '0.04em',
-    backgroundColor: systemColors.light['background-subtle'],
-    color: systemColors.light['content-secondary'],
+    backgroundColor: sysVar('background-subtle'),
+    color: sysVar('content-secondary'),
   },
   heroDescription: {
     margin: 0,
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
     fontSize: '13px',
     fontWeight: 400,
-    color: systemColors.light['content-secondary'],
+    color: sysVar('content-secondary'),
     lineHeight: '19px',
   },
   connector: {
@@ -992,7 +1452,7 @@ const styles: Record<string, React.CSSProperties> = {
     transform: 'translateX(-50%)',
     width: '2px',
     height: '32px',
-    backgroundColor: systemColors.light['background-subtle'],
+    backgroundColor: sysVar('background-subtle'),
   },
 };
 

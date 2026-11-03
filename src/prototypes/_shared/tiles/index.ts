@@ -7,4 +7,6 @@ export type { NoteTileProps } from './NoteTile';
 export type { NoteContent, NoteBlock, NoteVariant, InlineNode } from './noteContent';
 export { NOTE_VARIATIONS, NOTE_WEEKLY_UPDATE, NOTE_KEY_METRICS, NOTE_ANNOUNCEMENT, NOTE_Q3_RECAP, NOTE_QUICK } from './noteContent';
 export { chartColors, chartPalette, chartUi } from './chartPalette';
+export { useChartTheme, chartColorsDark, generateDarkModePalette } from './chartTheme';
+export type { ChartTheme } from './chartTheme';
 export * from './charts';

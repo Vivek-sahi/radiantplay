@@ -44,7 +44,7 @@
 .input:focus {
   outline: none;
   border-color: var(--rd-sys-color-border-brand);
-  box-shadow: 0 0 0 3px rgba(39, 112, 239, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rd-sys-color-border-brand) 12%, transparent);
 }
 
 .input::placeholder {
@@ -57,7 +57,7 @@
 
 .inputError:focus {
   border-color: var(--rd-sys-color-border-failure);
-  box-shadow: 0 0 0 3px rgba(226, 43, 61, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rd-sys-color-border-failure) 12%, transparent);
 }
 
 .inputDisabled {
@@ -119,7 +119,7 @@
 
 .monthYear {
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-primary);
 }
 
@@ -129,7 +129,7 @@
   border: none;
   background: none;
   font-size: var(--font-size-sm, 14px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-primary);
   cursor: pointer;
   border-radius: var(--radius-sm, 4px);
@@ -146,8 +146,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: var(--spacing-7);
+  height: var(--spacing-7);
   border: none;
   background: none;
   color: var(--rd-sys-color-content-secondary);
@@ -183,7 +183,7 @@
 .weekday {
   text-align: center;
   font-size: 11px;
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-tertiary);
   text-transform: uppercase;
 }
@@ -221,7 +221,7 @@
 }
 
 .dayToday {
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   border: 1px solid var(--rd-sys-color-border-brand);
 }
 
@@ -274,7 +274,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
+  height: var(--spacing-10);
   font-size: 13px;
   font-weight: var(--font-weight-medium, 500);
   color: var(--rd-sys-color-content-primary);
@@ -315,7 +315,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
+  height: var(--spacing-10);
   font-size: 13px;
   font-weight: var(--font-weight-medium, 500);
   color: var(--rd-sys-color-content-primary);
@@ -342,4 +342,180 @@
 
 .yearCellSelected:hover {
   background-color: var(--rd-comp-color-button-primary-hover);
+}
+
+/* ============================================
+   RADIANT 3.0 LOOK (opt-in: look: 'radiant-3')
+   ============================================ */
+
+/* Field: 32px, radius 6, regular 12/18 label, bold hover border, no focus ring */
+:global([data-rd-look="radiant-3"]) .label {
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-sm);
+  transition: color var(--duration-fast) var(--easing-standard);
+}
+
+:global([data-rd-look="radiant-3"]) .container:focus-within .label {
+  color: var(--rd-sys-color-content-brand);
+}
+
+:global([data-rd-look="radiant-3"]) .input {
+  height: var(--spacing-8);
+  padding: 0 var(--spacing-10) 0 var(--spacing-4);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+}
+
+:global([data-rd-look="radiant-3"]) .input:hover:not(:focus):not(:disabled):not(.inputError) {
+  border-color: var(--rd-sys-color-border-bold-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .input:focus,
+:global([data-rd-look="radiant-3"]) .inputError:focus {
+  box-shadow: none;
+}
+
+:global([data-rd-look="radiant-3"]) .inputDisabled {
+  opacity: 0.4;
+  background-color: var(--rd-sys-color-background-base);
+}
+
+/* Panel: padding 24, radius 6, Raised, menu shadow, no border */
+:global([data-rd-look="radiant-3"]) .calendar {
+  padding: var(--spacing-6);
+  background-color: var(--rd-sys-color-background-raised);
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--rd-sys-color-shadow-menu);
+}
+
+:global([data-rd-look="radiant-3"]) .calendarHeader {
+  margin-bottom: var(--spacing-2);
+}
+
+/* Month and year: brand tertiary buttons, 14/20 emphasis */
+:global([data-rd-look="radiant-3"]) .headerButton,
+:global([data-rd-look="radiant-3"]) .monthYear {
+  height: var(--spacing-8);
+  padding: 0 var(--spacing-1);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-brand);
+  border-radius: var(--radius-md);
+}
+
+:global([data-rd-look="radiant-3"]) .monthYear {
+  display: inline-flex;
+  align-items: center;
+}
+
+:global([data-rd-look="radiant-3"]) .headerButton:hover {
+  background-color: var(--rd-comp-color-button-tertiary-hover);
+  color: var(--rd-sys-color-content-brand);
+}
+
+/* Nav: 32px ghost buttons with 18px chevrons */
+:global([data-rd-look="radiant-3"]) .navButton {
+  width: var(--spacing-8);
+  height: var(--spacing-8);
+  border-radius: var(--radius-full);
+}
+
+:global([data-rd-look="radiant-3"]) .navButton:hover {
+  background-color: var(--rd-comp-color-button-tertiary-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .navIcon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Weekday labels: 14/20 emphasis, Content/Secondary */
+:global([data-rd-look="radiant-3"]) .weekday {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-secondary);
+}
+
+/* Days: 32px rounded squares (radius 6), gap 4 */
+:global([data-rd-look="radiant-3"]) .day {
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-md);
+}
+
+:global([data-rd-look="radiant-3"]) .day:hover:not(.daySelected) {
+  background-color: var(--rd-sys-color-background-ghost-hover);
+}
+
+:global([data-rd-look="radiant-3"]) .monthCell,
+:global([data-rd-look="radiant-3"]) .yearCell {
+  font-size: var(--font-size-sm);
+}
+
+/* ============================================
+   RANGE (DateRangePicker only; these classes are not used by DatePicker)
+   Figma "Date Picker / Range" 18244:21015
+   ============================================ */
+
+/* Two fields with "to" between them, gap 12 */
+.rangeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+/* Field: 148 wide in Figma, no calendar icon so the right padding is 12 */
+.input.rangeInput {
+  width: 148px;
+  padding-right: var(--spacing-3);
+  box-sizing: border-box;
+}
+
+/* Keeps the brand border on the field whose calendar is open, even while focus is in the calendar */
+.input.rangeInputActive:not(.inputError) {
+  border-color: var(--rd-sys-color-border-brand);
+}
+
+.rangeSeparator {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-md);
+  color: var(--rd-sys-color-content-primary);
+}
+
+/* Month and year as two header buttons, gap 8 */
+.rangeHeaderButtons {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+/* Days between start and end */
+.dayInRange {
+  background-color: color-mix(in srgb, var(--rd-sys-color-background-brand) 12%, transparent);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.dayInRange:hover {
+  background-color: color-mix(in srgb, var(--rd-sys-color-background-brand) 20%, transparent);
+}
+
+.rangeCalendar .day:focus-visible,
+.rangeCalendar .monthCell:focus-visible,
+.rangeCalendar .yearCell:focus-visible {
+  outline: 2px solid var(--rd-sys-color-border-focus);
+  outline-offset: 1px;
+}
+
+:global([data-rd-look="radiant-3"]) .day.dayInRange:hover:not(.daySelected) {
+  background-color: color-mix(in srgb, var(--rd-sys-color-background-brand) 20%, transparent);
+}
+
+/* Selected day, month and year: Ghost Highlight with brand text, not solid brand */
+:global([data-rd-look="radiant-3"]) .daySelected,
+:global([data-rd-look="radiant-3"]) .daySelected:hover,
+:global([data-rd-look="radiant-3"]) .monthCellSelected,
+:global([data-rd-look="radiant-3"]) .monthCellSelected:hover,
+:global([data-rd-look="radiant-3"]) .yearCellSelected,
+:global([data-rd-look="radiant-3"]) .yearCellSelected:hover {
+  background-color: var(--rd-sys-color-background-ghost-highlight);
+  color: var(--rd-sys-color-content-brand);
 }

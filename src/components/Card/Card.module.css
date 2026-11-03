@@ -62,7 +62,7 @@
 
 .headerTitle {
   font-size: var(--font-size-md, 16px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-primary);
   line-height: 1.4;
   margin: 0;

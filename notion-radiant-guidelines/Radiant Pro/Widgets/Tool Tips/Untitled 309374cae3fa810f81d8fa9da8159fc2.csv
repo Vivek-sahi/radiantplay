@@ -1,4 +1,0 @@
-﻿Object,Number,Name,Description,Dynamic Behavior,Default State,Error State,Content Rules
-TL.0 Tool tips,1,Icon,,Button action callout in verb (with 1 second delay on hover),,,
-TL.0 Tool tips,2,Truncated string,,Truncated string (with 1 second delay on hover),,,
-TL.0 Tool tips,3,Special labeling or explain text,,"Special labeling or explain text, maximum 3 lines at 340px wide",,,

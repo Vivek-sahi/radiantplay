@@ -8,9 +8,9 @@
 // 3-layer token exports
 export { referenceColors } from './reference';
 export type { ReferenceColors } from './reference';
-export { systemColors } from './system';
+export { systemColors, sysVar, shadowVar } from './system';
 export type { SystemColors, SystemColorKey } from './system';
-export { rdComponentColors } from './component';
+export { rdComponentColors, compVar } from './component';
 export type { RdComponentColors, RdComponentColorKey } from './component';
 
 // Charts (standalone, no migration needed)

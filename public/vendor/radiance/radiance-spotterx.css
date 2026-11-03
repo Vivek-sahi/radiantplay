@@ -1,0 +1,90 @@
+/*
+ * Radiance product pattern "spotterx" - the page recipe (FIXED, admin-owned).
+ *
+ * Pair with <div class="radiance-local" data-radiance-pattern="spotterx">
+ * inside an element with the class "radiance-spotterx" - see README.md.
+ * The renderer draws the colour, drift, breathing and film; this file carries
+ * the parts that live on the page: the fade (a CSS mask, so colour, grain and
+ * the overlay fade together), the after-answer retreat, the tone filter and
+ * the fine noise overlay (Home's hero stack). Nothing here is tunable: these
+ * values are the product pattern (RULES.md PRODUCT-1..5).
+ *
+ * States come from the surface itself (data-radiance-state = idle | reasoning
+ * | answered) and its theme from data-radiance-appearance, read with :has(),
+ * so the product's own code only sets those two attributes.
+ */
+
+.radiance-spotterx {
+    /* SpotterX: the field is fixed behind the page from the top edge (there
+       is no global header; the chat header is transparent). */
+    position: fixed;
+    z-index: -1;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 820px;
+    overflow: hidden;
+    pointer-events: none;
+    filter: saturate(1.16) contrast(1.06);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 1.0000) 0.00%, rgba(0, 0, 0, 0.7420) 4.17%, rgba(0, 0, 0, 0.5707) 8.33%, rgba(0, 0, 0, 0.4538) 12.50%, rgba(0, 0, 0, 0.3716) 16.67%, rgba(0, 0, 0, 0.3118) 20.83%, rgba(0, 0, 0, 0.2665) 25.00%, rgba(0, 0, 0, 0.2312) 29.17%, rgba(0, 0, 0, 0.2026) 33.33%, rgba(0, 0, 0, 0.1789) 37.50%, rgba(0, 0, 0, 0.1589) 41.67%, rgba(0, 0, 0, 0.1416) 45.83%, rgba(0, 0, 0, 0.1265) 50.00%, rgba(0, 0, 0, 0.1133) 54.17%, rgba(0, 0, 0, 0.1015) 58.33%, rgba(0, 0, 0, 0.0911) 62.50%, rgba(0, 0, 0, 0.0817) 66.67%, rgba(0, 0, 0, 0.0734) 70.83%, rgba(0, 0, 0, 0.0638) 75.00%, rgba(0, 0, 0, 0.0496) 79.17%, rgba(0, 0, 0, 0.0341) 83.33%, rgba(0, 0, 0, 0.0201) 87.50%, rgba(0, 0, 0, 0.0092) 91.67%, rgba(0, 0, 0, 0.0023) 95.83%, rgba(0, 0, 0, 0.0000) 100.00%);
+    mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 1.0000) 0.00%, rgba(0, 0, 0, 0.7420) 4.17%, rgba(0, 0, 0, 0.5707) 8.33%, rgba(0, 0, 0, 0.4538) 12.50%, rgba(0, 0, 0, 0.3716) 16.67%, rgba(0, 0, 0, 0.3118) 20.83%, rgba(0, 0, 0, 0.2665) 25.00%, rgba(0, 0, 0, 0.2312) 29.17%, rgba(0, 0, 0, 0.2026) 33.33%, rgba(0, 0, 0, 0.1789) 37.50%, rgba(0, 0, 0, 0.1589) 41.67%, rgba(0, 0, 0, 0.1416) 45.83%, rgba(0, 0, 0, 0.1265) 50.00%, rgba(0, 0, 0, 0.1133) 54.17%, rgba(0, 0, 0, 0.1015) 58.33%, rgba(0, 0, 0, 0.0911) 62.50%, rgba(0, 0, 0, 0.0817) 66.67%, rgba(0, 0, 0, 0.0734) 70.83%, rgba(0, 0, 0, 0.0638) 75.00%, rgba(0, 0, 0, 0.0496) 79.17%, rgba(0, 0, 0, 0.0341) 83.33%, rgba(0, 0, 0, 0.0201) 87.50%, rgba(0, 0, 0, 0.0092) 91.67%, rgba(0, 0, 0, 0.0023) 95.83%, rgba(0, 0, 0, 0.0000) 100.00%);
+    /* After an answer the fade contracts toward the top: its stops are
+       percentages, so scaling the mask scales the whole shape, and colour,
+       grain and overlay retreat together into a faint leak. */
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    transition:
+        -webkit-mask-size 2400ms cubic-bezier(0.22, 1, 0.36, 1),
+        mask-size 2400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.radiance-spotterx:has(> .radiance-local[data-radiance-state="answered"]) {
+    -webkit-mask-size: 100% 40%;
+    mask-size: 100% 40%;
+}
+
+.radiance-spotterx:has(> .radiance-local[data-radiance-appearance="dark"]) {
+    filter: saturate(1.2) contrast(1.08);
+}
+
+/* The fine noise overlay (Home's hero): 0.22 multiply in light, 0.27 screen
+   in dark. A sanctioned product exception to GRAIN-5 (PRODUCT-3). */
+.radiance-spotterx::before {
+    content: "";
+    position: absolute;
+    z-index: 3;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.22;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.48' numOctaves='3' seed='21' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='1.58' intercept='-0.18'/%3E%3CfeFuncG type='linear' slope='1.22' intercept='-0.12'/%3E%3CfeFuncB type='linear' slope='1.5' intercept='-0.16'/%3E%3CfeFuncA type='linear' slope='0.64'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='56' height='56' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 56px 56px;
+    mix-blend-mode: multiply;
+}
+
+.radiance-spotterx:has(> .radiance-local[data-radiance-appearance="dark"])::before {
+    opacity: 0.27;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.48' numOctaves='3' seed='21' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='1.64' intercept='-0.2'/%3E%3CfeFuncG type='linear' slope='1.14' intercept='-0.1'/%3E%3CfeFuncB type='linear' slope='1.58' intercept='-0.18'/%3E%3CfeFuncA type='linear' slope='0.7'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='56' height='56' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: screen;
+}
+
+.radiance-spotterx > .radiance-local {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.radiance-spotterx > .radiance-local canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .radiance-spotterx {
+        transition: none;
+    }
+}

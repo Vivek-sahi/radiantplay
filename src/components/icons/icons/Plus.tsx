@@ -3,12 +3,12 @@ import { BaseIconProps } from '../Icon.types';
 import { iconSize } from '../../../tokens/icons';
 
 const VARIANTS: Record<'xs' | 's' | 'm' | 'l', { viewBox: string; inner: string }> = {
-  xs: { viewBox: '0 0 12 12', inner: `<path d="M5.33333 1.33333H6.66667V10.6667H5.33333V1.33333Z" fill="currentColor"/>
-<path d="M1.33333 6.66666V5.33333H10.6667V6.66666H1.33333Z" fill="currentColor"/>` },
-  s: { viewBox: '0 0 14 14', inner: `<path d="M6.22222 1.55556H7.77778V12.4444H6.22222V1.55556Z" fill="currentColor"/>
-<path d="M1.55556 7.77778V6.22222H12.4444V7.77778H1.55556Z" fill="currentColor"/>` },
-  m: { viewBox: '0 0 16 16', inner: `<path d="M7.11111 1.77777H8.88889V14.2222H7.11111V1.77777Z" fill="currentColor"/>
-<path d="M1.77778 8.88888V7.1111H14.2222V8.88888H1.77778Z" fill="currentColor"/>` },
+  xs: { viewBox: '0 0 12 12', inner: `<path d="M5.33325 1.33331H6.66659V10.6666H5.33325V1.33331Z" fill="currentColor"/>
+<path d="M1.33325 6.66665V5.33331H10.6666V6.66665H1.33325Z" fill="currentColor"/>` },
+  s: { viewBox: '0 0 14 14', inner: `<path d="M6.22233 1.55554H7.77789V12.4444H6.22233V1.55554Z" fill="currentColor"/>
+<path d="M1.55566 7.77776V6.22221H12.4446V7.77776H1.55566Z" fill="currentColor"/>` },
+  m: { viewBox: '0 0 16 16', inner: `<path d="M7.11117 1.77777H8.88894V14.2222H7.11117V1.77777Z" fill="currentColor"/>
+<path d="M1.77783 8.88888V7.1111H14.2223V8.88888H1.77783Z" fill="currentColor"/>` },
   l: { viewBox: '0 0 18 18', inner: `<path d="M8 2H10V16H8V2Z" fill="currentColor"/>
 <path d="M2 10V8H16V10H2Z" fill="currentColor"/>` },
 };

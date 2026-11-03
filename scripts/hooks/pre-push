@@ -2,15 +2,16 @@
 # pre-push hook — Radiant Play maintainer safety net
 #
 # Two responsibilities:
-#   1. Block personal branches from being pushed to galaxy (the shared upstream).
-#      Personal work stays on origin (GitHub) only — pushing it to galaxy would
-#      pollute every other designer's /sync-upstream flow.
+#   1. Protect the maintainer working branch 'faris': refuse force-pushes and
+#      deletions on any remote. faris is real history (it replaced the old
+#      personal branch + force-reset mirror pair), so a non-fast-forward push
+#      would drop commits on the remote.
 #   2. Remind on pushes to main if platformVersion.ts wasn't bumped.
 #
-# Install once: bash scripts/install-maintainer-hooks.sh
+# Install once: bash internal/scripts/install-maintainer-hooks.sh
 
 PLATFORM_VERSION_FILE="src/data/platformVersion.ts"
-RELEASE_SCRIPT="scripts/release.sh"
+RELEASE_SCRIPT="internal/scripts/release.sh"
 
 remote_name="$1"
 remote_url="$2"
@@ -27,24 +28,28 @@ while read local_ref local_sha remote_ref remote_sha; do
   branch="${local_ref#refs/heads/}"
   remote_branch="${remote_ref#refs/heads/}"
 
-  # ── Block personal* pushes to galaxy ──────────────────────────────────────
-  if [[ "$is_galaxy_push" == true ]]; then
-    if [[ "$branch" == "personal" ]] || [[ "$branch" == personal/* ]] \
-       || [[ "$remote_branch" == "personal" ]] || [[ "$remote_branch" == personal/* ]]; then
+  # ── Protect faris: no force-push, no deletion ─────────────────────────────
+  if [[ "$remote_branch" == "faris" ]]; then
+    zero="0000000000000000000000000000000000000000"
+    if [[ "$local_sha" == "$zero" ]]; then
       echo ""
-      echo "Refusing to push '$branch' to galaxy."
+      echo "Refusing to delete 'faris' on $remote_name."
+      echo "faris is the maintainer working branch, not a disposable mirror."
       echo ""
-      echo "Personal branches are origin-only. Galaxy is the shared upstream"
-      echo "that other designers fork from — pushing personal work there would"
-      echo "pollute everyone else's /sync-upstream."
+      exit 1
+    fi
+    if [[ "$remote_sha" != "$zero" ]] \
+       && ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
       echo ""
-      echo "If this is shared library work, switch to main:"
-      echo "  git checkout main"
-      echo "  # cherry-pick or rewrite the change, move registry entry from"
-      echo "  # registry-mine.ts to registry-core.ts, then push main to galaxy."
+      echo "Refusing non-fast-forward push to 'faris' on $remote_name."
+      echo ""
+      echo "faris is real history now (it replaced the old personal branch and its"
+      echo "force-reset mirror). Rewriting it would drop commits on the remote."
+      echo "Integrate first, then push normally:"
+      echo "  git pull --rebase $remote_name faris"
       echo ""
       echo "To bypass this hook (you almost never want to):"
-      echo "  git push --no-verify galaxy $branch"
+      echo "  git push --no-verify $remote_name faris"
       echo ""
       exit 1
     fi

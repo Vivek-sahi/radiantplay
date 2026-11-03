@@ -5,7 +5,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--rd-sys-color-background-overlay);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -16,7 +16,7 @@
 /* ── Panel ────────────────────────────────────────────────────────────────── */
 
 .panel {
-  background: var(--rd-sys-color-background-surface, var(--rd-sys-color-background-raised));
+  background: var(--rd-sys-color-background-raised, var(--rd-sys-color-background-raised));
   border-radius: var(--radius-xl);
   max-width: 480px;
   width: 90vw;
@@ -41,7 +41,7 @@
 .title {
   font-family: var(--font-family-primary);
   font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-emphasis);
   color: var(--rd-sys-color-content-primary);
   line-height: var(--line-height-lg);
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
-import { chartColors, chartUi, chartFont } from '../chartPalette';
+import { chartFont } from '../chartPalette';
+import { useChartTheme } from '../chartTheme';
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
 const seriesData = [
@@ -8,34 +9,37 @@ const seriesData = [
   { name: 'Returns', data: [10, 15, 12, 18, 14, 20, 16, 22] },
 ];
 
-interface Props { width?: number; height?: number; }
+interface Props { width?: number; height?: number; colors?: string[]; }
 
-export const AreaChart: React.FC<Props> = ({ height }) => {
+export const AreaChart: React.FC<Props> = ({ height, colors }) => {
+  const { colors: themeColors, seriesColor, ui } = useChartTheme();
+  const palette = colors ? colors.map(seriesColor) : themeColors;
   const option = {
+    backgroundColor: 'transparent',
     grid: { top: 8, bottom: 8, left: 8, right: 8, containLabel: true },
     tooltip: { trigger: 'axis' },
     xAxis: {
       type: 'category',
       data: months,
-      axisLabel: { fontFamily: chartFont, fontSize: 10, color: chartUi.labelColor },
+      axisLabel: { fontFamily: chartFont, fontSize: 10, color: ui.labelColor },
       axisLine: { show: false },
       axisTick: { show: false },
     },
     yAxis: {
       type: 'value',
-      axisLabel: { fontFamily: chartFont, fontSize: 10, color: chartUi.labelColor },
+      axisLabel: { fontFamily: chartFont, fontSize: 10, color: ui.labelColor },
       axisLine: { show: false },
       axisTick: { show: false },
-      splitLine: { lineStyle: { color: chartUi.axis } },
+      splitLine: { lineStyle: { color: ui.axis } },
     },
     series: seriesData.map((s, i) => ({
       name: s.name,
       type: 'line',
       data: s.data,
       smooth: true,
-      lineStyle: { color: chartColors[i], width: 2 },
-      itemStyle: { color: chartColors[i] },
-      areaStyle: { color: chartColors[i], opacity: 0.15 },
+      lineStyle: { color: palette[i % palette.length], width: 2 },
+      itemStyle: { color: palette[i % palette.length] },
+      areaStyle: { color: palette[i % palette.length], opacity: 0.15 },
       symbol: 'none',
     })),
   };

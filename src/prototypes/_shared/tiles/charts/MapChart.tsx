@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
-import { chartColors, chartUi, chartFont } from '../chartPalette';
+import { chartFont } from '../chartPalette';
+import { useChartTheme } from '../chartTheme';
+import { systemColors } from '@tokens/colors';
 
 // Regional bubbles on a simple XY plane (prototype stand-in for a geo map)
 const regions = [
@@ -14,7 +16,9 @@ const regions = [
 interface Props { width?: number; height?: number; }
 
 export const MapChart: React.FC<Props> = ({ height }) => {
+  const { isDark, colors: themeColors, ui } = useChartTheme();
   const option = {
+    backgroundColor: 'transparent',
     grid: { top: 8, bottom: 8, left: 8, right: 8, containLabel: true },
     tooltip: {
       trigger: 'item',
@@ -39,14 +43,15 @@ export const MapChart: React.FC<Props> = ({ height }) => {
       type: 'scatter',
       data: [{ value: [r.x, r.y, r.value] }],
       symbolSize: (val: number[]) => Math.sqrt(val[2]) * 1.2,
-      itemStyle: { color: chartColors[i % chartColors.length], opacity: 0.75 },
+      itemStyle: { color: themeColors[i % themeColors.length], opacity: 0.75 },
       label: {
         show: true,
         formatter: r.name,
         fontFamily: chartFont,
         fontSize: 10,
-        color: '#fff',
-        fontWeight: 600,
+        // Sits on a series colour: white on light, dark on the lifted dark palette
+        color: systemColors[isDark ? 'dark' : 'light']['content-primary-inverse'],
+        fontWeight: 550,
         position: 'inside',
       },
     })),
@@ -54,7 +59,7 @@ export const MapChart: React.FC<Props> = ({ height }) => {
       show: true,
       bottom: 0,
       data: regions.map((r) => r.name),
-      textStyle: { fontFamily: chartFont, fontSize: 10, color: chartUi.labelColor },
+      textStyle: { fontFamily: chartFont, fontSize: 10, color: ui.labelColor },
     },
   };
 

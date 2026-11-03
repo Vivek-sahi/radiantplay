@@ -2,7 +2,7 @@ import React from 'react';
 import { Avatar } from '../../../components/Avatar';
 import { Chip } from '../../../components/Chip';
 import { tableStyles as styles } from '../styles';
-import { systemColors, referenceColors } from '../../../tokens/colors';
+import { sysVar } from '../../../tokens/colors';
 import { spacing } from '../../../tokens/spacing';
 import { Group, organizations, getRelativeTime } from '../data/mockData';
 
@@ -36,11 +36,11 @@ export const GroupsTable: React.FC<GroupsTableProps> = ({
           display: 'grid',
           gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr',
           padding: `${spacing.C}px ${spacing.D}px`,
-          backgroundColor: systemColors.light['background-sunken'],
-          borderBottom: `1px solid ${systemColors.light['background-subtle']}`,
+          backgroundColor: sysVar('background-sunken'),
+          borderBottom: `1px solid ${sysVar('background-subtle')}`,
           fontSize: '12px',
-          fontWeight: 600,
-          color: systemColors.light['content-secondary'],
+          fontWeight: 'var(--font-weight-emphasis)',
+          color: sysVar('content-secondary'),
           textTransform: 'uppercase',
           letterSpacing: '0.3px',
         }}
@@ -66,13 +66,13 @@ export const GroupsTable: React.FC<GroupsTableProps> = ({
               display: 'grid',
               gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr',
               padding: `${spacing.C}px ${spacing.D}px`,
-              borderBottom: index === groups.length - 1 ? 'none' : `1px solid ${systemColors.light['background-subtle']}`,
+              borderBottom: index === groups.length - 1 ? 'none' : `1px solid ${sysVar('background-subtle')}`,
               alignItems: 'center',
               cursor: 'pointer',
               transition: 'background-color 0.15s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = systemColors.light['background-sunken'];
+              e.currentTarget.style.backgroundColor = sysVar('background-sunken');
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent';
@@ -80,11 +80,11 @@ export const GroupsTable: React.FC<GroupsTableProps> = ({
           >
             {/* Name */}
             <div>
-              <div style={{ fontWeight: 500, color: systemColors.light['content-brand'], fontSize: '14px' }}>
+              <div style={{ fontWeight: 500, color: sysVar('content-brand'), fontSize: '14px' }}>
                 {group.displayName}
               </div>
               {group.description && (
-                <div style={{ fontSize: '12px', color: systemColors.light['content-tertiary'], marginTop: '2px' }}>
+                <div style={{ fontSize: '12px', color: sysVar('content-tertiary'), marginTop: '2px' }}>
                   {group.description.length > 50
                     ? `${group.description.substring(0, 50)}...`
                     : group.description
@@ -99,27 +99,27 @@ export const GroupsTable: React.FC<GroupsTableProps> = ({
                 <Chip key={i} label={orgName} />
               ))}
               {moreCount > 0 && (
-                <span style={{ fontSize: '12px', color: systemColors.light['content-brand'], fontWeight: 500 }}>
+                <span style={{ fontSize: '12px', color: sysVar('content-brand'), fontWeight: 500 }}>
                   +{moreCount} more
                 </span>
               )}
             </div>
 
             {/* Members */}
-            <div style={{ fontSize: '14px', color: referenceColors.gray['70'] }}>
+            <div style={{ fontSize: '14px', color: sysVar('content-secondary') }}>
               {group.memberCount}
             </div>
 
             {/* Created by */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Avatar name={group.createdBy.name} size="xs" />
-              <span style={{ fontSize: '13px', color: referenceColors.gray['70'] }}>
+              <span style={{ fontSize: '13px', color: sysVar('content-secondary') }}>
                 {group.createdBy.name}
               </span>
             </div>
 
             {/* Created */}
-            <div style={{ fontSize: '13px', color: systemColors.light['content-tertiary'] }}>
+            <div style={{ fontSize: '13px', color: sysVar('content-tertiary') }}>
               {getRelativeTime(group.createdAt)}
             </div>
           </div>
@@ -130,7 +130,7 @@ export const GroupsTable: React.FC<GroupsTableProps> = ({
         <div style={{
           padding: '48px',
           textAlign: 'center',
-          color: systemColors.light['content-tertiary'],
+          color: sysVar('content-tertiary'),
           fontSize: '14px',
         }}>
           No groups found. Click "Add group" to create one.

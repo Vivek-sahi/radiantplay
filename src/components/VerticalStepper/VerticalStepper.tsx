@@ -19,9 +19,9 @@ export interface VerticalStepperProps {
 
 // Checkmark SVG for completed state
 const CheckIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <path
-      d="M2 6L5 9L10 3"
+      d="M3 8.5L6.5 12L13 4.5"
       stroke="currentColor"
       strokeWidth="1.5"
       strokeLinecap="round"
@@ -99,7 +99,15 @@ const VerticalStepperStep: React.FC<{
 
       {/* Right column: title + description + content */}
       <div className={styles.rightColumn}>
-        <div className={styles.stepTitle}>{step.title}</div>
+        <div
+          className={[
+            styles.stepTitle,
+            isActive && styles.titleActive,
+            isCompleted && styles.titleCompleted,
+          ].filter(Boolean).join(' ')}
+        >
+          {step.title}
+        </div>
         {step.description && (
           <div className={styles.stepDescription}>{step.description}</div>
         )}

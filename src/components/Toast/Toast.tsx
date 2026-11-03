@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Button } from '../Button';
 import styles from './Toast.module.css';
 
 export type ToastType = 'success' | 'info' | 'warning' | 'error';
@@ -87,15 +88,6 @@ const ToastIcon: React.FC<{ type: ToastType }> = ({ type }) => {
 };
 
 /**
- * Close icon
- */
-const CloseIcon: React.FC = () => (
-  <svg className={styles.closeIcon} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-);
-
-/**
  * Toast Component
  * 
  * A temporary notification that appears to provide feedback about an action.
@@ -174,28 +166,37 @@ export const Toast: React.FC<ToastProps> = ({
 
   return (
     <div className={toastClasses} role="alert" aria-live="polite">
-      <ToastIcon type={type} />
-      <span className={styles.message}>{message}</span>
-      {actionText && (
-        <button 
-          type="button" 
-          className={styles.actionButton}
-          onClick={() => {
-            onAction?.();
-            handleDismiss();
-          }}
-        >
-          {actionText}
-        </button>
-      )}
-      <button 
-        type="button" 
-        className={styles.closeButton}
+      <div className={styles.content}>
+        <div className={styles.lead}>
+          <ToastIcon type={type} />
+          <span className={styles.message}>{message}</span>
+        </div>
+        {actionText && (
+          <Button
+            variant="primary"
+            colorway="white"
+            size="small"
+            onClick={() => {
+              onAction?.();
+              handleDismiss();
+            }}
+          >
+            {actionText}
+          </Button>
+        )}
+      </div>
+      <Button
+        variant="tertiary"
+        colorway="white"
+        size="small"
+        iconOnly
+        icon="cross"
+        className={styles.dismiss}
         onClick={handleDismiss}
         aria-label="Dismiss"
       >
-        <CloseIcon />
-      </button>
+        Dismiss
+      </Button>
     </div>
   );
 };

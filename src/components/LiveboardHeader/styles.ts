@@ -1,19 +1,23 @@
-import { systemColors } from '@tokens/colors/system';
+import { sysVar, shadowVar } from '@tokens/colors/system';
 import { fontFamily } from '@tokens/typography';
 
 export const colors = {
-  pageBg: systemColors.light['background-sunken'],
-  headerBg: systemColors.light['background-base'],
-  editHeaderBg: systemColors.light['background-base-inverse'],
-  textPrimary: systemColors.light['content-primary'],
-  textSecondary: systemColors.light['content-secondary'],
-  textOnDark: systemColors.light['content-primary-inverse'],
-  textOnDarkMuted: systemColors.light['border-subtle-hover'],
-  brand: systemColors.light['content-brand'],
-  border: systemColors.light['border-divider'],
-  borderDark: systemColors.light['border-default-inverse'],
-  divider: systemColors.light['border-default'],
-  actionPillBg: systemColors.light['background-subtle'],
+  pageBg: sysVar('background-sunken'),
+  headerBg: sysVar('background-base'),
+  editHeaderBg: sysVar('background-base-inverse'),
+  textPrimary: sysVar('content-primary'),
+  textSecondary: sysVar('content-secondary'),
+  textOnDark: sysVar('content-primary-inverse'),
+  textOnDarkMuted: sysVar('border-subtle-hover'),
+  brand: sysVar('content-brand'),
+  border: sysVar('border-divider'),
+  borderDark: sysVar('border-default-inverse'),
+  divider: sysVar('border-default'),
+  actionPillBg: sysVar('background-subtle'),
+  // The ThoughtSpot primary nav follows the theme, like the product's Radiant nav
+  primaryNavBg: sysVar('background-on-base'),
+  primaryNavText: sysVar('content-primary'),
+  primaryNavBorder: sysVar('border-subtle'),
 } as const;
 
 export const typography = {
@@ -21,7 +25,7 @@ export const typography = {
 } as const;
 
 export const shadows = {
-  header: '0px 0px 4px 0px rgba(25,35,49,0.1), 0px 2px 4px 0px rgba(25,35,49,0.04)',
+  header: shadowVar('surface'),
 } as const;
 
 export const layout = {

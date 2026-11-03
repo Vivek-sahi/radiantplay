@@ -1,0 +1,818 @@
+/* Refreshed agent reasoning ("Working") — flat timeline of NL text + tool calls. */
+
+.reasoning {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3, 12px);
+  font-family: var(--font-family-primary);
+  animation: reasoningIn 320ms cubic-bezier(0.32, 0.72, 0, 1);
+  box-sizing: border-box;
+  /* 16px inner padding aligns with the response grid. The right padding carries up
+     to 48px extra at wide widths for readable lines — it's set inline (JS-measured,
+     see useReasoningPadding) and collapses to this 16px base as the column narrows.
+     This value is the floor / pre-measure fallback. */
+  padding-left: var(--spacing-4, 16px);
+  padding-right: var(--spacing-4, 16px);
+  /* Space before the response — tighter when collapsed, roomier when expanded.
+     Transitioned on the same curve as the expand reveal so the response below
+     slides down in sync instead of jumping. */
+  margin-bottom: var(--spacing-3, 12px);
+  transition: margin-bottom 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reasoning[data-expanded='true'] {
+  margin-bottom: var(--spacing-6, 24px);
+}
+
+@keyframes reasoningIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── Header / trigger ─────────────────────────────────────────────────────── */
+
+/* Plain text line (like the tool-call headers) — no padding/height so it aligns
+   with the block's left edge; hovers to brand colour. */
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1, 4px);
+  max-width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--rd-sys-color-content-secondary);
+  font-family: inherit;
+  font-size: var(--font-size-md, 16px);
+  font-weight: var(--font-weight-regular, 400);
+  line-height: var(--line-height-lg, 24px);
+  cursor: pointer;
+  align-self: flex-start;
+  transition: color 120ms ease;
+}
+.trigger:hover { color: var(--rd-sys-color-content-brand); }
+/* While running the label is a shimmer (transparent fill) — on hover, settle it
+   to a solid brand colour instead. */
+.trigger:hover .shimmer {
+  background: none;
+  -webkit-text-fill-color: var(--rd-sys-color-content-brand);
+  color: var(--rd-sys-color-content-brand);
+  animation: none;
+}
+
+/* Chevron matches the tool-call accordion: right when collapsed, down when expanded. */
+.chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rd-sys-color-content-secondary);
+  transition: transform 200ms ease, color 120ms ease;
+}
+.chevron[data-expanded='true'] { transform: rotate(90deg); }
+.trigger:hover .chevron { color: var(--rd-sys-color-content-brand); }
+
+/* Shimmer — a lighter highlight sweeps across the secondary base label while the
+   chain is running.
+   ── Controls ──────────────────────────────────────────────────────────────
+   • Base colour      → content-secondary (the gradient's edges)
+   • Highlight colour → content-tertiary (the gradient's dead centre) — a true,
+                        unmixed token colour, chosen over border-subtle after
+                        comparing both live. Only the shoulders (28%/72%) are
+                        color-mix'd toward secondary for a gradual ramp in/out;
+                        the peak itself is never diluted.
+   • --shimmer-angle  → gradient tilt (100deg = slight diagonal sweep)
+   • --shimmer-size   → background-size width; larger = the band travels further
+                        off-screen each cycle (longer apparent travel)
+   • Sweep duration   → 2s, continuous (no pause) — chosen live for a fast,
+                        "the agent is working" feel.
+   The keyframe slides background-position from +size → -size for a left-sweep. */
+.shimmer {
+  --shimmer-angle: 100deg;
+  --shimmer-size: 220%;
+  /* Solid secondary base fills wherever the (no-repeat) gradient isn't, so the
+     text never falls back to transparent as the band slides off-screen. */
+  background-color: var(--rd-sys-color-content-secondary);
+  /* Wide, gentle multi-stop ramp: the shoulders ease from secondary toward the
+     peak colour, but the 50% stop is the PURE content-tertiary token — no
+     color-mix — so the brightest instant of the sweep is the real token. */
+  background-image: linear-gradient(
+    var(--shimmer-angle),
+    var(--rd-sys-color-content-secondary) 6%,
+    color-mix(in srgb, var(--rd-sys-color-content-tertiary) 45%, var(--rd-sys-color-content-secondary)) 28%,
+    var(--rd-sys-color-content-tertiary) 50%,
+    color-mix(in srgb, var(--rd-sys-color-content-tertiary) 45%, var(--rd-sys-color-content-secondary)) 72%,
+    var(--rd-sys-color-content-secondary) 94%
+  );
+  background-size: var(--shimmer-size) 100%;
+  /* no-repeat → exactly ONE highlight sweeps per cycle (repeat tiled it). */
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: shimmer 2s linear infinite;
+}
+@keyframes shimmer {
+  from { background-position: var(--shimmer-size) 0; }
+  to   { background-position: calc(-1 * var(--shimmer-size)) 0; }
+}
+
+/* ── Timeline ─────────────────────────────────────────────────────────────── */
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* 2px between blocks (the connecting line breaks here too) */
+}
+
+/* Bouncing dots — shown in the header (in place of "Working") while the agent
+   spins up, before any step has streamed in. */
+.dotsRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1, 4px);
+  height: var(--line-height-lg, 24px);
+}
+.bounceDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--rd-sys-color-content-tertiary);
+  animation: dotBounce 1200ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.bounceDot:nth-child(2) { animation-delay: 150ms; }
+.bounceDot:nth-child(3) { animation-delay: 300ms; }
+@keyframes dotBounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-7px); }
+}
+
+/* Each block: marker rail (20px) + content. align-items: stretch lets the rail
+   match the content height so its line fills the full block (incl. bottom space). */
+.row {
+  display: flex;
+  gap: var(--spacing-1, 4px);
+  align-items: stretch;
+}
+
+/* ── Masked block ─────────────────────────────────────────────────────────── */
+/* The whole timeline is one block inside a mask pinned under the header. Its
+   translate + the mask height are driven from JS (Reasoning.tsx), so collapse/
+   expand and step-to-step changes are all the same motion. position: relative on
+   the slide makes the rows' offsetTop measurable relative to the block. */
+/* Bottom-anchored clip: the content's bottom is pinned to the mask bottom (so the
+   last row / "Done" is always there as the mask height animates); overflow clips
+   the TOP, where earlier steps emerge from behind the header. Height/overflow are
+   set inline (JS-driven). */
+.mask {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.maskSlide {
+  position: relative;
+  flex-shrink: 0; /* keep full height so it overflows the top (never squished) */
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* 2px between blocks (the connecting line breaks here too) */
+}
+
+/* Full-block fade on open/close. A CSS animation (not a transition) so it runs even
+   when the block starts from the clipped height-0 "Show work" state. `forwards`
+   holds the end opacity.
+   • Open  → gentle ease-in (slow → fast): eases off 0% then accelerates.
+   • Close → ease-out (fast → slow): drops away quickly, then settles to 0. */
+.fadeIn {
+  animation: reasonFadeIn 420ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.fadeOut {
+  animation: reasonFadeOut 420ms cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+}
+@keyframes reasonFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes reasonFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* Left rail — 20px column holding a 20×20 icon/dot box, then a 1px line that
+   flex-fills the rest of the block height (including the 16px bottom spacing),
+   so the timeline connects each block to the next. */
+.markerCol {
+  width: 20px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Tool glyphs inherit this via currentColor (matches the content-secondary asset fills). */
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.iconBox {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.line {
+  flex: 1;
+  width: 1px;
+  margin-top: 2px;
+  border-radius: 999px;
+  background-color: var(--rd-sys-color-border-subtle);
+}
+
+/* Semi-collapsed text step: a single 1px line filling the full block height,
+   top to bottom, with no dot/icon box above it. */
+.lineFull {
+  flex: 1;
+  width: 1px;
+  border-radius: 999px;
+  background-color: var(--rd-sys-color-border-subtle);
+}
+
+/* Content column carries the 16px bottom spacing between blocks. No gap — the
+   space above an open code card lives on .codeCard so it's clipped when closed. */
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--spacing-4, 16px);
+}
+
+/* Terminal block (Done, or the anchored latest): no trailing space. The line is
+   NOT forced off — it's flex:1, so with padding-bottom:0 it collapses to 0 on a
+   short/collapsed row and only appears when there's height below the icon (an open
+   tool card, or multi-line text). */
+.row[data-terminal='true'] .content { padding-bottom: 0; }
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--rd-sys-color-content-tertiary);
+}
+
+/* NL text — read-only agent output. */
+.text {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  color: var(--rd-sys-color-content-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-regular, 400);
+  line-height: var(--line-height-md, 20px);
+  white-space: pre-wrap;
+}
+
+/* Each newly-streamed chunk fades in (remounted per chunk) so the reveal reads
+   smoothly instead of snapping in. */
+.streamChunk {
+  animation: streamFade 360ms ease both;
+}
+@keyframes streamFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Tool call ────────────────────────────────────────────────────────────── */
+
+.toolHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1, 4px);
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: var(--rd-sys-color-content-primary);
+  font-family: inherit;
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-regular, 400);
+  line-height: var(--line-height-md, 20px);
+  align-self: flex-start;
+  max-width: 100%;
+}
+.toolHeader:hover { color: var(--rd-sys-color-content-brand); }
+
+/* Error / permission-denied — title (and its chevron) turn red, no brand hover. */
+.toolHeader[data-error] { color: var(--rd-sys-color-content-failure); }
+.toolHeader[data-error]:hover { color: var(--rd-sys-color-content-failure); }
+.toolHeader[data-error] .toolChevron,
+.toolHeader[data-error]:hover .toolChevron { color: var(--rd-sys-color-content-failure); }
+
+/* Loading tool row — same layout as the header but static: shimmer title (set on
+   the inner span), no chevron, no hover, not clickable. */
+.toolLoading {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1, 4px);
+  max-width: 100%;
+  font-family: inherit;
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-regular, 400);
+  line-height: var(--line-height-md, 20px);
+  align-self: flex-start;
+}
+
+.toolTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toolChevron {
+  display: inline-flex;
+  align-items: center;
+  color: var(--rd-sys-color-content-secondary);
+  transition: transform 200ms ease, color 120ms ease;
+}
+/* chevron-right → points down when open */
+.toolChevron[data-open='true'] { transform: rotate(90deg); }
+.toolHeader:hover .toolChevron { color: var(--rd-sys-color-content-brand); }
+
+/* ── Collapsible code card ───────────────────────────────────────────────── */
+
+/* Smooth slide in/out: grid-template-rows animates the ACTUAL content height
+   (no fixed max-height snap), with an opacity fade. Also drives nested accordions. */
+.codeWrap {
+  display: grid;
+  grid-template-rows: 1fr;
+  /* Constrain the column to the container width (default auto track grows to the
+     code's max-content, overflowing); the code area scrolls inside instead. */
+  grid-template-columns: minmax(0, 1fr);
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    grid-template-rows 320ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 220ms ease;
+}
+/* The grid child is a bare wrapper (no padding/border/margin) with min-height:0 +
+   overflow:hidden, so the 0fr track fully collapses to 0. The padded/bordered
+   code card lives inside it and gets clipped during the slide. */
+.codeWrapInner {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+/* Fully open → stop clipping so popovers (permission menu) can overflow. */
+.codeWrap[data-settled] {
+  overflow: visible;
+}
+.codeWrap[data-settled] .codeWrapInner {
+  overflow: visible;
+}
+.codeWrap[data-open='false'] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Outer tool-call box — bordered, 10px radius, 12px padding all round, full
+   width of the available space. Holds the Input/Output blocks (8px gap). The 8px
+   top margin is the space below the tool header, clipped by .codeWrap when closed.
+   (Figma's 0.6 corner smoothing isn't expressible in CSS border-radius.) */
+.codeCard {
+  margin-top: var(--spacing-2, 8px);
+  margin-bottom: var(--spacing-1, 4px); /* breathing room below the expanded body */
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--spacing-2, 8px);
+  padding: var(--spacing-3, 12px);
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: 10px;
+}
+
+/* ── Nested code execution (double accordion) ─────────────────────────────── */
+/* Sits inside an open tool call's codeWrap: a list of LLM-summary headers, each
+   its own accordion. Indented under the parent title; clipped when parent closes. */
+.nested {
+  margin-top: var(--spacing-1, 4px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1, 4px);
+}
+.nestedRow {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Code section (Input / Output) — Figma 407-25918 ─────────────────────── */
+/* Label above the card, 4px gap, then a rounded code card. */
+.codeSection {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--spacing-1, 4px);
+}
+
+/* "Input" / "Output" label */
+.sectionLabel {
+  font-size: var(--font-size-xs, 12px);
+  line-height: 18px;
+  letter-spacing: -0.072px;
+  color: var(--rd-sys-color-content-secondary);
+}
+
+/* Rounded code card — caps at 180px, then the code area scrolls. */
+.codeBlock {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-height: 180px;
+  overflow: hidden;
+  border-radius: var(--radius-md, 8px);
+  background-color: var(--rd-sys-color-background-on-base);
+}
+
+/* Header — language tag + copy button: pl 16, pr 10, py 8. */
+.codeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: var(--spacing-2, 8px) 10px var(--spacing-2, 8px) var(--spacing-4, 16px);
+}
+
+.langTag {
+  font-size: var(--font-size-xs, 12px);
+  line-height: 18px;
+  letter-spacing: -0.072px;
+  color: var(--rd-sys-color-content-secondary);
+}
+
+.copyBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--rd-sys-color-content-secondary);
+  border-radius: var(--radius-sm, 4px);
+  transition: color 120ms ease, background-color 120ms ease;
+}
+.copyBtn:hover {
+  color: var(--rd-sys-color-content-primary);
+  background-color: var(--rd-sys-color-background-subtle);
+}
+
+/* Scrollable code area — fills the rest of the card below the header. */
+.codeScroll {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+.codeScroll::-webkit-scrollbar { width: 10px; height: 10px; }
+.codeScroll::-webkit-scrollbar-track { background: transparent; }
+.codeScroll::-webkit-scrollbar-thumb {
+  background: var(--rd-sys-color-content-tertiary);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.codeScroll::-webkit-scrollbar-thumb:hover {
+  background: var(--rd-sys-color-content-secondary);
+  background-clip: padding-box;
+}
+
+/* Code text — Geist Mono 14/22, no top padding (header carries the gap). */
+.pre {
+  margin: 0;
+  padding: 0 var(--spacing-4, 16px) var(--spacing-3, 12px);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm, 14px);
+  line-height: 22px;
+  letter-spacing: -0.056px;
+  color: var(--rd-sys-color-content-primary);
+  white-space: pre;
+}
+
+/* ── Syntax highlighting — Radiant accent colours. The design used the /70
+   chart shades; Radiant exposes the /60 accents as tokens, so the darker
+   shade is derived by mixing toward content-primary. ── */
+.synString  { color: color-mix(in srgb, var(--rd-sys-color-content-accent-green) 80%, var(--rd-sys-color-content-primary)); }
+.synNumber  { color: color-mix(in srgb, var(--rd-sys-color-content-accent-blue) 80%, var(--rd-sys-color-content-primary)); }
+.synKeyword { color: color-mix(in srgb, var(--rd-sys-color-content-accent-blue) 80%, var(--rd-sys-color-content-primary)); }
+.synFn      { color: color-mix(in srgb, var(--rd-sys-color-content-accent-red) 80%, var(--rd-sys-color-content-primary)); }
+.synKey     { color: var(--rd-sys-color-content-primary); }
+
+/* Error / permission-denied Output block — red background, red message, no header
+   (Figma 414-70086). The message is plain prose, not syntax-highlighted. */
+.codeBlockError {
+  background-color: var(--rd-sys-color-background-failure);
+}
+.preError {
+  /* no header above it, so pad the top too */
+  padding: var(--spacing-3, 12px) var(--spacing-4, 16px);
+  color: var(--rd-sys-color-content-failure);
+  white-space: pre-wrap;
+}
+
+/* ── Visualization output — the "Visualizing data" tool (Figma 430-105788) ──── */
+/* Input = NL question (plain text); Output = query-token chips + table/chart
+   toggle + an area chart (chart area caps at 272px). */
+.vizSection {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--spacing-1, 4px);
+}
+
+/* The Input question — plain prose, not code. */
+.vizQuestion {
+  margin: 0;
+  color: var(--rd-sys-color-content-primary);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: var(--font-weight-regular, 400);
+  line-height: var(--line-height-md, 20px);
+}
+
+.vizOutput {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--spacing-2, 8px);
+}
+
+/* Token chips (left) + table/chart toggle (right). */
+.vizHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-2, 8px);
+}
+
+.vizTokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1, 4px);
+  min-width: 0;
+}
+
+/* Base chip — neutral (keyword / filter). */
+.vizToken {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1, 4px);
+  padding: 1px var(--spacing-2, 8px);
+  border-radius: 6px;
+  font-size: var(--font-size-sm, 14px);
+  line-height: var(--line-height-md, 20px);
+  color: var(--rd-sys-color-content-primary);
+  background-color: var(--rd-sys-color-background-subtle);
+  white-space: nowrap;
+}
+.vizTokenIcon {
+  display: inline-flex;
+  color: var(--rd-sys-color-content-secondary);
+}
+/* Measure (green) and date (purple) chips use the Radiant chart palette, which
+   isn't exposed as CSS sys-vars — same documented exception as the syntax colours. */
+.vizTokenMeasure {
+  background-color: var(--rd-sys-color-background-accent-green);
+  color: color-mix(in srgb, var(--rd-sys-color-content-accent-green) 70%, var(--rd-sys-color-content-primary)); /* darkened for contrast on the chip */
+}
+.vizTokenDate {
+  background-color: var(--rd-sys-color-background-accent-purple-subtle);
+  color: color-mix(in srgb, var(--rd-sys-color-content-accent-purple) 75%, var(--rd-sys-color-content-primary));
+}
+
+/* Table / chart segmented toggle (Figma 432-141815) — a fully-rounded pill track;
+   the selected button is a white chip with surface elevation and a green glyph. */
+.vizToggle {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 2px;
+  border-radius: 999px;
+  background-color: var(--rd-sys-color-background-subtle);
+}
+.vizToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--rd-sys-color-content-secondary);
+  cursor: pointer;
+  transition: color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+}
+.vizToggleBtn:hover {
+  color: var(--rd-sys-color-content-primary);
+}
+.vizToggleBtnActive,
+.vizToggleBtnActive:hover {
+  background-color: var(--rd-sys-color-background-base);
+  box-shadow: var(--shadow-surface);
+  color: var(--rd-sys-color-content-primary);
+}
+.vizChartIconActive {
+  display: inline-flex;
+  color: var(--rd-sys-color-content-accent-green); /* active chart glyph */
+}
+
+/* Chart area — caps at 272px; the area stretches to the card width. */
+.vizChart {
+  max-height: 272px;
+  overflow: auto;
+}
+.vizSvg {
+  display: block;
+  width: 100%;
+  height: 240px;
+}
+.vizArea {
+  fill: var(--rd-sys-color-background-subtle); /* chart gray fill */
+}
+.vizLine {
+  fill: none;
+  stroke: var(--rd-sys-color-content-tertiary);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.vizProjection {
+  stroke: var(--rd-sys-color-content-tertiary);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+.vizEndDot {
+  fill: var(--rd-sys-color-content-tertiary);
+}
+
+/* Table view of the same series. */
+.vizTableWrap {
+  width: 100%;
+}
+.vizTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm, 14px);
+  line-height: var(--line-height-md, 20px);
+}
+.vizTable td {
+  padding: var(--spacing-1, 4px) var(--spacing-2, 8px);
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+}
+.vizTableLabel {
+  color: var(--rd-sys-color-content-secondary);
+}
+.vizTableValue {
+  text-align: right;
+  color: var(--rd-sys-color-content-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── MCP permission prompt — Figma 410-61998 ─────────────────────────────── */
+.permCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-4, 16px);
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: var(--spacing-2, 8px); /* gap below the tool header, like the code card */
+  padding: var(--spacing-4, 16px);
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: 10px;
+  background-color: var(--rd-sys-color-background-base);
+}
+
+.permText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2, 8px);
+  padding: 0 var(--spacing-1, 4px);
+}
+.permTitle {
+  margin: 0;
+  font-size: var(--font-size-sm, 14px);
+  line-height: 20px;
+  font-weight: var(--font-weight-emphasis);
+  color: var(--rd-sys-color-content-primary);
+}
+.permDesc {
+  margin: 0;
+  font-size: var(--font-size-sm, 14px);
+  line-height: 20px;
+  font-weight: var(--font-weight-regular, 400);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.permActions {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2, 8px);
+}
+
+/* "Allow once" + chevron, joined with a 2px seam (outer corners 16, inner 1). */
+.splitBtn {
+  display: flex;
+  gap: 2px;
+}
+.splitMain {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 6px var(--spacing-2, 8px) 6px var(--spacing-4, 16px);
+  border: none;
+  border-radius: 16px 1px 1px 16px;
+  background-color: var(--rd-comp-color-button-primary-default);
+  color: var(--rd-comp-color-button-primary-on-color-default);
+  font-family: inherit;
+  font-size: var(--font-size-sm, 14px);
+  line-height: 20px;
+  font-weight: var(--font-weight-regular, 400);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.splitMain:hover { background-color: var(--rd-comp-color-button-primary-hover); }
+.splitMain:active { background-color: var(--rd-comp-color-button-primary-pressed); }
+
+.splitMenuWrap {
+  position: relative;
+  display: flex;
+}
+/* Default: primary blue (same as the main half). Hover/pressed follow the DS;
+   when the menu is open it shows the pressed shade. */
+.splitChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 32px;
+  border: none;
+  border-radius: 1px 16px 16px 1px;
+  background-color: var(--rd-comp-color-button-primary-default);
+  color: var(--rd-comp-color-button-primary-on-color-default);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.splitChevron:hover { background-color: var(--rd-comp-color-button-primary-hover); }
+.splitChevron:active,
+.splitChevron[aria-expanded='true'] {
+  background-color: var(--rd-comp-color-button-primary-pressed);
+}
+
+.permMenu {
+  position: absolute;
+  top: calc(100% + var(--spacing-1, 4px));
+  left: 0;
+  min-width: 172px;
+  padding: var(--spacing-2, 8px) 0;
+  border-radius: 6px;
+  background-color: var(--rd-sys-color-background-raised);
+  box-shadow: var(--shadow-menu);
+  z-index: 10;
+}
+.permMenuItem {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px var(--spacing-4, 16px);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: var(--font-size-sm, 14px);
+  line-height: 20px;
+  color: var(--rd-sys-color-content-primary);
+}
+.permMenuItem:hover { background-color: var(--rd-sys-color-background-subtle); }
+
+.denyBtn {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 6px var(--spacing-4, 16px);
+  border: none;
+  border-radius: 16px;
+  background-color: var(--rd-comp-color-button-secondary-default);
+  color: var(--rd-sys-color-content-primary);
+  font-family: inherit;
+  font-size: var(--font-size-sm, 14px);
+  line-height: 20px;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.denyBtn:hover { background-color: var(--rd-comp-color-button-secondary-hover); }

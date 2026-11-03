@@ -1,8 +1,16 @@
 import React, { Suspense, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { systemColors, referenceColors } from '../tokens/colors';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { sysVar } from '../tokens/colors';
 import { getProject } from '../prototypes/registry';
+import { isLightOnly } from '../prototypes/registry-theme';
 import { Icon } from '../components/icons';
+import { LightOnly } from '../context/ThemeContext';
+import { RadiantLook } from '../context/RadiantLookContext';
+import { SpecSwitch } from '../app-chrome/SpecSheet/SpecSwitch';
+import { useSpecState, specVisible } from '../app-chrome/SpecSheet/useSpecState';
+
+// The spec view for engineering handoff, opened with the Prototype / Spec switch (/rp-spec writes it)
+const PrototypeSpec = React.lazy(() => import('../app-chrome/SpecSheet/PrototypeSpec'));
 
 class PrototypeErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -37,6 +45,9 @@ export const PlaygroundProject: React.FC = () => {
   const navigate = useNavigate();
 
   const project = projectName ? getProject(projectName) : undefined;
+  const [searchParams] = useSearchParams();
+  const spec = useSpecState(project?.id ?? '');
+  const showSpecSwitch = specVisible(spec.state);
 
   // Handle escape key to go back
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -77,7 +88,20 @@ export const PlaygroundProject: React.FC = () => {
     );
   }
 
+  if (searchParams.has('spec')) {
+    return (
+      <>
+        <Suspense fallback={<LoadingState />}>
+          <PrototypeSpec projectId={project.id} projectName={project.name} info={spec} />
+        </Suspense>
+        {showSpecSwitch && <SpecSwitch state={spec.state} />}
+      </>
+    );
+  }
+
   const ProjectComponent = project.component;
+  // look: 'radiant-3' opts the prototype into the Radiant 3.0 Figma sizes (RadiantLookContext.tsx)
+  const content = project.look === 'radiant-3' ? <RadiantLook><ProjectComponent /></RadiantLook> : <ProjectComponent />;
 
   return (
     <div style={styles.container}>
@@ -85,10 +109,17 @@ export const PlaygroundProject: React.FC = () => {
       <div style={styles.projectContainer}>
         <PrototypeErrorBoundary>
           <Suspense fallback={<LoadingState />}>
-            <ProjectComponent />
+            {isLightOnly(project) ? (
+              <LightOnly style={styles.lightOnly}>
+                {content}
+              </LightOnly>
+            ) : (
+              content
+            )}
           </Suspense>
         </PrototypeErrorBoundary>
       </div>
+      {showSpecSwitch && <SpecSwitch state={spec.state} />}
     </div>
   );
 };
@@ -109,10 +140,15 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     minHeight: '100vh',
     position: 'relative',
-    fontFamily: '"Plain", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: 'var(--font-family-primary)',
   },
 
   // Project Container
+  lightOnly: {
+    minHeight: '100%',
+    background: sysVar('background-base'),
+    color: sysVar('content-primary'),
+  },
   projectContainer: {
     minHeight: '100vh',
   },
@@ -124,13 +160,13 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
   },
   loadingSpinner: {
     width: '40px',
     height: '40px',
-    border: `3px solid ${systemColors.light['background-subtle']}`,
-    borderTopColor: systemColors.light['content-brand'],
+    border: `3px solid ${sysVar('background-subtle')}`,
+    borderTopColor: sysVar('content-brand'),
     borderRadius: '50%',
     animation: 'spin 1s linear infinite',
     marginBottom: '16px',
@@ -138,7 +174,7 @@ const styles: Record<string, React.CSSProperties> = {
   loadingText: {
     fontSize: '14px',
     fontWeight: 400,
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
   },
 
   // Not Found
@@ -147,7 +183,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh',
-    backgroundColor: systemColors.light['background-sunken'],
+    backgroundColor: sysVar('background-sunken'),
     padding: '32px',
   },
   notFoundContent: {
@@ -158,23 +194,23 @@ const styles: Record<string, React.CSSProperties> = {
     width: '80px',
     height: '80px',
     borderRadius: '20px',
-    backgroundColor: referenceColors.red['10'],
+    backgroundColor: sysVar('background-failure'),
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: systemColors.light['content-failure'],
+    color: sysVar('content-failure'),
     margin: '0 auto 24px',
   },
   notFoundTitle: {
     fontSize: '24px',
-    fontWeight: 600,
-    color: systemColors.light['content-primary'],
+    fontWeight: 'var(--font-weight-emphasis)',
+    color: sysVar('content-primary'),
     marginBottom: '12px',
   },
   notFoundDescription: {
     fontSize: '15px',
     fontWeight: 400,
-    color: systemColors.light['content-tertiary'],
+    color: sysVar('content-tertiary'),
     lineHeight: '24px',
     marginBottom: '24px',
   },
@@ -183,13 +219,13 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '8px',
     padding: '12px 20px',
-    backgroundColor: systemColors.light['content-brand'],
+    backgroundColor: sysVar('background-brand'),
     border: 'none',
     borderRadius: '10px',
     cursor: 'pointer',
     fontSize: '14px',
     fontWeight: 500,
-    color: systemColors.light['background-base'],
+    color: sysVar('content-alternate'),
     transition: 'all 150ms ease',
   },
 };

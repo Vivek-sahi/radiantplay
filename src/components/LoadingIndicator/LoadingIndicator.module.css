@@ -71,7 +71,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: color-mix(in srgb, var(--rd-sys-color-background-base) 85%, transparent);
   z-index: 10;
   border-radius: inherit;
 }
@@ -91,6 +91,14 @@
   align-items: center;
   justify-content: center;
   color: var(--rd-sys-color-content-brand);
+}
+
+.contextual.gray {
+  color: var(--rd-sys-color-content-tertiary);
+}
+
+.contextual.white {
+  color: var(--rd-sys-color-content-inverse);
 }
 
 .contextual svg {

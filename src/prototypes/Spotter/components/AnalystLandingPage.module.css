@@ -55,10 +55,10 @@
 }
 
 .avatarInitial {
-  color: #ffffff;
+  color: var(--rd-sys-color-content-inverse);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-2xl, 28px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   line-height: 1;
 }
 
@@ -67,7 +67,7 @@
   color: var(--rd-sys-color-content-primary);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-3xl, 32px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--font-weight-emphasis);
   line-height: var(--line-height-3xl, 40px);
   letter-spacing: -0.4px;
   text-align: center;

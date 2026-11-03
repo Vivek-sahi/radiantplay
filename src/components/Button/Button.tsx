@@ -4,7 +4,8 @@ import type { IconName, IconSize } from '../icons';
 import styles from './Button.module.css';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'tertiary';
-export type ButtonSize = 'small' | 'basic' | 'large';
+/** 'xs' (20px) is for icon-only buttons (Figma Icon button XS, 12px icon) */
+export type ButtonSize = 'xs' | 'small' | 'basic' | 'large';
 export type ButtonColorway = 'standard' | 'white';
 export type IconPosition = 'leading' | 'trailing' | 'none';
 
@@ -12,6 +13,7 @@ export type IconPosition = 'leading' | 'trailing' | 'none';
  * Maps button sizes to icon sizes for consistent proportions
  */
 const buttonSizeToIconSize: Record<ButtonSize, IconSize> = {
+  xs: 'xs',
   small: 's',
   basic: 'm',
   large: 'm',
@@ -168,6 +170,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
+      // An icon-only button hides its children, so they become its accessible name
+      aria-label={iconOnly && typeof children === 'string' ? children : undefined}
       {...props}
     >
       {loading ? (

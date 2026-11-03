@@ -5,17 +5,16 @@ A tool-agnostic prototyping playground built on ThoughtSpot's Radiant design sys
 [![React](https://img.shields.io/badge/React-19.2-blue)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-7.2-646CFF)](https://vitejs.dev/)
-[![Vercel](https://img.shields.io/badge/Deployed-Vercel-black)](https://vercel.com)
 
-**Live site:** [radiantplay.vercel.app](https://radiantplay.vercel.app) *(ThoughtSpot internal)*
+**Live site:** [radiantplay.design.coolify.thoughtspot.com](https://radiantplay.design.coolify.thoughtspot.com) *(ThoughtSpot internal; needs the corporate network)*
 
 ---
 
 ## What is this?
 
-Radiant Play is a fork-ready repository for ThoughtSpot designers, PMs, and anyone building product prototypes. It ships with 120+ Radiant UI components, design tokens, mock data, and an AI rule system — so you can describe a UI in plain language and get working, compliant code in seconds.
+Radiant Play is a fork-ready repository for ThoughtSpot designers, PMs, and anyone building product prototypes. It ships with 75+ Radiant UI components, design tokens, mock data, and an AI rule system — so you can describe a UI in plain language and get working, compliant code in seconds.
 
-Works with any AI coding tool: **Claude Code**, **Cursor**, **Codex**, or any tool that reads project-level instructions.
+Built for **Claude** (the desktop app's Code tab or the `claude` terminal command). Any AI tool that reads project-level instructions can use the same rules.
 
 ---
 
@@ -24,8 +23,8 @@ Works with any AI coding tool: **Claude Code**, **Cursor**, **Codex**, or any to
 ### Option 1 — With Git (recommended)
 
 ```bash
-# Fork on GitHub or Galaxy, then clone your fork
-git clone https://github.com/YOUR-USERNAME/radiantplay.git
+# Fork on Galaxy (or GitHub), then clone your fork. Needs Node.js 22+ (or 20.19+)
+git clone https://galaxy.corp.thoughtspot.com/YOUR-USERNAME/radiantplay.git
 cd radiantplay
 npm install
 npm run dev
@@ -110,7 +109,7 @@ After completing a full Tier 2 build, the system suggests clearing context (`/co
 ## Rule files reference
 
 ```
-.cursor/rules/                        # Auto-loaded by Cursor
+.cursor/rules/                        # Rule files Claude reads via CLAUDE.md
 ├── _orchestration.md                 # Router — always loaded, classifies every task
 ├── component-summary.md              # Quick reference: all component names and icons
 ├── component-inventory.md            # Full component props, variants, code examples
@@ -130,18 +129,18 @@ After completing a full Tier 2 build, the system suggests clearing context (`/co
 └── liveboard-*/                      # Canvas-specific rules (gated by requirements)
 
 .claude/                              # Claude Code native
-├── skills/                           # Same rules as native Claude Code skills
+├── skills/                           # rp- skills, plus older flat copies of six rule files (not loaded)
 ├── hooks/                            # Automated convention enforcement
-└── commands/                         # Slash commands (/compact, /explore, etc.)
+└── commands/                         # Slash commands (/compact, /rp-explore, etc.)
 ```
 
-The same rules work across tools — `.cursor/rules/` for Cursor, `.claude/skills/` for Claude Code. You don't need to configure anything.
+Claude reaches these through `CLAUDE.md`, which tells it to read `_orchestration.md` and then only the rule files the task needs. You don't need to configure anything.
 
 ---
 
 ## Available components
 
-120+ production-quality Radiant components ready to use.
+75+ production-quality Radiant components ready to use.
 
 | Category | Components |
 |----------|------------|
@@ -177,12 +176,11 @@ radiantplay/
 │   ├── styles/            # Global CSS
 │   ├── data/              # Component registry and roadmap data
 │   └── context/           # React context providers
-├── .cursor/rules/         # AI rule files — auto-loaded by Cursor
+├── .cursor/rules/         # AI rule files (Claude reads them via CLAUDE.md)
 ├── .claude/               # Claude Code skills, hooks, and commands
 ├── CLAUDE.md              # Project conventions — read by all AI tools
 ├── GETTING_STARTED.md     # Visual onboarding guide for beginners
-├── FORK-WORKFLOW.md       # Fork-based setup for designers
-└── SETUP-GUIDE.md         # Detailed step-by-step setup
+└── FORK-WORKFLOW.md       # Fork-based setup for designers
 ```
 
 ---
@@ -193,11 +191,13 @@ Radiant Play ships with slash commands you can run directly in Claude Code (or d
 
 | Command | What it does |
 |---------|-------------|
-| `/explore [scope]` | Suspends Radiant constraints for freeform exploration. Use when you want to try shadcn, Tailwind, custom CSS, or any direction outside the design system. The rest of the prototype stays Radiant-compliant. Example: `/explore shadcn form components` |
-| `/radiant-check [prototype]` | Runs a compliance health check on a prototype. Shows what's using the design system correctly, what's been customised, what's hardcoded, and where easy improvements exist. Non-blocking — it's a status check, not a gate. |
-| `/new-prototype [Name]` | Scaffolds a new prototype folder with the correct structure, registers it, and pulls the latest from main first. Same as `npm run new-prototype` but with AI guidance through the setup. |
-| `/project-status` | Opens a local HTML dashboard showing branches, forks, plans, worktrees, and divergence vs main/staging/upstream. Pure shell — no AI tokens used. |
-| `/sync-upstream` | Previews and merges the latest upstream changes into your fork. Shows what's coming first, then asks before applying. Works from any branch — stashes WIP, syncs main, forwards changes into your feature branch, restores WIP. |
+| `/rp-explore [scope]` | Suspends Radiant constraints for freeform exploration. Use when you want to try shadcn, Tailwind, custom CSS, or any direction outside the design system. The rest of the prototype stays Radiant-compliant. Example: `/rp-explore shadcn form components` |
+| `/rp-radiant-check [prototype]` | Runs a compliance health check on a prototype. Shows what's using the design system correctly, what's been customised, what's hardcoded, and where easy improvements exist. Non-blocking — it's a status check, not a gate. |
+| `/rp-new-prototype [Name]` | Scaffolds a new prototype folder with the correct structure, registers it, and pulls the latest from main first. Same as `npm run new-prototype` but with AI guidance through the setup. |
+| `/rp-project-canvas` | Opens the local project canvas: content, branches, sites, forks, plans and worktrees, with divergence vs main/staging/upstream. Pure shell, no AI tokens used. |
+| `/rp-sync-upstream` | Previews and merges the latest upstream changes into your fork. Shows what's coming first, then asks before applying. Works from any branch — stashes WIP, syncs main, forwards changes into your feature branch, restores WIP. |
+| `/rp-contribute [prototype]` | Shares your work with Radiant Play the right way. Asks what you're sharing and who should use it, works out where each piece belongs (Radiant, Spotter, shared code or a sample prototype), splits it into PRs against `staging`, runs the checks and writes the PR description. Asks before every commit and push. |
+| `/rp-spec [prototype]` | Writes the engineering spec for a prototype that's ready to hand off. Checks it's ready, drafts the spec from the code, walks you through each section, and marks it Ready for build only when you approve. The prototype then gets a Prototype / Spec switch. |
 | `/fork-status` | Reports on all downstream designer forks — which are up to date, which are behind, and what needs attention. |
 
 **Two automated hooks also run in the background (Claude Code only):**
@@ -268,11 +268,12 @@ A built-in click-to-annotate tool for leaving feedback on prototypes during a li
 
 | Remote | URL | Purpose |
 |--------|-----|---------|
-| `origin` | `github.com/faris-ts/radiantplay` | Primary — Vercel deploys from here |
-| `galaxy` | `galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay` | Internal ThoughtSpot access |
+| `origin` | `github.com/faris-ts/radiantplay` | Primary GitHub copy |
+| `galaxy` | `galaxy.corp.thoughtspot.com/mohammed-faris/radiantplay` | Internal ThoughtSpot access — Coolify deploys from here (see `docs/coolify/`) |
+| `public` | `github.com/thoughtspot/radiant-play` | Public release mirror — curated snapshot, publish-only |
 
 ---
 
 **Built for ThoughtSpot designers and PMs to prototype faster.** — Faris
 
-For a live walkthrough of the components, prototypes, and design system: [radiantplay.vercel.app](https://radiantplay.vercel.app)
+For a live walkthrough of the components, prototypes, and design system: [radiantplay.design.coolify.thoughtspot.com](https://radiantplay.design.coolify.thoughtspot.com)

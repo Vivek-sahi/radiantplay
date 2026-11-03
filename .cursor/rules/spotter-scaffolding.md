@@ -242,9 +242,9 @@ Keep it realistic — use product-relevant names and timestamps. Random Lorem-st
 
 ## Theme
 
-Spotter prototypes ship in **light mode**. The `GlobalHeader` uses its light variant. System tokens come from `systemColors.light`.
+Spotter works in light and dark; light is the default. Read colours through `var(--rd-sys-color-*)` in CSS and `sysVar()` / `compVar()` inline so they follow the theme. Never use `systemColors.light[...]` for UI: it stays light in dark mode.
 
-Dark mode is not blocked but no design exists. If you build dark mode, verify every Spotter-local token (especially `spotterGlow`) has sensible contrast on dark backgrounds.
+Check dark with the ThemeSwitch or Ctrl+D, and run `npm run scan:dark -- src/prototypes/<Name>`. Verify every Spotter-local token (especially `spotterGlow`) has sensible contrast on dark backgrounds.
 
 ---
 
