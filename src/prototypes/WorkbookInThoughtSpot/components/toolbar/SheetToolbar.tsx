@@ -15,7 +15,7 @@ import styles from './SheetToolbar.module.css';
 // list" 1863:164897). One 40px row, Google-Sheets-like: small ghost icon buttons (24px) in groups
 // aligned left, Expand on the right. Glyphs Radiant lacks come from that icon list.
 // Pin sits in the last group (Vivek, 3 Nov): pinning is a ThoughtSpot-level action, so it earns a
-// place on the bar, beside download. Focus cell is a toggle beside Expand.
+// place on the bar, beside download. Focus cell is a toggle in the column tools group; only Expand is on the right.
 
 type Glyph = IconName | React.ReactNode;
 
@@ -59,6 +59,8 @@ const GROUPS: Tool[][] = [
     { id: 'painter', label: 'Paint format', icon: <StyleIcon /> },
     { id: 'filter', label: 'Filter columns', icon: 'funnel' },
     { id: 'clear-filter', label: 'Clear filter', icon: 'cross' },
+    // Focus cell sits with the other tools, not on the right (Vivek, 3 Nov).
+    { id: 'focus', label: 'Focus cell: shade the active row and column', icon: 'zoom-area' },
   ],
   [{ id: 'formula', label: 'Insert function', icon: 'formula' }, { id: 'upload', label: 'Upload', icon: 'upload' }],
   [{ id: 'pin', label: 'Pin to a Liveboard', icon: 'pin' }, { id: 'export', label: 'Download', icon: 'download' }],
@@ -105,7 +107,6 @@ export const SheetToolbar: React.FC<SheetToolbarProps> = ({ onAction, active = [
         ))}
       </div>
       <div className={styles.group}>
-        {tool({ id: 'focus', label: 'Focus cell: shade the active row and column', icon: 'zoom-area' })}
         {tool({ id: 'expand', label: 'Expand', icon: 'expand' })}
       </div>
     </div>

@@ -281,12 +281,14 @@
   --cq-hint-ramp: 24px;
   -webkit-mask-image: linear-gradient(
     to right,
-    #000 calc(100% - var(--cq-hint-clear) - var(--cq-hint-ramp)),
+    /* A mask reads only opacity; any opaque token works in both themes. */
+    var(--rd-sys-color-content-primary) calc(100% - var(--cq-hint-clear) - var(--cq-hint-ramp)),
     transparent calc(100% - var(--cq-hint-clear))
   );
   mask-image: linear-gradient(
     to right,
-    #000 calc(100% - var(--cq-hint-clear) - var(--cq-hint-ramp)),
+    /* A mask reads only opacity; any opaque token works in both themes. */
+    var(--rd-sys-color-content-primary) calc(100% - var(--cq-hint-clear) - var(--cq-hint-ramp)),
     transparent calc(100% - var(--cq-hint-clear))
   );
 }

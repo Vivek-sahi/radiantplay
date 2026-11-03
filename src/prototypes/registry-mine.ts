@@ -54,6 +54,9 @@ export const myRegistry: ProjectMeta[] = [
     lastModified: '2026-11-03',
     component: WorkbookInThoughtSpot,
     section: 'mine',
+    // Follows light and dark (Vivek, 3 Nov): scan:dark finds nothing outside vendor/agentic-ds, whose
+    // findings are connector brand colours in screens this prototype doesn't use.
+    theme: 'global',
   },
   {
     id: 'AgentDBMVPHome',
