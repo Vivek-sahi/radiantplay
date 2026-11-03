@@ -125,3 +125,23 @@
 .linkish {
   align-self: flex-start;
 }
+
+/* Data model picker rows: icon, name, and where the model comes from. */
+.modelRow {
+  gap: var(--spacing-3);
+  align-items: flex-start;
+  padding-top: var(--spacing-2);
+  padding-bottom: var(--spacing-2);
+}
+
+.modelText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+}
+
+.modelDetail {
+  font-size: var(--font-size-xs);
+  color: var(--rd-sys-color-content-secondary);
+}

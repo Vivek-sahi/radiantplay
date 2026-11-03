@@ -8,6 +8,7 @@ import { ClarifyCard, CLARIFY_EXIT_MS, type ClarifyAnswer, type ClarifyStepView 
 import { AnsweredQuestions } from './AnsweredQuestions';
 import { WorkbookLoading } from './WorkbookLoading';
 import { WorkbookLive } from './WorkbookLive';
+import { ModelPickerDialog } from './WorkbookDialogs';
 import { blankWorkbook, financeWorkbook } from '../data/finance';
 import { ActionRow, AskedAQuestion, ShowWork, StreamingText, WorkingChecklist, agentTextStyle, streamMs, userBubbleStyle } from './ChatTurns';
 import { CHAT_QUESTION, SOURCES, buildSteps, type SourceId } from '../data/create';
@@ -53,7 +54,8 @@ type Item =
   | { kind: 'agent'; text: string }
   | { kind: 'recap'; pairs: { question: string; answer: string }[] };
 
-type Phase = 'card' | 'leaving' | 'chat' | 'building';
+// pick: the data-model picker is open (Vivek, 3 Nov: a modal like Pin to Liveboard, not a question in the chat).
+type Phase = 'card' | 'leaving' | 'chat' | 'pick' | 'building';
 
 const sourceLabel = (id: SourceId) => SOURCES.find((s) => s.id === id)?.label ?? '';
 
@@ -71,7 +73,7 @@ export const CreateFlow: React.FC<CreateFlowProps> = ({ seedPrompt, startSource,
   const needsCard = !startSource || startSource === 'upload';
   const [answers, setAnswers] = useState<Record<string, ClarifyAnswer>>({});
   const [stepIndex, setStepIndex] = useState(0);
-  const [phase, setPhase] = useState<Phase>(needsCard ? 'card' : CHAT_QUESTION[startSource!] ? 'chat' : 'building');
+  const [phase, setPhase] = useState<Phase>(needsCard ? 'card' : startSource === 'model' ? 'pick' : CHAT_QUESTION[startSource!] ? 'chat' : 'building');
   const [source, setSource] = useState<SourceId | undefined>(startSource);
   const [detail, setDetail] = useState('');
   const [reply, setReply] = useState('');
@@ -86,7 +88,7 @@ export const CreateFlow: React.FC<CreateFlowProps> = ({ seedPrompt, startSource,
     const first: Item[] = [];
     if (seedPrompt) first.push({ kind: 'user', text: seedPrompt });
     first.push({ kind: 'agent', text: intro });
-    if (startSource && CHAT_QUESTION[startSource]) first.push({ kind: 'agent', text: CHAT_QUESTION[startSource]! });
+    if (startSource && startSource !== 'model' && CHAT_QUESTION[startSource]) first.push({ kind: 'agent', text: CHAT_QUESTION[startSource]! });
     return first;
   });
 
@@ -114,13 +116,15 @@ export const CreateFlow: React.FC<CreateFlowProps> = ({ seedPrompt, startSource,
     setPhase('leaving');
     setTimeout(() => {
       setSource(chosen);
+      // A data model is picked in the model picker; an Answer is still named in the chat.
+      const ask = chosen !== 'model' && CHAT_QUESTION[chosen];
       setItems((prev) => [
         ...prev,
         { kind: 'recap', pairs },
-        ...(CHAT_QUESTION[chosen] ? [{ kind: 'agent', text: CHAT_QUESTION[chosen]! } as Item] : []),
+        ...(ask ? [{ kind: 'agent', text: CHAT_QUESTION[chosen]! } as Item] : []),
       ]);
       if (chosen === 'upload') setDetail(file);
-      setPhase(CHAT_QUESTION[chosen] ? 'chat' : 'building');
+      setPhase(chosen === 'model' ? 'pick' : ask ? 'chat' : 'building');
     }, CLARIFY_EXIT_MS);
   };
 
@@ -133,7 +137,18 @@ export const CreateFlow: React.FC<CreateFlowProps> = ({ seedPrompt, startSource,
     setPhase('building');
   };
 
-  const src: SourceId = source ?? 'blank';
+  const chooseModel = (name: string) => {
+    setItems((prev) => [...prev, { kind: 'recap', pairs: [{ question: 'Which data model?', answer: name }] }]);
+    setDetail(name);
+    setPhase('building');
+  };
+  // Closing the picker without a choice falls back to naming the model in the chat.
+  const closePicker = () => {
+    setItems((prev) => [...prev, { kind: 'agent', text: CHAT_QUESTION.model! }]);
+    setPhase('chat');
+  };
+
+  const src: SourceId = source ?? (startSource === 'model' ? 'model' : 'blank');
   const checklist = buildSteps(src, detail);
   const workbookName =
     src === 'model' ? `${detail} workbook` :
@@ -201,6 +216,7 @@ export const CreateFlow: React.FC<CreateFlowProps> = ({ seedPrompt, startSource,
   return (
     <div className={styles.root}>
       <RadianceBackground pattern="spotterx" state={radiance} />
+      <ModelPickerDialog isOpen={phase === 'pick'} onClose={closePicker} onChoose={chooseModel} />
       {phase !== 'building' ? (
         <div className={styles.centered}>
           <div className={styles.column}>

@@ -9,6 +9,8 @@ export interface RecentItem {
 }
 
 export const RECENTS: RecentItem[] = [
+  // The film opens here (Vivek, 4 Nov): the analyst's Liveboard, opened from Recents.
+  { id: 'fy26-regional-review', name: 'FY26 Regional review', icon: 'liveboard', when: '1 hour ago' },
   { id: 'fy27-revenue-plan', name: 'FY27 Revenue Plan', icon: 'table', when: '2 hours ago' },
   { id: 'onespot', name: 'OneSpot', icon: 'liveboard', when: '5 days ago' },
   { id: 'tsa-icp', name: 'Total Account TSA ICP Score, Total A…', icon: 'answer', when: '5 days ago' },

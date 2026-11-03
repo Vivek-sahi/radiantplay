@@ -161,6 +161,54 @@ export const PinDialog: React.FC<{ isOpen: boolean; what: string; live: boolean;
   );
 };
 
+// Choosing a data model for a new workbook (Vivek, 3 Nov): a picker modelled on Pin to Liveboard
+// (title, search, one list, Cancel and a primary action). Replaces asking for the model in the chat.
+const MODELS: { name: string; detail: string }[] = [
+  { name: 'Finance', detail: 'Snowflake · Revenue, COGS, plan and prior year by region and month' },
+  { name: 'Sales pipeline', detail: 'Salesforce · Opportunities, stages and owners' },
+  { name: 'Marketing attribution', detail: 'BigQuery · Campaigns, touches and conversions' },
+  { name: 'Supply chain', detail: 'Databricks · Orders, inventory and lead times' },
+  { name: 'Customer 360', detail: 'Snowflake · Accounts, usage and health' },
+  { name: 'Headcount', detail: 'Workday · People, roles and cost centres' },
+];
+
+export const ModelPickerDialog: React.FC<{ isOpen: boolean; onClose: () => void; onChoose: (model: string) => void }> = ({ isOpen, onClose, onChoose }) => {
+  const [query, setQuery] = useState('');
+  const [pick, setPick] = useState<string | null>(null);
+  const shown = MODELS.filter((m) => `${m.name} ${m.detail}`.toLowerCase().includes(query.toLowerCase()));
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Choose a data model"
+      size="medium"
+      footer={
+        <div className={styles.footer}>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" disabled={!pick} onClick={() => pick && onChoose(pick)}>Open in workbook</Button>
+        </div>
+      }
+    >
+      <Vertical gap={12}>
+        <SearchInput placeholder="Search data models" value={query} onChange={(e) => setQuery(e.target.value)} onClear={() => setQuery('')} />
+        <Typography variant="body-normal" color="gray">Data models you can use</Typography>
+        <div className={styles.rows}>
+          {shown.map((m) => (
+            <button key={m.name} className={`${styles.row} ${styles.modelRow} ${pick === m.name ? styles.rowOn : ''}`} onClick={() => setPick(m.name)} onDoubleClick={() => onChoose(m.name)}>
+              <Icon name="model" size="s" />
+              <span className={styles.modelText}>
+                <span className={styles.fn}>{m.name}</span>
+                <span className={styles.modelDetail}>{m.detail}</span>
+              </span>
+            </button>
+          ))}
+          {!shown.length && <Typography variant="body-normal" color="gray">No data model matches “{query}”</Typography>}
+        </div>
+      </Vertical>
+    </Modal>
+  );
+};
+
 /** Insert > Pivot table, as in Google Sheets: the data range, and where to put the pivot. */
 export const CreatePivotDialog: React.FC<{
   isOpen: boolean;

@@ -24,8 +24,18 @@ export interface PlanAppProps {
 }
 
 export const PlanApp: React.FC<PlanAppProps> = ({ wb, sheet, onChange, onNote }) => {
-  const plan = wb.sheets.find((s) => s.name === 'Plan');
   const finance = wb.sheets.find((s) => s.name === 'Finance');
+  // Plan figures come from the Plan input tab; a workbook without one (the film's three-tab workbook, Vivek 4 Nov)
+  // falls back to the Finance tab's Plan revenue column, with edits kept in the app until approval.
+  const planTab = wb.sheets.find((s) => s.name === 'Plan');
+  const [local, setLocal] = useState<Record<string, number>>({});
+  const plan = useMemo(() => {
+    if (planTab) return planTab;
+    if (!finance) return undefined;
+    const by = new Map<string, number>();
+    for (const r of finance.rows) { const k = r[0] + '|' + r[1]; by.set(k, (by.get(k) ?? 0) + Number(r[6])); }
+    return { id: '', name: 'Plan', kind: 'local' as const, columns: [], cells: {}, rows: [...by.entries()].map(([k, v]) => { const [reg, mo] = k.split('|'); return [reg, mo, local[k] ?? Math.round(v)]; }) };
+  }, [planTab, finance, local]);
   const regions = useMemo(() => [...new Set((plan?.rows ?? []).map((r) => String(r[0])))], [plan]);
   const [region, setRegion] = useState(regions[0] ?? '');
   const [edited, setEdited] = useState<Set<string>>(new Set());
@@ -48,7 +58,8 @@ export const PlanApp: React.FC<PlanAppProps> = ({ wb, sheet, onChange, onNote })
     if (!plan) return;
     const v = text.replace(/[$,\s]/g, '');
     if (v === '' || isNaN(Number(v)) || Number(v) === Math.round(Number(plan.rows[rowIndex][2]))) return;
-    onChange(setCell(wb, plan.id, 2, rowIndex + 2, v).wb);
+    if (planTab) onChange(setCell(wb, planTab.id, 2, rowIndex + 2, v).wb);
+    else setLocal((l) => ({ ...l, [region + '|' + month]: Number(v) }));
     setEdited((e) => new Set(e).add(`${region}|${month}`));
   };
 
