@@ -7,6 +7,7 @@ import type { IconName } from '@components/icons';
 import chip from '@spotter/chat/QuickAction.module.css';
 import welcome from '@spotter/page/SpotterWelcome.module.css';
 import { NewBadge } from './NewBadge';
+import { HomeWidgets } from './HomeWidgets';
 import styles from '../WorkbookInThoughtSpot.module.css';
 
 // Home on the Radiance "home" product pattern (ThoughtSpot's AI background), as the product
@@ -47,6 +48,7 @@ export const HomeView: React.FC = () => {
             </button>
           ))}
         </Horizontal>
+        <HomeWidgets />
       </Vertical>
     </div>
   );
