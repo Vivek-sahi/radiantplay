@@ -36,3 +36,22 @@
   font-size: var(--font-size-xs);
   line-height: var(--line-height-sm);
 }
+
+/* Radiance home pattern: the parent needs position relative and isolation isolate. */
+.home {
+  position: relative;
+  isolation: isolate;
+  min-height: 100%;
+}
+
+.homeContent {
+  position: relative;
+  z-index: 1;
+  max-width: 844px;
+  margin: 0 auto;
+  padding: var(--spacing-16, 64px) var(--spacing-8) var(--spacing-8);
+}
+
+.homePrompt {
+  width: 100%;
+}
