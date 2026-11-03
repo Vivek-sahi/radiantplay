@@ -40,6 +40,8 @@ export interface WorkbookRow {
 }
 
 export const WORKBOOKS: WorkbookRow[] = [
+  // The PM's scenario, pre-built: opens for real (the edit scenario).
+  { id: 'fy26-plan-vs-actual', name: 'FY26 plan vs actual', model: 'Finance Model', sheets: 4, owner: 'You', edited: '1 hour ago', status: 'Draft', mine: true },
   { id: 'fy27-revenue-plan', name: 'FY27 Revenue Plan', model: 'Finance Model', sheets: 4, owner: 'You', edited: '2 hours ago', status: 'Verified', mine: true },
   { id: 'monthly-close-pack', name: 'Monthly close pack', model: 'GL Model', sheets: 6, owner: 'A. Kim', edited: 'Yesterday', status: 'Verified', mine: false },
   { id: 'pipeline-vs-target', name: 'Pipeline vs target', model: 'Sales Model', sheets: 3, owner: 'J. Reyes', edited: '3 days ago', status: 'Draft', mine: false },

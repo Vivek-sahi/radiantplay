@@ -43,7 +43,7 @@ const FILTERS = [
   { id: 'shared', label: 'Shared with me' },
 ];
 
-export const WorkbooksView: React.FC<{ onCreate: (source?: SourceId) => void }> = ({ onCreate }) => {
+export const WorkbooksView: React.FC<{ onCreate: (source?: SourceId) => void; onOpen: (id: string) => void }> = ({ onCreate, onOpen }) => {
   const [filter, setFilter] = useState('all');
   // Templates sit behind a secondary button, not on the page (Vivek, 3 Nov: too many cards).
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -80,11 +80,11 @@ export const WorkbooksView: React.FC<{ onCreate: (source?: SourceId) => void }> 
       </div>
 
       <Vertical gap={12}>
-        <Horizontal justify="space-between" align="center">
-          <Typography variant="section-label">Recent</Typography>
-          <SegmentedControl options={FILTERS} value={filter} onChange={setFilter} size="small" />
+        {/* No "Recent" heading; the filter sits on the left at the default size (Vivek, 3 Nov). */}
+        <Horizontal justify="start" align="center">
+          <SegmentedControl className={styles.filter} options={FILTERS} value={filter} onChange={setFilter} size="large" />
         </Horizontal>
-        <Table columns={COLUMNS} data={rows as unknown as Record<string, unknown>[]} rowKey="id" />
+        <Table columns={COLUMNS} data={rows as unknown as Record<string, unknown>[]} rowKey="id" onRowClick={(row) => onOpen(String(row.id))} />
       </Vertical>
 
       <Modal isOpen={templatesOpen} onClose={() => setTemplatesOpen(false)} title="Templates" size="large">

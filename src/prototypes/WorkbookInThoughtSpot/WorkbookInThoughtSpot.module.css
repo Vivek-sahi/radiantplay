@@ -75,3 +75,9 @@
   width: 100%;
   margin-top: var(--spacing-12, 48px);
 }
+
+/* Workbooks filter: large control with a bigger label (Vivek, 3 Nov). The extra class weight
+   beats the control's own .container.large .segment size. */
+.filter.filter.filter button {
+  font-size: var(--font-size-md);
+}
