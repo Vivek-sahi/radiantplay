@@ -8,6 +8,7 @@ import { SegmentedControl } from '@components/SegmentedControl';
 import { Modal } from '@components/Modal';
 import { Horizontal, Vertical } from '@components/Layout';
 import { Icon } from '@components/icons';
+import { Link } from '@components/Link';
 import { START_OPTIONS, TEMPLATES, WORKBOOKS, type WorkbookRow } from '../data/workbooks';
 import type { SourceId } from '../data/create';
 import styles from '../WorkbookInThoughtSpot.module.css';
@@ -29,7 +30,16 @@ const STATUS_RENDER = (value: unknown) =>
   );
 
 const COLUMNS: TableColumn[] = [
-  { key: 'name', label: 'Name', sortable: true },
+  {
+    key: 'name', label: 'Name', sortable: true,
+    // Clickable names with the object type's icon, as in ThoughtSpot's other lists (Vivek, 3 Nov).
+    render: (value) => (
+      <Horizontal gap={8} align="center">
+        <Icon name="table" size="m" color="var(--rd-sys-color-content-secondary)" />
+        <Link href="#" color="blue" onClick={(e) => e.preventDefault()}>{String(value)}</Link>
+      </Horizontal>
+    ),
+  },
   { key: 'model', label: 'Model' },
   { key: 'sheets', label: 'Sheets' },
   { key: 'owner', label: 'Owner' },
@@ -84,7 +94,7 @@ export const WorkbooksView: React.FC<{ onCreate: (source?: SourceId) => void; on
         <Horizontal justify="start" align="center">
           <SegmentedControl className={styles.filter} options={FILTERS} value={filter} onChange={setFilter} size="large" />
         </Horizontal>
-        <Table columns={COLUMNS} data={rows as unknown as Record<string, unknown>[]} rowKey="id" onRowClick={(row) => onOpen(String(row.id))} />
+        <Table className={styles.listTable} columns={COLUMNS} data={rows as unknown as Record<string, unknown>[]} rowKey="id" onRowClick={(row) => onOpen(String(row.id))} />
       </Vertical>
 
       <Modal isOpen={templatesOpen} onClose={() => setTemplatesOpen(false)} title="Templates" size="large">

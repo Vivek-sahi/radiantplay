@@ -81,3 +81,8 @@
 .filter.filter.filter button {
   font-size: var(--font-size-md);
 }
+
+/* Workbook rows open on click. */
+.listTable tr {
+  cursor: pointer;
+}
