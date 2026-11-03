@@ -29,6 +29,7 @@ export function financeWorkbook(modelName: string, name: string): Workbook {
     ],
     rows: (data.rows as Row[]).map(([reg, m, ind, ...nums]) => [reg, monthLabel(m), ind, ...nums]),
     cells: {},
+    source: `${modelName} model · refreshed 2 hours ago`,
   };
   return { name, model: modelName, sheets: [model], names: {} };
 }

@@ -1,0 +1,73 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-2) var(--spacing-4);
+  border-bottom: 1px solid var(--rd-sys-color-border-subtle);
+}
+
+.left {
+  min-width: 0;
+}
+
+.title {
+  font-weight: var(--font-weight-emphasis, 600);
+  font-size: var(--font-size-md);
+}
+
+.draft {
+  padding: 0 var(--spacing-2);
+  border-radius: var(--radius-sm);
+  background: var(--rd-sys-color-background-sunken);
+  color: var(--rd-sys-color-content-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-sm);
+}
+
+/* Grey glyph buttons, as in the toolbar. */
+.header .quiet.quiet,
+.header .quiet.quiet > span {
+  color: var(--rd-sys-color-content-secondary);
+  transition: none;
+}
+
+.header .quiet svg,
+.header .quiet svg * {
+  pointer-events: none;
+}
+
+.sources {
+  border: 1px solid var(--rd-sys-color-border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.sourceRow {
+  display: grid;
+  grid-template-columns: 12px minmax(100px, 1fr) 56px minmax(160px, 2fr);
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--rd-sys-color-content-primary);
+}
+
+.sourceRow + .sourceRow {
+  border-top: 1px solid var(--rd-sys-color-border-subtle);
+}
+
+.sourceKind,
+.sourceWhere {
+  color: var(--rd-sys-color-content-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.live { background: var(--rd-sys-color-content-success); }
+.input { background: var(--rd-sys-color-content-brand); }
+.local { background: var(--rd-sys-color-content-tertiary); }

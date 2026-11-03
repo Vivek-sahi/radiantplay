@@ -1,12 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CompactSelection, type GridSelection } from '@glideapps/glide-data-grid';
-import { Typography } from '@components/Typography';
-import { Horizontal } from '@components/Layout';
-import { Icon } from '@components/icons';
 import { SheetGrid, type SheetGridHandle } from './SheetGrid';
 import { FormulaBar, type FormulaBarHandle } from './FormulaBar';
 import { SheetFooter, type Aggregate } from './SheetFooter';
 import { SheetToolbar } from './toolbar/SheetToolbar';
+import { WorkbookHeader } from './WorkbookHeader';
 import { colLetter, parseRef, refsIn } from '../engine/formula';
 import {
   addSheet, defineName, lastDataRow, rawOf, readOnlyReason, refFor, setCell, shiftFormula, valueOf, type Workbook,
@@ -29,10 +27,14 @@ interface Editing { sheetId: string; c: number; r: number; draft: string }
 
 export interface WorkbookLiveProps {
   initial: Workbook;
+  /** An existing workbook that's already been published (the edit scenario). */
+  publishedAlready?: boolean;
 }
 
-export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial }) => {
+export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAlready }) => {
   const [wb, setWb] = useState(initial);
+  const [publishCount, setPublishCount] = useState(publishedAlready ? 1 : 0);
+  const [dirty, setDirty] = useState(false);
   const past = useRef<Workbook[]>([]);
   const future = useRef<Workbook[]>([]);
   const [activeId, setActiveId] = useState(initial.sheets[0].id);
@@ -51,6 +53,7 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial }) => {
   // ── history ────────────────────────────────────────────────────────────────
   const commitWb = useCallback((next: Workbook) => {
     setWb((prev) => { past.current = [...past.current.slice(-99), prev]; future.current = []; return next; });
+    setDirty(true);
   }, []);
   const undo = useCallback(() => {
     const prev = past.current.pop();
@@ -215,12 +218,18 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial }) => {
 
   return (
     <div className={styles.frame}>
-      <Horizontal gap={8} align="center" className={styles.titleBar}>
-        <Icon name="table" size="m" />
-        <Typography variant="content-label">{wb.name}</Typography>
-        <span className={styles.draft}>Draft</span>
-        {wb.model && <span className={styles.model}><span className={styles.liveDot} />{wb.model} model</span>}
-      </Horizontal>
+      <WorkbookHeader
+        wb={wb}
+        onRename={(name) => commitWb({ ...wb, name })}
+        publishCount={publishCount}
+        dirty={dirty}
+        unsavedInputs={0}
+        onPublish={() => {
+          setPublishCount((n) => n + 1);
+          setDirty(false);
+          setNote(publishCount === 0 ? 'Published. Share it now: people you share with see this version.' : 'Changes published. Everyone now sees this version.');
+        }}
+      />
 
       <div className={styles.toolbar}>
         <SheetToolbar onAction={(id) => {

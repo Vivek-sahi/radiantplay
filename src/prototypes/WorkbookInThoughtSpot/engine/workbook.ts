@@ -28,6 +28,8 @@ export interface Sheet {
   rows: (string | number | null)[][];
   /** Free cells keyed "col,row": a typed value or a formula. */
   cells: Record<string, string>;
+  /** Where the data comes from, for Workbook details. */
+  source?: string;
 }
 
 export interface Workbook {

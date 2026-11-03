@@ -27,6 +27,7 @@ export function fy26Workbook(): Workbook {
     ],
     rows: [...planBy.entries()].map(([k, v]) => [...k.split('|'), Math.round(v)]),
     cells: {},
+    source: 'Writes to FINANCE.PLANNING.PLAN_BY_REGION in your warehouse',
   };
 
   // Assumptions: values that live only in this workbook.

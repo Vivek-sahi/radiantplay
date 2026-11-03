@@ -46,7 +46,7 @@ export const OpenWorkbook: React.FC<{ build: () => Workbook }> = ({ build }) => 
           </Vertical>
         </div>
         <div className={styles.canvas}>
-          <WorkbookLive initial={initial} />
+          <WorkbookLive initial={initial} publishedAlready />
         </div>
       </div>
     </div>
