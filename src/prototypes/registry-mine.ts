@@ -39,12 +39,22 @@ const DataNotebook = React.lazy(() => import('./DataNotebook'));
 const SpotterPrep = React.lazy(() => import('./SpotterPrep'));
 const SpotterPrep2 = React.lazy(() => import('./SpotterPrep2'));
 const NearStore = React.lazy(() => import('./NearStore'));
+const WorkbookInThoughtSpot = React.lazy(() => import('./WorkbookInThoughtSpot'));
 const AgentDBMVP = React.lazy(() => import('./AgentDBMVP'));
 const AgentDBMVPHome = React.lazy(() => import('./AgentDBMVP/Home'));
 const SearchDataOnDataModelexplorations = React.lazy(() => import('./SearchDataOnDataModelexplorations'));
 const SearchDataOnDataModelFinal = React.lazy(() => import('./SearchDataOnDataModelFinal'));
 
 export const myRegistry: ProjectMeta[] = [
+  {
+    id: 'WorkbookInThoughtSpot',
+    name: 'Workbook in ThoughtSpot',
+    description: 'A spreadsheet object that Spotter works on, beside Apps and Liveboards. Step 1: the entry points, a Workbook chip under the home prompt bar and Workbooks under Library.',
+    author: 'Vivek Sahi',
+    lastModified: '2026-11-03',
+    component: WorkbookInThoughtSpot,
+    section: 'mine',
+  },
   {
     id: 'AgentDBMVPHome',
     name: 'AgentDB MVP · Project home',
