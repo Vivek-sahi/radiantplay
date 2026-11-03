@@ -34,3 +34,17 @@
 .bar .tool.tool:hover > span {
   color: var(--rd-sys-color-content-primary);
 }
+
+/* Feels instant, like Sheets: no fade on hover or press, a visible pressed state. Tooltips wait
+   400ms so moving across the bar doesn't flash labels, and hide at once. */
+.bar .tool.tool {
+  transition: none;
+}
+
+.bar .tool.tool:hover {
+  background-color: var(--rd-sys-color-background-ghost-hover);
+}
+
+.bar .tool.tool:active {
+  background-color: var(--rd-sys-color-background-subtle);
+}
