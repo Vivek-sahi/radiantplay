@@ -228,7 +228,7 @@ export const specs: ComponentSpec[] = [
   {
     id: 'limit-banner',
     name: 'Plan-limit banner',
-    summary: 'Warning banner (Radiant Alert, page variant) at the top of the Data Cache page and of every model\'s Caching tab when a plan limit is reached.',
+    summary: 'Warning banner (Radiant Alert, section multi-line, full width) at the top of the Data Cache page and of every model\'s Caching tab when a plan limit is reached.',
     tags: ['New'],
     preview: () => <LimitBanner limit="hours" plan={plan} />,
     states: [
@@ -238,7 +238,7 @@ export const specs: ComponentSpec[] = [
     behaviour: [
       { trigger: 'Query hours used up', result: 'Caching pauses until the 1st; queries run on the warehouse; nothing is charged. Cached models show Paused, every uncached model shows Add hours, Cache Model is disabled on the Caching tab. Hours tile shows 1,000 of 1,000, "Used up on 22 Nov. Resets 1 Dec".' },
       { trigger: 'Storage full', result: 'Existing caches keep refreshing; no new model can be cached until storage is added or a cache is purged. Cache Model disabled everywhere. Storage tile shows 500 GB of 500 GB, "Full".' },
-      { trigger: 'Add hours / Add storage', result: 'Opens a modal: Not now / Contact my ThoughtSpot rep. Contacting closes it with the toast "Request sent to your ThoughtSpot rep".' },
+      { trigger: 'More hours or storage', result: 'No button on the banner: customers contact sales (Vivek, 4 Nov).' },
     ],
     files: [{ path: 'src/prototypes/DataCache/components/LimitBanner.tsx', holds: 'Banner and its modal' }],
     sources: [{ title: 'LimitBanner.tsx', code: limitSrc }],

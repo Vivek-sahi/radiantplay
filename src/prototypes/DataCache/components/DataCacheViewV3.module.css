@@ -76,3 +76,11 @@
   width: 100%;
   justify-content: center;
 }
+
+/* Notices span the page, the same width as the savings banner (Vivek, 4 Nov). */
+.page .fullWidth {
+  width: 100%;
+  max-width: none; /* the DS section alert caps at 454px */
+  align-self: stretch;
+  box-sizing: border-box;
+}

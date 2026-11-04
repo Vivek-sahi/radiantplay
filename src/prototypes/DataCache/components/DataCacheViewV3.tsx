@@ -252,7 +252,7 @@ export const DataCacheViewV3: React.FC<{
           </Horizontal>
         )}
       </Vertical>
-      {!enabled && <Alert status="info" variant="section" dismissible={false} message={NOT_ENABLED} />}
+      {!enabled && <Alert status="info" variant="section" dismissible={false} message={NOT_ENABLED} className={styles.fullWidth} />}
       <LimitBanner limit={limit} plan={plan} />
 
       {bannerEl}

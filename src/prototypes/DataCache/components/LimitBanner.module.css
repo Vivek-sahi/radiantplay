@@ -1,0 +1,6 @@
+/* Full width of the page or tab; the DS section alert caps at 454px otherwise. */
+.banner.banner {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
