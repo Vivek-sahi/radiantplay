@@ -15,8 +15,9 @@ import { DocsShell } from './home/DocsShell';
 const PROTOTYPE = '/playground/WorkbookInThoughtSpot';
 const REPO = 'https://github.com/Vivek-sahi/radiantplay/tree/prototype/data-studio/src/prototypes/WorkbookInThoughtSpot';
 const ext = { target: '_blank', rel: 'noreferrer' } as const;
-/** Recordings and documents (public/workbook/, git-ignored: they open locally and are not deployed). */
-const DOCS = '/workbook';
+/** The workflow recordings on Loom (Vivek, 4 Nov). */
+const MANUAL_LOOM = 'https://www.loom.com/share/fcce5bf5b4384062bdd9caaec844685a';
+const AGENTIC_LOOM = 'https://www.loom.com/share/1ff5cafd668e416b98190c2fd7cf15c2';
 
 const Section: React.FC<{ id: string; title: string; note?: React.ReactNode; children: React.ReactNode }> = ({ id, title, note, children }) => (
   <section id={id} className={styles.section}>
@@ -39,8 +40,8 @@ const WorkbookHome: React.FC = () => (
       <Horizontal gap={spacing.B} wrap>
         <RouterLink to={PROTOTYPE}><Button variant="primary" icon="play">Open the prototype</Button></RouterLink>
         <a href={REPO} {...ext}><Button variant="secondary" icon="folder">Repo</Button></a>
-        <a href={`${DOCS}/manual-workflow-2026-11-03.mp4`} {...ext}><Button variant="secondary" icon="video">Manual workflow recording</Button></a>
-        <a href={`${DOCS}/agentic-workflow-2026-11-03.mp4`} {...ext}><Button variant="secondary" icon="video">Agentic workflow recording</Button></a>
+        <a href={MANUAL_LOOM} {...ext}><Button variant="secondary" icon="video">Manual workflow recording</Button></a>
+        <a href={AGENTIC_LOOM} {...ext}><Button variant="secondary" icon="video">Agentic workflow recording</Button></a>
       </Horizontal>
     </Vertical>
 
