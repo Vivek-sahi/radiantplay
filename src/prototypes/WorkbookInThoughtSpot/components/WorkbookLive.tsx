@@ -59,6 +59,8 @@ export interface WorkbookLiveProps {
   onDeleted?: () => void;
   /** Lets Spotter edit this workbook through the same engine as the user's own edits. */
   agent?: React.Ref<WorkbookAgent>;
+  /** Hands a request to Spotter (tab + → App, Make an app): Spotter opens and runs it. */
+  onAskSpotter?: (prompt: string) => void;
 }
 
 /** What Spotter can do to an open workbook (Vivek, 3 Nov: the agent-led edit flow). Each action is one
@@ -87,9 +89,12 @@ export interface WorkbookAgent {
 
 // Pin needs a published workbook (Vivek, 3 Nov): a Liveboard tile shows the version everyone sees, the
 // same reason Share waits for Publish. The PM docs have no publish step; this comes from the Apps model.
+/** What the tab + → App and Make an app send to Spotter. */
+export const APP_PROMPT = 'Build an app from this workbook';
+
 const PIN_NEEDS_PUBLISH = 'Publish first. A pinned tile shows the published version, so publish your changes, then pin.';
 
-export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAlready, onDeleted, agent }) => {
+export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAlready, onDeleted, agent, onAskSpotter }) => {
   const [wb, setWb] = useState(initial);
   const [publishCount, setPublishCount] = useState(publishedAlready ? 1 : 0);
   const [dirty, setDirty] = useState(false);
@@ -216,7 +221,12 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
   }), [wb, commitWb, publishCount, dirty]);
   const { menuBar } = useContext(VariantContext);
   const addTab = (kind: 'blank' | 'input' | 'app') => {
-    if (kind === 'app') { setNote('Ask Spotter for an app: it builds one as an App tab beside your sheets'); return; }
+    // New app (Vivek, 4 Nov): Spotter opens with the request and runs its app flow.
+    if (kind === 'app') {
+      if (onAskSpotter) onAskSpotter(APP_PROMPT);
+      else setNote('Ask Spotter for an app: it builds one as an App tab beside your sheets');
+      return;
+    }
     if (kind === 'input') { setNewInput(true); return; }
     const out = addSheet(wb, 'local');
     commitWb(out.wb);
@@ -491,7 +501,10 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
       case 'move-right': commitWb(moveSheet(wb, id, 1)); break;
       case 'refresh': setNote(`${s.name} refreshed from the ${wb.model} model just now`); break;
       case 'pin': if (publishCount === 0 || dirty) { setNote(PIN_NEEDS_PUBLISH); break; } setActiveId(id); setPin({ what: `the ${s.name} sheet`, ...pinLiveness(wb, id, { c1: 0, c2: Math.max(0, s.columns.length - 1), r1: 1, r2: s.rows.length ? lastDataRow(s) : 60 }) }); break;
-      case 'make-app': setNote('Make an app comes next: it opens as an App tab beside your sheets'); break;
+      case 'make-app':
+        if (onAskSpotter) onAskSpotter(APP_PROMPT);
+        else setNote('Make an app comes next: it opens as an App tab beside your sheets');
+        break;
       case 'save-input':
         if (!unsavedCount(s)) { setNote(`Nothing to save: ${s.name} matches ${s.writesTo ?? 'the warehouse'}`); break; }
         setSaveFor(id);

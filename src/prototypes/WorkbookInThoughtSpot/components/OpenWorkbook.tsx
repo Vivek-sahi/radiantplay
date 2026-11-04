@@ -56,6 +56,7 @@ export const OpenWorkbook: React.FC<{ build: () => Workbook; onDeleted?: () => v
   const [ask, setAsk] = useState<Ask | null>(null);
   const [asking, setAsking] = useState<'in' | 'leaving'>('in');
   const [appBuild, setAppBuild] = useState<BuildState>('idle');
+  const [openKey, setOpenKey] = useState(0);
   const intro = `Opened ${initial.name}. It’s on the ${initial.model} model, which refreshed 2 hours ago. Ask me to change it, or work in the sheet.`;
   const [turns, setTurns] = useState<Turn[]>([{ kind: 'agent', text: intro, next: OPEN_NEXT }]);
   const push = (...t: Turn[]) => setTurns((prev) => [...prev, ...t]);
@@ -164,7 +165,7 @@ export const OpenWorkbook: React.FC<{ build: () => Workbook; onDeleted?: () => v
     <div className={styles.root}>
       <RadianceBackground pattern="spotterx" state={busy ? radiance : 'answered'} />
       <div className={styles.split}>
-        <SpotterDock>
+        <SpotterDock openKey={openKey}>
           <div ref={scrollRef} className={styles.thread}>
             <Vertical gap={20} ref={contentRef}>
               {turns.map((t, i) => {
@@ -254,7 +255,7 @@ export const OpenWorkbook: React.FC<{ build: () => Workbook; onDeleted?: () => v
           </Vertical>
         </SpotterDock>
         <div className={styles.canvas}>
-          <WorkbookLive initial={initial} publishedAlready onDeleted={onDeleted} agent={agent} />
+          <WorkbookLive initial={initial} publishedAlready onDeleted={onDeleted} agent={agent} onAskSpotter={(prompt) => { setOpenKey((k) => k + 1); send(prompt); }} />
         </div>
       </div>
     </div>

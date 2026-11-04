@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SpotterLeftToggle, type SpotterLeftMode } from '@spotter/page';
 import styles from './CreateFlow.module.css';
 
@@ -7,8 +7,10 @@ import styles from './CreateFlow.module.css';
 // to a slim rail holding the toggle and the workbook takes the width. The conversation stays mounted
 // while collapsed, so a turn that's still streaming or building carries on.
 
-export const SpotterDock: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const SpotterDock: React.FC<{ children: React.ReactNode; openKey?: number }> = ({ children, openKey }) => {
   const [mode, setMode] = useState<SpotterLeftMode>('panel');
+  // Something in the workbook asked Spotter to act (tab + → App): open the panel if it's collapsed.
+  useEffect(() => { if (openKey) setMode('panel'); }, [openKey]);
   const collapsed = mode === 'rail';
   return (
     <div className={collapsed ? styles.rail : styles.chat}>

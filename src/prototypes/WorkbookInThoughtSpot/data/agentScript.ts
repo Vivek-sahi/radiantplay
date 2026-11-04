@@ -271,24 +271,23 @@ export const styleFor = (answer: string): AppStyle => APP_STYLES.find((x) => x.l
 export const APP_INTRO =
   'A data app fits. I’ve got everything from this workbook: it’s built on the Finance model, Plan is an input table keyed by Region and Month, and Summary already has actual, plan and variance. So there’s nothing to set up on data. Two quick questions.';
 export const APP_ASK = [
-  { question: 'Who uses it, and what happens to their changes?', options: ['Regional leads, and the plan owner approves changes', 'Regional leads, saving straight to the warehouse', 'The finance team, all regions'] },
+  // Approval is not an app step (Vivek, 4 Nov): it goes through the workbook / sheet publish and share flow.
+  { question: 'Who uses it?', options: ['Regional leads', 'The finance team, all regions'] },
   // The style step (Faris's flow has one; Vivek, 3 Nov: like Excel's table styles).
   { question: 'How should it look?', options: APP_STYLES.map((x) => x.label) },
 ];
 export const APP_BULLETS = [
   'Each lead picks their region and sees actual, plan and variance for the last 6 months',
   'They change plan month by month; it saves to the Plan input table',
-  'Send for approval goes to the plan owner before anything reaches the warehouse',
 ];
 export const AFTER_APP = [
   { id: 'publish-app', label: 'Publish and share it with the regional leads' },
 ];
 export const appPlan = (answer: string, style: AppStyle = 'light') => {
   const audience = /finance team/i.test(answer) ? 'The finance team, all regions' : 'Regional leads, each in their own region';
-  const approval = /straight/i.test(answer) ? 'None: changes save straight to the warehouse' : /finance team/i.test(answer) ? 'None' : 'The plan owner approves changes before they save';
-  return { ...appPlanFor(audience, approval, style), style };
+  return { ...appPlanFor(audience, style), style };
 };
-const appPlanFor = (audience: string, approval: string, style: AppStyle) => ({
+const appPlanFor = (audience: string, style: AppStyle) => ({
   title: 'Regional plan update',
   description: `An app for ${audience.toLowerCase()} to check actual against plan and update plan month by month.`,
   rows: [
@@ -296,7 +295,6 @@ const appPlanFor = (audience: string, approval: string, style: AppStyle) => ({
     { label: 'Shows', value: 'Actual, plan and variance for the last 6 months, by month' },
     { label: 'Can change', value: 'Plan revenue, month by month' },
     { label: 'Writes to', value: 'The Plan input table: FINANCE.PLANNING.PLAN_BY_REGION' },
-    { label: 'Approval', value: approval },
     { label: 'Style', value: APP_STYLES.find((x) => x.id === style)!.plan },
   ],
 });
@@ -305,7 +303,6 @@ export const APP_STEPS = [
   'Added a region picker',
   'Added actual, plan and variance for the last 6 months',
   'Made plan editable, saving to the Plan input table',
-  'Added Send for approval',
 ];
 export const APP_BUILT = 'It reads the same numbers you do. Publish the workbook and share it with the regional leads to let them in.';
 

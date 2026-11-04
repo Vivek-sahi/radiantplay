@@ -45,7 +45,7 @@ export interface WorkbookHeaderProps {
 const KIND_ICON = { live: 'database', input: 'pencil', local: 'doc', app: 'apps' } as const;
 const KIND_LABEL = { live: 'Live', input: 'Input', local: 'Local', app: 'App' } as const;
 
-export const WorkbookHeader: React.FC<WorkbookHeaderProps> = ({ wb, onRename, publishCount, dirty, unsavedInputs, onPublish, versions, onRestore, onCopy, onDownload, onSchedule, onDelete, open }) => {
+export const WorkbookHeader: React.FC<WorkbookHeaderProps> = ({ wb, onRename, publishCount, dirty, unsavedInputs, onPublish, versions, onRestore, onCopy, onDownload, onDelete, open }) => {
   const [info, setInfo] = useState(false);
   const [history, setHistory] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -81,10 +81,8 @@ export const WorkbookHeader: React.FC<WorkbookHeaderProps> = ({ wb, onRename, pu
           trigger={<Button className={styles.quiet} variant="tertiary" size="small" iconOnly icon="more" iconPosition="leading">More workbook actions</Button>}
         >
           <ActionMenu.Group>
-            <ActionMenu.Item label="Version history" icon={<Icon name="clock" size="s" />} disabled={!published} onClick={() => setHistory(true)} />
             <ActionMenu.Item label="Make a copy" icon={<Icon name="copy" size="s" />} onClick={onCopy} />
             <ActionMenu.Item label="Download as Excel" icon={<Icon name="download" size="s" />} onClick={onDownload} />
-            <ActionMenu.Item label="Schedule" icon={<Icon name="calendar-cleaned" size="s" />} disabled={!published} onClick={onSchedule} />
           </ActionMenu.Group>
           <ActionMenu.Group>
             <ActionMenu.Item label="Delete" icon={<Icon name="delete" size="s" />} destructive onClick={() => setConfirmDelete(true)} />

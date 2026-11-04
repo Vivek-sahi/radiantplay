@@ -20,6 +20,23 @@ export type ColumnAction =
   | 'rename' | 'duplicate' | 'remove'
   | 'input-type' | 'input-key' | 'input-required' | 'input-allowed' | 'input-default';
 
+/** The grid cancels mouse-down on its canvas, so ActionMenu's own click-outside never hears a click
+ *  on the grid. Close on any press or scroll outside the menu, and on Escape. */
+function useDismiss(host: React.RefObject<HTMLDivElement | null>, onClose: () => void) {
+  useEffect(() => {
+    const outside = (e: Event) => { if (!host.current?.contains(e.target as Node)) onClose(); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('pointerdown', outside, true);
+    document.addEventListener('wheel', outside, true);
+    document.addEventListener('keydown', esc, true);
+    return () => {
+      document.removeEventListener('pointerdown', outside, true);
+      document.removeEventListener('wheel', outside, true);
+      document.removeEventListener('keydown', esc, true);
+    };
+  }, [host, onClose]);
+}
+
 export interface ColumnMenuProps {
   sheet: Sheet;
   /** The column and where its header is on screen; n reopens the menu for a new click. */
@@ -30,7 +47,9 @@ export interface ColumnMenuProps {
 
 export const ColumnMenu: React.FC<ColumnMenuProps> = ({ sheet, at, onAction, onClose }) => {
   const trigger = useRef<HTMLButtonElement>(null);
+  const host = useRef<HTMLDivElement>(null);
   useEffect(() => { trigger.current?.click(); }, []);
+  useDismiss(host, onClose);
 
   const col = sheet.columns[at.c];
   const name = col?.title || sheet.cells[`${at.c},1`] || `Column ${colLetter(at.c)}`;
@@ -39,7 +58,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ sheet, at, onAction, onC
   const run = (a: ColumnAction) => () => onAction(at.c, a);
 
   return (
-    <div className={styles.host} style={{ left: at.x, top: at.y, width: at.w, height: at.h }}>
+    <div ref={host} className={styles.host} style={{ left: at.x, top: at.y, width: at.w, height: at.h }}>
       <ActionMenu
         placement="bottom-end"
         onClose={onClose}
@@ -99,9 +118,11 @@ export type NewColumnType = 'text' | 'number' | 'currency' | 'percent' | 'date';
 
 export const AddColumnMenu: React.FC<{ at: { x: number; y: number; w: number; h: number; n: number }; onPick: (t: NewColumnType) => void; onClose: () => void }> = ({ at, onPick, onClose }) => {
   const trigger = useRef<HTMLButtonElement>(null);
+  const host = useRef<HTMLDivElement>(null);
   useEffect(() => { trigger.current?.click(); }, []);
+  useDismiss(host, onClose);
   return (
-    <div className={styles.host} style={{ left: at.x, top: at.y, width: at.w, height: at.h }}>
+    <div ref={host} className={styles.host} style={{ left: at.x, top: at.y, width: at.w, height: at.h }}>
       <ActionMenu placement="bottom-end" onClose={onClose} trigger={<button ref={trigger} className={styles.trigger} aria-label="Add a column" />}>
         <ActionMenu.Group label="Add a column">
           <ActionMenu.Item label="Text" icon={<Icon name="text" size="s" />} onClick={() => onPick('text')} />

@@ -2,15 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { Typography } from '@components/Typography';
 import { Select } from '@components/Select';
 import { TextInput } from '@components/TextInput';
-import { Button } from '@components/Button';
-import { Horizontal, Vertical } from '@components/Layout';
+import { Vertical } from '@components/Layout';
 import { setCell, type Sheet, type Workbook } from '../../engine/workbook';
 import styles from './PlanApp.module.css';
 
 // The App tab Spotter builds from the FY26 workbook (Vivek, 3 Nov: the data app happens via the agent).
-// Regional leads pick their region, see actual against plan, edit plan by month, and send it to the plan
-// owner for approval (the PM's e2e flow). Plan edits write to the workbook's Plan input table, so the
-// sheets and the app stay one source.
+// Regional leads pick their region, see actual against plan and edit plan by month. Plan edits write to
+// the workbook's Plan input table, so the sheets and the app stay one source. No Send for approval here
+// (Vivek, 4 Nov): approval goes through the workbook / sheet publish and share flow, not the app.
 
 const money = (n: number) => `${n < 0 ? '−' : ''}$${Math.round(Math.abs(n)).toLocaleString()}`;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -23,10 +22,10 @@ export interface PlanAppProps {
   onNote: (note: string) => void;
 }
 
-export const PlanApp: React.FC<PlanAppProps> = ({ wb, sheet, onChange, onNote }) => {
+export const PlanApp: React.FC<PlanAppProps> = ({ wb, sheet, onChange }) => {
   const finance = wb.sheets.find((s) => s.name === 'Finance');
   // Plan figures come from the Plan input tab; a workbook without one (the film's three-tab workbook, Vivek 4 Nov)
-  // falls back to the Finance tab's Plan revenue column, with edits kept in the app until approval.
+  // falls back to the Finance tab's Plan revenue column, with edits kept in the app.
   const planTab = wb.sheets.find((s) => s.name === 'Plan');
   const [local, setLocal] = useState<Record<string, number>>({});
   const plan = useMemo(() => {
@@ -73,7 +72,7 @@ export const PlanApp: React.FC<PlanAppProps> = ({ wb, sheet, onChange, onNote })
         <Vertical gap={4}>
           <Typography variant="page-title">{sheet.app?.title}</Typography>
           <Typography variant="body-normal" color="gray">
-            For {sheet.app?.audience}. Plan changes write to {sheet.app?.writesTo} once the plan owner approves them.
+            For {sheet.app?.audience}. Plan changes write to {sheet.app?.writesTo}.
           </Typography>
         </Vertical>
 
@@ -125,21 +124,6 @@ export const PlanApp: React.FC<PlanAppProps> = ({ wb, sheet, onChange, onNote })
           })}
         </div>
 
-        <Horizontal gap={8} align="center">
-          <Button
-            variant="primary"
-            disabled={!edited.size}
-            onClick={() => {
-              onNote(`Sent ${edited.size} plan change${edited.size === 1 ? '' : 's'} for ${region} to the plan owner for approval`);
-              setEdited(new Set());
-            }}
-          >
-            Send for approval
-          </Button>
-          <Typography variant="footnote" color="gray">
-            {edited.size ? `${edited.size} month${edited.size === 1 ? '' : 's'} changed` : 'Edit a plan value to send it for approval'}
-          </Typography>
-        </Horizontal>
       </Vertical>
     </div>
   );
