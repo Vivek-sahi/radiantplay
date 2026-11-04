@@ -24,6 +24,7 @@ import {
   warehouseHours,
   RATE_PER_QUERY,
   RATE_PER_HOUR,
+  HIT_CEILING,
   queryTimeAvoidedHours,
   savingPerYearHours,
 } from '../utils';
@@ -63,7 +64,7 @@ const ORG_SCOPE = 'Last 30 days, on your cacheable models';
 export const defaultOrgEstimate = (org: Org): EstimateInputs => ({
   queriesPerMonth: Math.round((org.warehouseQueries30d * org.volumeShare) / 100),
   avgQuerySeconds: org.warehouseQueries30d > 0 ? Math.round(((org.warehouseHours30d * 3600) / org.warehouseQueries30d) * 10) / 10 : 3,
-  hitPct: 80,
+  hitPct: Math.round(HIT_CEILING * 100),
   ratePerQuery: RATE_PER_QUERY,
   hoursPerMonth: org.cacheableHours30d,
   ratePerHour: RATE_PER_HOUR,
@@ -195,7 +196,7 @@ export const DataCacheViewV3: React.FC<{
     <Vertical gap={spacing.A}>
       <Typography variant="section-label" color="base" as="h2" noMargin>Estimated cost savings</Typography>
       <Typography variant="body-normal" color="gray-light" noMargin>
-        With DataCache, 60-80% of your warehouse compute on cacheable models can be executed extremely fast and at no cost. Your plan includes {formatRowsFull(plan.freeHours)} compute hours, enough to cache {em(`${cov.pct}%`)} of your models.
+        With DataCache, 80-90% of your warehouse compute on cacheable models can be executed extremely fast and at no cost. Your plan includes {formatRowsFull(plan.freeHours)} compute hours, enough to cache {em(`${cov.pct}%`)} of your models.
       </Typography>
     </Vertical>
   );

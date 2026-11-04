@@ -87,7 +87,9 @@ export const isCacheEnabled = (m: DataModel): boolean => !!m.cache; // config ex
 /** $ per warehouse compute hour, the saving estimate's unit price (5 Nov: replaces $ per query). */
 export const RATE_PER_HOUR = 3;
 export const RATE_PER_QUERY = 0.05; // $ per warehouse query, the saving estimate's unit price
-export const HIT_CEILING = 0.8; // up to 80% of queries on a cached model use cached data
+export const HIT_CEILING = 0.9; // up to 90% of queries on a cached model use cached data (5 Nov: 80–90%)
+/** The low end of the band: ranges run from 80% to 90% served from cache. */
+export const HIT_FLOOR = 0.8;
 /** Per-model bar: at the ceiling and $0.05 a query, this many queries in 30 d saves $1,000 a year. */
 export const MODEL_BAR_QUERIES = 2055;
 const CACHE_FACTOR = 1; // cache query hours per warehouse query hour absorbed (worst case, 1:1)
@@ -117,8 +119,8 @@ export const usd = (n: number): string =>
         ? `${(n / 1000).toFixed(1)}k`
         : String(Math.round(n)));
 
-/** The saving as a range: 60% to 80% of queries from cache. */
-export const usdRange = (atCeiling: number): string => `${usd(atCeiling * 0.75)} to ${usd(atCeiling)}`;
+/** The saving as a range: 80% to 90% of queries from cache. */
+export const usdRange = (atCeiling: number): string => `${usd(atCeiling * (HIT_FLOOR / HIT_CEILING))} to ${usd(atCeiling)}`;
 
 /** Rounds to 3 significant figures for headline counts: 675,606 → 676,000 */
 export const roundSig = (n: number): number => Number(n.toPrecision(3));
