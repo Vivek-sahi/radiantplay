@@ -156,9 +156,9 @@ export const CalculatorBox: React.FC<{ inputs: EstimateInputs; plan: Plan; onCha
           <Typography variant="page-title" color="success" as="span" noMargin>{usdRange(r.savingPerYear)}</Typography>
           <Typography variant="footnote" color="gray-light" noMargin>a year in warehouse cost</Typography>
         </Vertical>
-        {/* Harviish, 4 Nov: ties cache query hours to the warehouse queries. Static for now. */}
-        <Typography variant="body-normal" color="gray" noMargin>Caching this model uses ~32 of your 1,000 query hours</Typography>
         <CalculatorInputs inputs={inputs} onChange={onChange} />
+        {/* Harviish, 4 Nov: ties cache query hours to the warehouse queries. Static for now. */}
+        <Typography variant="footnote" color="gray-light" noMargin>Caching this model uses ~32 of your 1,000 query hours</Typography>
       </Vertical>
     </Card>
   );
