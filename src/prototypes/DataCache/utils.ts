@@ -203,4 +203,4 @@ export const usdRangeYr = (atCeiling: number): string => `${usdRange(atCeiling).
 
 /** The line under the figure, live from the inputs, the same on the Caching tab and the Data Cache page. */
 export const estimateBasis = (e: EstimateInputs): string =>
-  `At $${Number.isInteger(e.ratePerHour) ? e.ratePerHour : e.ratePerHour.toFixed(2)} per warehouse compute hour, ${e.hitPct}% served from Data Cache`;
+  `At $${Number.isInteger(e.ratePerHour) ? e.ratePerHour : e.ratePerHour.toFixed(2)} per warehouse compute hour, ${e.hitPct}% of queries served from DataCache`;

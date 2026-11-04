@@ -31,7 +31,7 @@ export const EstimateModal: React.FC<{
   fit?: boolean;
   /** The first input's label (the page's modal is org-wide, Vivek's wording 4 Nov). */
   queriesLabel?: string;
-}> = ({ initial, plan, onSave, onClose, title = 'Estimate your saving', queriesHelp = 'Last 30 days', fit = false, queriesLabel }) => {
+}> = ({ initial, plan, onSave, onClose, title = 'Estimate your savings', queriesHelp = 'Last 30 days', fit = false, queriesLabel }) => {
   const [draft, setDraft] = useState<EstimateInputs>(initial);
   const r = computeEstimate(draft, plan);
   const f = fitLine(draft, plan);
@@ -40,7 +40,7 @@ export const EstimateModal: React.FC<{
       isOpen
       onClose={onClose}
       title={title}
-      size="medium"
+      size="large"
       footer={
         <ModalFooter
           secondaryAction={<Button variant="secondary" onClick={onClose}>Cancel</Button>}

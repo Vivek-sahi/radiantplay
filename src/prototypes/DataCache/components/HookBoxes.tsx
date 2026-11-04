@@ -13,7 +13,7 @@ export const HOOK_BOX_OPTIONS: { id: HookBoxStyle; label: string }[] = [
   { id: 'calculator', label: 'Calculator' },
 ];
 
-const BOX_TITLE = 'Estimated savings';
+const BOX_TITLE = 'Estimated cost savings';
 
 const Line: React.FC<{ label: string; sub?: string; value: React.ReactNode; total?: boolean; valueColor?: 'base' | 'success' }> = ({ label, sub, value, total, valueColor = 'base' }) => (
   <Horizontal justify="space-between" align="start" gap={spacing.D} className={`${styles.line} ${total ? styles.total : ''}`}>
@@ -98,10 +98,10 @@ export const CalculatorInputs: React.FC<{
           <TextInput value={draft.rate} onChange={(e) => commit('rate', e.target.value)} inputMode="decimal" aria-label="Warehouse cost per compute hour ($)" />
         </Vertical>
         <Vertical gap={spacing.A} className={styles.knobWide}>
-          <Typography variant="content-label" color="base" noMargin>Served from cache</Typography>
+          <Typography variant="content-label" color="base" noMargin>Queries served from cache</Typography>
           <Horizontal gap={spacing.C} align="center" className={styles.knobSlider}>
             <div className={styles.slider}>
-              <Slider value={inputs.hitPct} min={0} max={100} step={5} onChange={(v) => onChange({ ...inputs, hitPct: v })} aria-label="Served from cache" />
+              <Slider value={inputs.hitPct} min={0} max={100} step={5} onChange={(v) => onChange({ ...inputs, hitPct: v })} aria-label="Queries served from cache" />
             </div>
             <Typography variant="body-normal" color="base" as="span" noMargin className={styles.pct}>{inputs.hitPct}%</Typography>
           </Horizontal>
@@ -134,12 +134,12 @@ export const CalculatorInputs: React.FC<{
       </Horizontal>
       <Horizontal justify="space-between" align="center" gap={spacing.D} className={styles.line}>
         <Vertical gap={0}>
-          <Typography variant="content-label" color="base" noMargin>Served from cache</Typography>
-          <Typography variant="footnote" color="gray-light" noMargin>Most models reach 60 to 80%</Typography>
+          <Typography variant="content-label" color="base" noMargin>Queries served from cache</Typography>
+          <Typography variant="footnote" color="gray-light" noMargin>Most models reach 80 to 90%</Typography>
         </Vertical>
         <Horizontal gap={spacing.C} align="center" className={styles.field}>
           <div className={styles.slider}>
-            <Slider value={inputs.hitPct} min={0} max={100} step={5} onChange={(v) => onChange({ ...inputs, hitPct: v })} aria-label="Served from cache" />
+            <Slider value={inputs.hitPct} min={0} max={100} step={5} onChange={(v) => onChange({ ...inputs, hitPct: v })} aria-label="Queries served from cache" />
           </div>
           <Typography variant="body-normal" color="base" as="span" noMargin className={styles.pct}>{inputs.hitPct}%</Typography>
         </Horizontal>

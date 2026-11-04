@@ -19,7 +19,6 @@ import {
   hoursUsed,
   isCacheable,
   usd,
-  usdRange,
   usdRangeYr,
   estimateBasis,
   warehouseHours,
@@ -166,11 +165,11 @@ export const DataCacheViewV3: React.FC<{
     ...(org.aboveThreshold || savingForAll
       ? [{
           key: 'saving',
-          label: 'Est. saving / yr',
+          label: 'Estimated cost savings',
           render: (_v: unknown, row: DataModel) => {
             if (!isCacheable(row)) return '—';
             // Same estimate before, during and after caching (Vivek, 4 Nov).
-            return <Typography variant="content-label" color="success" as="span" noMargin>{usdRange(savingPerYearHours(warehouseHours(row)))}</Typography>;
+            return <Typography variant="content-label" color="success" as="span" noMargin>{usdRangeYr(savingPerYearHours(warehouseHours(row)))}</Typography>;
           },
         }]
       : []),
@@ -208,7 +207,7 @@ export const DataCacheViewV3: React.FC<{
         <Vertical gap={spacing.D} className={styles.bannerBody}>
           {copy}
           {banner === 'inline' && <div className={styles.inputs}>{inputs}</div>}
-          {banner === 'modal' && <div><Button variant="secondary" onClick={() => setOpen('calc')}>Estimate your saving</Button></div>}
+          {banner === 'modal' && <div><Button variant="secondary" onClick={() => setOpen('calc')}>Estimate your savings</Button></div>}
           {banner === 'receipt' && <div><Button variant="secondary" onClick={() => setOpen('receipt')}>How we got this number</Button></div>}
           {banner === 'expand' && expanded && <div className={styles.inputs}>{inputs}</div>}
         </Vertical>
@@ -220,7 +219,7 @@ export const DataCacheViewV3: React.FC<{
     <Vertical gap={spacing.F} className={styles.page}>
       <Vertical gap={spacing.B}>
         <Horizontal gap={spacing.C} align="center">
-          <Typography variant="page-title" color="base" as="h1" noMargin>Data Cache</Typography>
+          <Typography variant="page-title" color="base" as="h1" noMargin>DataCache</Typography>
           {enabled && titleTag === 'pill' && <StatusPill kind="success" icon="checkmark" label="Included in your plan" />}
           {enabled && titleTag === 'neutral' && <StatusPill kind="neutral" label="Included" />}
         </Horizontal>
@@ -266,7 +265,7 @@ export const DataCacheViewV3: React.FC<{
         <Tile icon="clock" label="Compute hours" value={formatRowsFull(limit === 'hours' ? plan.freeHours : used)} of={`of ${formatRowsFull(plan.freeHours)}`} meter={limit === 'hours' ? 100 : allowancePct(used, plan.freeHours)} sub={limit === 'hours' ? 'Used up on 22 Nov. Resets 1 Dec' : n ? `Used by your ${n} cached ${n === 1 ? 'model' : 'models'} this month` : ''} />
         <Tile icon="database" label="Storage" value={limit === 'storage' ? `${plan.freeGB} GB` : gb >= 1 ? `${gb.toFixed(gb < 10 ? 1 : 0)} GB` : gb > 0 ? `${Math.round(gb * 1024)} MB` : '0 GB'} of={`of ${plan.freeGB} GB`} meter={limit === 'storage' ? 100 : allowancePct(gb, plan.freeGB)} sub={limit === 'storage' ? 'Full' : n ? `${formatCompact(rows)} rows across ${n} ${n === 1 ? 'model' : 'models'}` : ''} />
         <Tile icon="chart" label="Queries served from cache" value={formatRowsFull(fromCache)} sub={fromCache ? `${hitPct}% of queries on cached models` : ''} />
-        <Tile icon="chart" label="Warehouse cost avoided" value={fromCache ? `~${usd(saved)}` : '$0'} sub={fromCache ? `About ${usd(saved * 12)} a year at this rate` : `Estimate at $${RATE_PER_HOUR} per warehouse compute hour`} />
+        <Tile icon="chart" label="Warehouse cost avoided" value={fromCache ? `~${usd(saved)}` : '$0'} sub={fromCache ? `About ${usd(saved * 12)} a year at this rate` : `At $${RATE_PER_HOUR} per warehouse compute hour`} />
       </Horizontal>
 
       <Vertical gap={spacing.D}>

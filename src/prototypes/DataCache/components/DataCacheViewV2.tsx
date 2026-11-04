@@ -309,7 +309,7 @@ export const DataCacheViewV2: React.FC<{
       {/* Title, the plan in one line, and the notice when caching isn't enabled. */}
       <Vertical gap={spacing.B}>
         <Horizontal gap={spacing.C} align="center">
-          <Typography variant="page-title" color="base" as="h1" noMargin>Data Cache</Typography>
+          <Typography variant="page-title" color="base" as="h1" noMargin>DataCache</Typography>
           {enabled && <StatusPill kind="success" icon="checkmark" label="Included in your plan" />}
         </Horizontal>
         <Typography variant="body-normal" color="gray-light" noMargin>

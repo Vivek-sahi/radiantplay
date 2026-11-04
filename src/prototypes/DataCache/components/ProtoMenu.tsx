@@ -104,7 +104,7 @@ export const ProtoMenu: React.FC<{
                 <Row label="Box"><SegmentedControl size="small" options={seg(HOOK_BOX_OPTIONS.map((o) => ({ id: o.id, label: o.id === 'original' ? 'Original' : o.id === 'receipt' ? 'Receipt' : 'Calculator' })))} value={boxStyle} onChange={(v) => onBoxStyle(v as HookBoxStyle)} /></Row>
 
                 <Divider />
-                <Typography variant="overline" color="gray-light" noMargin>Data Cache page</Typography>
+                <Typography variant="overline" color="gray-light" noMargin>DataCache page</Typography>
                 <Row label="Earlier designs">
                   <SegmentedControl size="small" options={[{ id: 'v1', label: 'v1' }, { id: 'v2', label: 'v2' }]} value={EARLIER.some((o) => o.id === version) ? version : ''} onChange={(v) => onVersion(v as PageVersion)} />
                 </Row>

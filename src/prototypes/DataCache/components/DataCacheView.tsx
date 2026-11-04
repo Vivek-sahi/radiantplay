@@ -279,7 +279,7 @@ export const DataCacheView: React.FC<{
   return (
     <Vertical gap={spacing.F} className={styles.page}>
       <Horizontal gap={spacing.C} align="center">
-        <Typography variant="page-title" color="base" noMargin>Data Cache</Typography>
+        <Typography variant="page-title" color="base" noMargin>DataCache</Typography>
         <StatusPill kind="success" icon="checkmark" label="Included in your plan" />
       </Horizontal>
 

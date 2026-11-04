@@ -158,7 +158,7 @@ export const DataCache: React.FC = () => {
       return <DataObjectsView models={models} onOpenModel={(id) => openModel(id, 'objects')} />;
     }
     if (view.kind === 'other') {
-      return <NoData title={NAV_LABELS[view.id] ?? view.id} description="Not part of this prototype. Data objects and Data Cache are the pages that are built." />;
+      return <NoData title={NAV_LABELS[view.id] ?? view.id} description="Not part of this prototype. Data objects and DataCache are the pages that are built." />;
     }
     const model = models.find((m) => m.id === view.modelId);
     if (!model) return null;

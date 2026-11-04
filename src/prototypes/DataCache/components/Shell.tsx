@@ -43,7 +43,7 @@ const categories = (badge: NavBadge): Record<string, SidebarCategory[]> => ({
         { id: 'usage', label: 'Usage' },
         { id: 'dbt', label: 'dbt' },
         { id: 'liveboard-verification', label: 'Liveboard verification' },
-        { id: 'datacache', label: 'Data Cache', badge: <span className={`${styles.navTag} ${badge === 'new' ? styles.navTagNew : styles.navTagIncluded}`}>{badge === 'new' ? 'New' : 'Included'}</span> },
+        { id: 'datacache', label: 'DataCache', badge: <span className={`${styles.navTag} ${badge === 'new' ? styles.navTagNew : styles.navTagIncluded}`}>{badge === 'new' ? 'New' : 'Included'}</span> },
       ],
     },
   ],
