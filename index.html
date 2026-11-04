@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
@@ -54,7 +54,7 @@
       // Set the saved theme before first paint, so a reload never flashes the wrong one.
       // Keep the key and the light default in step with src/context/ThemeContext.tsx.
       (function () {
-        var mode = 'light';
+        var mode = 'dark'; // Vivek's fork defaults to dark (5 Nov); keep in step with ThemeContext DEFAULT_MODE
         try {
           var stored = localStorage.getItem('rp-theme-mode');
           if (stored === 'light' || stored === 'dark' || stored === 'system') mode = stored;

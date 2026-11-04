@@ -15,7 +15,7 @@ import type { ThemeMode, ThemeName } from '../tokens/theme';
  */
 
 export const THEME_STORAGE_KEY = 'rp-theme-mode';
-const DEFAULT_MODE: ThemeName = 'light';
+const DEFAULT_MODE: ThemeName = 'dark'; // Vivek's fork defaults to dark (5 Nov); keep in step with index.html
 
 const isThemeName = (value: unknown): value is ThemeName =>
   value === 'light' || value === 'dark' || value === 'system';
