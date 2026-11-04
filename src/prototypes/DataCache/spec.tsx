@@ -132,6 +132,7 @@ export const specs: ComponentSpec[] = [
     ],
     notes: [
       'Placeholder maths: cache query hours are taken 1:1 with the warehouse query hours they replace, until the real compute-hour formula lands.',
+      'Open (waiting on leadership + Harviish): per Harviish, cache query hours = queries × average cache query time. Once that average is confirmed, coverage N% should use the same derivation as the calculator\'s "~X of your 1,000 query hours" line, so the page and the Caching tab agree.',
       'Open: the first sentence is passive; Vivek has it as "ok for now".',
     ],
   },
@@ -220,7 +221,7 @@ export const specs: ComponentSpec[] = [
     files: [{ path: 'src/prototypes/DataCache/components/HookBoxes.tsx', holds: 'CalculatorBox and CalculatorInputs' }],
     sources: [{ title: 'HookBoxes.tsx', code: boxSrc }],
     notes: [
-      'Open: the query hours line differs between the two calculators ("~32 of your 1,000 query hours" here, "enough to cache N% of your models" on the page) and is not decided. "~32" is static text. Harviish\'s formula is queries × average cache query time; the average and the period (month or year) are not confirmed. Our own 1:1 placeholder would give ~267 h for this model.',
+      'Units (Harviish, 4 Nov): inputs stay in queries and the saving in $ per query (what telemetry has, how customers read their bill); the cost side is query hours on the cache (what we meter), derived from queries. Final call with leadership. Open: the query hours line differs between the two calculators ("~32 of your 1,000 query hours" here, "enough to cache N% of your models" on the page) and is not decided. "~32" is static text. Harviish\'s formula is queries × average cache query time; the average and the period (month or year) are not confirmed. Our own 1:1 placeholder would give ~267 h for this model.',
       'Estimate modal (Data Cache page): same three inputs, labelled "Queries on your cacheable models" / "Last 30 days"; Cancel and Save. Same figure and basis line as the calculator. Open: the slider label.',
     ],
   },
