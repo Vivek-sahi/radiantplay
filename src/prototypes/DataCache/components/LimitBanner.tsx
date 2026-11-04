@@ -16,13 +16,13 @@ import type { Plan } from '../types';
 export type Limit = 'none' | 'hours' | 'storage';
 export const LIMIT_OPTIONS: { id: Limit; label: string }[] = [
   { id: 'none', label: 'None' },
-  { id: 'hours', label: 'Query hours' },
+  { id: 'hours', label: 'Compute hours' },
   { id: 'storage', label: 'Storage' },
 ];
 
 const message = (limit: Exclude<Limit, 'none'>, plan: Plan) =>
   limit === 'hours'
-    ? `Caching is paused for November. You used your ${formatRowsFull(plan.freeHours)} free query hours on 22 Nov. Queries are running on your warehouse again and nothing is charged. Caching resumes 1 Dec, or now if you add hours.`
+    ? `Caching is paused for November. You used your ${formatRowsFull(plan.freeHours)} free compute hours on 22 Nov. Queries are running on your warehouse again and nothing is charged. Caching resumes 1 Dec, or now if you add hours.`
     : `Your ${plan.freeGB} GB of cache storage is full. Cached models keep refreshing, but no new model can be cached. Add storage, or purge a cache to free up space.`;
 
 // No button (Vivek, 4 Nov): customers contact sales for more. Section multi-line so the

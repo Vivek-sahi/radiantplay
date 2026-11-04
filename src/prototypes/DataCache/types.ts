@@ -132,7 +132,10 @@ export interface EstimateInputs {
   queriesPerMonth: number;
   avgQuerySeconds: number;
   hitPct: number; // share of queries served from cache, 0-100
-  ratePerQuery: number; // $ per warehouse query
+  ratePerQuery: number; // $ per warehouse query (earlier explorations)
+  /** Compute hours (5 Nov, leadership): the calculators run on warehouse compute hours and $ per hour. */
+  hoursPerMonth: number; // warehouse compute hours, last 30 days
+  ratePerHour: number; // $ per warehouse compute hour
 }
 
 // ── PLG additions ─────────────────────────────────────────────────────────────

@@ -84,6 +84,8 @@ export const isCacheEnabled = (m: DataModel): boolean => !!m.cache; // config ex
 // ── The PLG maths (from the reference prototype, 2 Nov) ───────────────────────
 // Every constant is a placeholder until the real formula lands; they are kept
 // in one place so a change is one edit.
+/** $ per warehouse compute hour, the saving estimate's unit price (5 Nov: replaces $ per query). */
+export const RATE_PER_HOUR = 3;
 export const RATE_PER_QUERY = 0.05; // $ per warehouse query, the saving estimate's unit price
 export const HIT_CEILING = 0.8; // up to 80% of queries on a cached model use cached data
 /** Per-model bar: at the ceiling and $0.05 a query, this many queries in 30 d saves $1,000 a year. */
@@ -100,6 +102,9 @@ export const cacheHours = (m: DataModel): number => Math.round(warehouseHours(m)
 
 /** Yearly saving at the ceiling for a model with `queries30d` warehouse queries a month. */
 export const savingPerYear = (queries30d: number): number => (queries30d * 365) / 30 * HIT_CEILING * RATE_PER_QUERY;
+
+/** Yearly saving at the ceiling for a model with `hours30d` warehouse compute hours a month (5 Nov). */
+export const savingPerYearHours = (hours30d: number): number => hours30d * RATE_PER_HOUR * 12 * HIT_CEILING;
 
 /** 381479 → "$381k"; 1_250_000 → "$1.3M"; 2500 → "$2.5k"; 640 → "$640" */
 export const usd = (n: number): string =>
@@ -142,6 +147,8 @@ export const defaultEstimate = (m: DataModel): EstimateInputs => ({
   avgQuerySeconds: m.usage?.avgQuerySeconds ?? 3,
   hitPct: Math.round(HIT_CEILING * 100),
   ratePerQuery: RATE_PER_QUERY,
+  hoursPerMonth: warehouseHours(m),
+  ratePerHour: RATE_PER_HOUR,
 });
 
 export interface Estimate {
@@ -154,13 +161,14 @@ export interface Estimate {
 
 export function computeEstimate(e: EstimateInputs, plan: Plan): Estimate {
   const hit = Math.min(100, Math.max(0, e.hitPct)) / 100;
-  const warehouseHrs = Math.round((e.queriesPerMonth * e.avgQuerySeconds) / 3600);
+  const warehouseHrs = Math.round(e.hoursPerMonth);
   const cacheHrs = Math.round(warehouseHrs * CACHE_FACTOR + REFRESH_HOURS);
   return {
     stillReaching: Math.round((e.queriesPerMonth * (1 - hit)) / 10) * 10,
     warehouseHours: warehouseHrs,
     cacheHours: cacheHrs,
-    savingPerYear: ((e.queriesPerMonth * 365) / 30) * hit * e.ratePerQuery,
+    // Their formula (5 Nov): compute hours × $ per hour × 12 × share served from cache.
+    savingPerYear: e.hoursPerMonth * e.ratePerHour * 12 * hit,
     withinFree: cacheHrs <= plan.freeHours,
   };
 }
@@ -195,4 +203,4 @@ export const usdRangeYr = (atCeiling: number): string => `${usdRange(atCeiling).
 
 /** The line under the figure, live from the inputs, the same on the Caching tab and the Data Cache page. */
 export const estimateBasis = (e: EstimateInputs): string =>
-  `At $${e.ratePerQuery.toFixed(2)} per warehouse query, with ${e.hitPct}% queries served from DataCache`;
+  `At $${Number.isInteger(e.ratePerHour) ? e.ratePerHour : e.ratePerHour.toFixed(2)} per warehouse compute hour, ${e.hitPct}% served from Data Cache`;

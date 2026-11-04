@@ -15,6 +15,10 @@ import limitSrc from './components/LimitBanner.tsx?raw';
 import utilsSrc from './utils.ts?raw';
 
 /**
+ * PARKED (Vivek, 5 Nov): renamed from spec.tsx so the Prototype / Spec switch does not
+ * show. Rename back to spec.tsx to bring the handoff spec back. Not up to date with the
+ * compute-hours change ($3 per compute hour).
+ *
  * Data Cache (PLG): the engineering handoff, drafted 4 Nov 2026 from the code and
  * Vivek's rulings in session. DRAFT until Vivek approves it.
  *
@@ -206,7 +210,7 @@ export const specs: ComponentSpec[] = [
     name: 'Estimate calculator',
     summary: 'Live estimate for one model on its Caching tab. The same inputs appear org-wide in the estimate modal on the Data Cache page.',
     tags: ['New'],
-    preview: () => <CalculatorBox inputs={{ queriesPerMonth: 228_790, avgQuerySeconds: 4.2, hitPct: 80, ratePerQuery: 0.05 }} plan={plan} onChange={noop} />,
+    preview: () => <CalculatorBox inputs={{ queriesPerMonth: 228_790, avgQuerySeconds: 4.2, hitPct: 80, ratePerQuery: 0.05, hoursPerMonth: 267, ratePerHour: 3 }} plan={plan} onChange={noop} />,
     anatomy: [
       { name: 'Title', description: '"Estimated savings"' },
       { name: 'Result', description: 'Saving on a subtle surface, "$84k–$111k/yr", then the basis line "At $0.05 per warehouse query, with 80% queries served from DataCache", live from the inputs. Same figure format and basis line as the Data Cache page banner and the estimate modal.' },

@@ -230,7 +230,7 @@ export const CachingHook: React.FC<{
         <Vertical gap={spacing.C} className={`${styles.colLeft} ${heroEl ? '' : styles.colLeftLifted}`}>
           <Typography variant="page-title" color="base" as="h2" noMargin className={styles.colTitle}>Cache to reduce query cost</Typography>
           <Typography variant="body-large" color="gray-light" noMargin className={styles.colText}>
-            Your data doesn't change every second. Cache your data in ThoughtSpot and refresh it on your schedule. Your plan includes {formatRowsFull(plan.freeHours)} query hours and {plan.freeGB} GB storage.
+            Your data doesn't change every second. Cache your data in ThoughtSpot and refresh it on your schedule. Your plan includes {formatRowsFull(plan.freeHours)} compute hours and {plan.freeGB} GB storage.
           </Typography>
           {heroEl && <div className={styles.colHero}>{heroEl}</div>}
           <Horizontal gap={spacing.C} align="center" className={styles.cta}>
@@ -253,7 +253,7 @@ export const CachingHook: React.FC<{
           {heroEl}
           <Typography variant="page-title" color="base" as="h2" noMargin>Cache to reduce query cost</Typography>
           <Typography variant="body-large" color="gray-light" noMargin className={styles.introText}>
-            Your ThoughtSpot plan includes {formatRowsFull(plan.freeHours)} query hours and {plan.freeGB} GB storage.
+            Your ThoughtSpot plan includes {formatRowsFull(plan.freeHours)} compute hours and {plan.freeGB} GB storage.
           </Typography>
           <div className={styles.cta}>
             <Button variant="primary" size="large" onClick={onCache} disabled={!enabled || blocked} className={styles.ctaButton}>Cache Model</Button>

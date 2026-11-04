@@ -72,13 +72,13 @@ export const CalculatorInputs: React.FC<{
   queriesLabel?: string;
   /** `rows` (the box): label left, field right, one under another. `row` (the banner): the three side by side, label above field. */
   layout?: 'rows' | 'row';
-}> = ({ inputs, onChange, queriesHelp = 'Last 30 days', queriesLabel = 'Warehouse queries a month', layout = 'rows' }) => {
-  const [draft, setDraft] = useState({ q: formatRowsFull(inputs.queriesPerMonth), rate: String(inputs.ratePerQuery) });
+}> = ({ inputs, onChange, queriesHelp = 'Last 30 days', queriesLabel = 'Warehouse compute hours a month', layout = 'rows' }) => {
+  const [draft, setDraft] = useState({ q: formatRowsFull(inputs.hoursPerMonth), rate: String(inputs.ratePerHour) });
   const commit = (k: 'q' | 'rate', raw: string) => {
     setDraft((d) => ({ ...d, [k]: raw }));
     const n = Number(raw.replace(/[^0-9.]/g, ''));
     if (!Number.isFinite(n) || raw.trim() === '') return;
-    onChange(k === 'q' ? { ...inputs, queriesPerMonth: Math.max(0, Math.round(n)) } : { ...inputs, ratePerQuery: Math.max(0, n) });
+    onChange(k === 'q' ? { ...inputs, hoursPerMonth: Math.max(0, Math.round(n)) } : { ...inputs, ratePerHour: Math.max(0, n) });
   };
   if (layout === 'row') {
     return (
@@ -88,20 +88,20 @@ export const CalculatorInputs: React.FC<{
           <TextInput
             value={draft.q}
             onChange={(e) => commit('q', e.target.value)}
-            onBlur={() => setDraft((d) => ({ ...d, q: formatRowsFull(inputs.queriesPerMonth) }))}
+            onBlur={() => setDraft((d) => ({ ...d, q: formatRowsFull(inputs.hoursPerMonth) }))}
             inputMode="numeric"
             aria-label={queriesLabel}
           />
         </Vertical>
         <Vertical gap={spacing.A} className={styles.knob}>
-          <Typography variant="content-label" color="base" noMargin>Warehouse cost per query ($)</Typography>
-          <TextInput value={draft.rate} onChange={(e) => commit('rate', e.target.value)} inputMode="decimal" aria-label="Warehouse cost per query ($)" />
+          <Typography variant="content-label" color="base" noMargin>Warehouse cost per compute hour ($)</Typography>
+          <TextInput value={draft.rate} onChange={(e) => commit('rate', e.target.value)} inputMode="decimal" aria-label="Warehouse cost per compute hour ($)" />
         </Vertical>
         <Vertical gap={spacing.A} className={styles.knobWide}>
-          <Typography variant="content-label" color="base" noMargin>Queries served from cache</Typography>
+          <Typography variant="content-label" color="base" noMargin>Served from cache</Typography>
           <Horizontal gap={spacing.C} align="center" className={styles.knobSlider}>
             <div className={styles.slider}>
-              <Slider value={inputs.hitPct} min={0} max={100} step={5} onChange={(v) => onChange({ ...inputs, hitPct: v })} aria-label="Queries served from cache" />
+              <Slider value={inputs.hitPct} min={0} max={100} step={5} onChange={(v) => onChange({ ...inputs, hitPct: v })} aria-label="Served from cache" />
             </div>
             <Typography variant="body-normal" color="base" as="span" noMargin className={styles.pct}>{inputs.hitPct}%</Typography>
           </Horizontal>
@@ -120,26 +120,26 @@ export const CalculatorInputs: React.FC<{
           <TextInput
             value={draft.q}
             onChange={(e) => commit('q', e.target.value)}
-            onBlur={() => setDraft((d) => ({ ...d, q: formatRowsFull(inputs.queriesPerMonth) }))}
+            onBlur={() => setDraft((d) => ({ ...d, q: formatRowsFull(inputs.hoursPerMonth) }))}
             inputMode="numeric"
             aria-label={queriesLabel}
           />
         </div>
       </Horizontal>
       <Horizontal justify="space-between" align="center" gap={spacing.D} className={styles.line}>
-        <Typography variant="content-label" color="base" noMargin>Warehouse cost per query ($)</Typography>
+        <Typography variant="content-label" color="base" noMargin>Warehouse cost per compute hour ($)</Typography>
         <div className={styles.field}>
-          <TextInput value={draft.rate} onChange={(e) => commit('rate', e.target.value)} inputMode="decimal" aria-label="Warehouse cost per query ($)" />
+          <TextInput value={draft.rate} onChange={(e) => commit('rate', e.target.value)} inputMode="decimal" aria-label="Warehouse cost per compute hour ($)" />
         </div>
       </Horizontal>
       <Horizontal justify="space-between" align="center" gap={spacing.D} className={styles.line}>
         <Vertical gap={0}>
-          <Typography variant="content-label" color="base" noMargin>Queries served from cache</Typography>
+          <Typography variant="content-label" color="base" noMargin>Served from cache</Typography>
           <Typography variant="footnote" color="gray-light" noMargin>Most models reach 60 to 80%</Typography>
         </Vertical>
         <Horizontal gap={spacing.C} align="center" className={styles.field}>
           <div className={styles.slider}>
-            <Slider value={inputs.hitPct} min={0} max={100} step={5} onChange={(v) => onChange({ ...inputs, hitPct: v })} aria-label="Queries served from cache" />
+            <Slider value={inputs.hitPct} min={0} max={100} step={5} onChange={(v) => onChange({ ...inputs, hitPct: v })} aria-label="Served from cache" />
           </div>
           <Typography variant="body-normal" color="base" as="span" noMargin className={styles.pct}>{inputs.hitPct}%</Typography>
         </Horizontal>
@@ -158,9 +158,9 @@ export const CalculatorBox: React.FC<{ inputs: EstimateInputs; plan: Plan; onCha
           <Typography variant="page-title" color="success" as="span" noMargin>{usdRangeYr(r.savingPerYear)}</Typography>
           <Typography variant="footnote" color="gray-light" noMargin>{estimateBasis(inputs)}</Typography>
         </Vertical>
-        <CalculatorInputs inputs={inputs} onChange={onChange} queriesLabel="Queries on this model" />
-        {/* Harviish, 4 Nov: ties cache query hours to the warehouse queries. Static for now. */}
-        <Typography variant="footnote" color="gray-light" noMargin>Caching this model uses ~32 of your 1,000 query hours</Typography>
+        <CalculatorInputs inputs={inputs} onChange={onChange} queriesLabel="Warehouse compute hours on this model" />
+        {/* The bridge (5 Nov): the model's compute hours against the plan's, live from input 1 (1:1). */}
+        <Typography variant="footnote" color="gray-light" noMargin>Caching this model uses ~{formatRowsFull(r.cacheHours)} of your {formatRowsFull(plan.freeHours)} compute hours</Typography>
       </Vertical>
     </Card>
   );

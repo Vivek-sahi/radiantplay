@@ -15,7 +15,7 @@ export const AddHoursModal: React.FC<{
   <Modal
     isOpen
     onClose={onClose}
-    title="Add query hours"
+    title="Add compute hours"
     size="medium"
     footer={
       <ModalFooter
@@ -26,13 +26,13 @@ export const AddHoursModal: React.FC<{
   >
     <Vertical gap={spacing.D}>
       <Typography variant="body-normal" color="base" noMargin>
-        Caching {model.name} needs about {formatRowsFull(cacheHours(model))} query hours a month.{' '}
+        Caching {model.name} needs about {formatRowsFull(cacheHours(model))} compute hours a month.{' '}
         {hoursLeft > 0
           ? `Your free hours have about ${formatRowsFull(hoursLeft)} left this month.`
           : `Your ${formatRowsFull(plan.freeHours)} free hours are used up this month.`}
       </Typography>
       <Typography variant="body-normal" color="base" noMargin>
-        Add a pack of 1,000 query hours and keep caching. Your ThoughtSpot rep can turn it on today.
+        Add a pack of 1,000 compute hours and keep caching. Your ThoughtSpot rep can turn it on today.
       </Typography>
       <Alert status="info" variant="section-multiline" dismissible={false} message="Free hours reset on the 1st of every month. Nothing is charged until you add hours." />
     </Vertical>

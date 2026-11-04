@@ -6,7 +6,8 @@
   display: inline-flex;
   align-items: center;
   border-radius: var(--radius-badge, 4px);
-  padding: 2px var(--spacing-2, 8px);
+  padding: 0 var(--spacing-2);
+  min-height: var(--spacing-6);
   font-family: var(--font-family-primary);
   font-size: var(--font-size-xs, 12px);
   line-height: var(--line-height-sm, 18px);
@@ -86,11 +87,11 @@
    only the text and the colour say the state (Vivek, 4 Nov). */
 .asButton {
   box-sizing: border-box;
-  height: 24px;
-  padding: 3px var(--spacing-3);
+  height: var(--spacing-6);
+  padding: 0 var(--spacing-3);
   border-radius: var(--radius-xl);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-sm);
-  letter-spacing: 0.072px;
+  letter-spacing: var(--letter-spacing-loose);
 }

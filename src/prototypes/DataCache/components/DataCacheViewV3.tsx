@@ -18,13 +18,15 @@ import {
   gbUsed,
   hoursUsed,
   isCacheable,
-  savingPerYear,
   usd,
   usdRange,
   usdRangeYr,
   estimateBasis,
   warehouseHours,
   RATE_PER_QUERY,
+  RATE_PER_HOUR,
+  queryTimeAvoidedHours,
+  savingPerYearHours,
 } from '../utils';
 import type { DataModel, EstimateInputs, Org, Plan } from '../types';
 
@@ -64,6 +66,8 @@ export const defaultOrgEstimate = (org: Org): EstimateInputs => ({
   avgQuerySeconds: org.warehouseQueries30d > 0 ? Math.round(((org.warehouseHours30d * 3600) / org.warehouseQueries30d) * 10) / 10 : 3,
   hitPct: 80,
   ratePerQuery: RATE_PER_QUERY,
+  hoursPerMonth: org.cacheableHours30d,
+  ratePerHour: RATE_PER_HOUR,
 });
 
 const cacheStatus = (m: DataModel): { kind: PillKind; label: string } => {
@@ -131,7 +135,7 @@ export const DataCacheViewV3: React.FC<{
   const fromCache = cached.reduce((t, m) => t + (m.cache!.analytics?.cachedQueries ?? 0), 0);
   const onCached = cached.reduce((t, m) => t + (m.cache!.analytics?.totalQueries ?? 0), 0);
   const hitPct = onCached > 0 ? Math.round((fromCache / onCached) * 100) : 0;
-  const saved = fromCache * RATE_PER_QUERY;
+  const saved = queryTimeAvoidedHours(cached) * RATE_PER_HOUR; // compute hours served from cache × $ per hour
   const est = computeEstimate(estimate, plan);
 
   // ── the one list: the PM's table ──
@@ -156,8 +160,9 @@ export const DataCacheViewV3: React.FC<{
   };
   const columns: TableColumn<DataModel>[] = [
     { key: 'name', label: 'Model', render: (_v, row) => <Link href="#" onClick={(e) => { e.preventDefault(); onOpenModel(row.id); }}>{row.name}</Link> },
+    // Compute hours drive the saving (5 Nov); queries stay as the secondary column.
+    { key: 'hours', label: 'Compute hours, 30 d', render: (_v, row) => `${formatRowsFull(warehouseHours(row))} h` },
     { key: 'queries', label: 'Warehouse queries, 30 d', render: (_v, row) => formatRowsFull(queries(row)) },
-    { key: 'hours', label: 'Query hours, 30 d', render: (_v, row) => `${formatRowsFull(warehouseHours(row))} h` },
     ...(org.aboveThreshold || savingForAll
       ? [{
           key: 'saving',
@@ -165,7 +170,7 @@ export const DataCacheViewV3: React.FC<{
           render: (_v: unknown, row: DataModel) => {
             if (!isCacheable(row)) return '—';
             // Same estimate before, during and after caching (Vivek, 4 Nov).
-            return <Typography variant="content-label" color="success" as="span" noMargin>{usdRange(savingPerYear(queries(row)))}</Typography>;
+            return <Typography variant="content-label" color="success" as="span" noMargin>{usdRange(savingPerYearHours(warehouseHours(row)))}</Typography>;
           },
         }]
       : []),
@@ -191,7 +196,7 @@ export const DataCacheViewV3: React.FC<{
     <Vertical gap={spacing.A}>
       <Typography variant="section-label" color="base" as="h2" noMargin>Estimated cost savings</Typography>
       <Typography variant="body-normal" color="gray-light" noMargin>
-        With DataCache, 60-80% of your warehouse queries on cacheable models can be executed extremely fast and at no cost. Your plan includes {formatRowsFull(plan.freeHours)} query hours, enough to cache {em(`${cov.pct}%`)} of your models.
+        With DataCache, 60-80% of your warehouse compute on cacheable models can be executed extremely fast and at no cost. Your plan includes {formatRowsFull(plan.freeHours)} compute hours, enough to cache {em(`${cov.pct}%`)} of your models.
       </Typography>
     </Vertical>
   );
@@ -221,18 +226,18 @@ export const DataCacheViewV3: React.FC<{
         </Horizontal>
         {planLine === 'plain' && (
           <Typography variant="body-normal" color="gray-light" noMargin>
-            Your plan includes {formatRowsFull(plan.freeHours)} query hours and {plan.freeGB} GB of cache storage a month.
+            Your plan includes {formatRowsFull(plan.freeHours)} compute hours and {plan.freeGB} GB of cache storage a month.
           </Typography>
         )}
         {planLine === 'bold' && (
           <Typography variant="body-normal" color="gray-light" noMargin>
-            Your plan includes {em(`${formatRowsFull(plan.freeHours)} query hours`)} and {em(`${plan.freeGB} GB of cache storage`)} a month.
+            Your plan includes {em(`${formatRowsFull(plan.freeHours)} compute hours`)} and {em(`${plan.freeGB} GB of cache storage`)} a month.
           </Typography>
         )}
         {planLine === 'pills' && (
           <Horizontal gap={spacing.B} align="center" wrap>
             <Typography variant="body-normal" color="gray-light" noMargin>Your plan includes</Typography>
-            <StatusPill kind="success" icon="clock" label={`${formatRowsFull(plan.freeHours)} query hours a month`} />
+            <StatusPill kind="success" icon="clock" label={`${formatRowsFull(plan.freeHours)} compute hours a month`} />
             <StatusPill kind="success" icon="database" label={`${plan.freeGB} GB of cache storage`} />
           </Horizontal>
         )}
@@ -241,7 +246,7 @@ export const DataCacheViewV3: React.FC<{
             <Typography variant="content-label" color="success" noMargin>Included in your plan</Typography>
             <Horizontal gap={spacing.B} align="center">
               <Icon name="clock" size="m" color={c['content-secondary']} />
-              {em(`${formatRowsFull(plan.freeHours)} query hours`)}
+              {em(`${formatRowsFull(plan.freeHours)} compute hours`)}
               <Typography variant="body-normal" color="gray-light" as="span" noMargin>a month</Typography>
             </Horizontal>
             <Horizontal gap={spacing.B} align="center">
@@ -258,7 +263,7 @@ export const DataCacheViewV3: React.FC<{
       {bannerEl}
 
       <Horizontal gap={spacing.D} align="stretch" wrap className={styles.tileRow}>
-        <Tile icon="clock" label="Query hours" value={formatRowsFull(limit === 'hours' ? plan.freeHours : used)} of={`of ${formatRowsFull(plan.freeHours)}`} meter={limit === 'hours' ? 100 : allowancePct(used, plan.freeHours)} sub={limit === 'hours' ? 'Used up on 22 Nov. Resets 1 Dec' : n ? `Used by your ${n} cached ${n === 1 ? 'model' : 'models'} this month` : ''} />
+        <Tile icon="clock" label="Compute hours" value={formatRowsFull(limit === 'hours' ? plan.freeHours : used)} of={`of ${formatRowsFull(plan.freeHours)}`} meter={limit === 'hours' ? 100 : allowancePct(used, plan.freeHours)} sub={limit === 'hours' ? 'Used up on 22 Nov. Resets 1 Dec' : n ? `Used by your ${n} cached ${n === 1 ? 'model' : 'models'} this month` : ''} />
         <Tile icon="database" label="Storage" value={limit === 'storage' ? `${plan.freeGB} GB` : gb >= 1 ? `${gb.toFixed(gb < 10 ? 1 : 0)} GB` : gb > 0 ? `${Math.round(gb * 1024)} MB` : '0 GB'} of={`of ${plan.freeGB} GB`} meter={limit === 'storage' ? 100 : allowancePct(gb, plan.freeGB)} sub={limit === 'storage' ? 'Full' : n ? `${formatCompact(rows)} rows across ${n} ${n === 1 ? 'model' : 'models'}` : ''} />
         <Tile icon="chart" label="Queries served from cache" value={formatRowsFull(fromCache)} sub={fromCache ? `${hitPct}% of queries on cached models` : ''} />
         <Tile icon="chart" label="Warehouse cost avoided" value={fromCache ? `~${usd(saved)}` : '$0'} sub={fromCache ? `About ${usd(saved * 12)} a year at this rate` : 'Estimate at $0.05 per warehouse query'} />
@@ -277,7 +282,7 @@ export const DataCacheViewV3: React.FC<{
         <EstimateModal
           initial={estimate}
           plan={plan}
-          queriesLabel="Queries on your cacheable models"
+          queriesLabel="Warehouse compute hours on cacheable models"
           queriesHelp="Last 30 days"
           onSave={(next) => { onEstimate(next); setOpen(null); }}
           onClose={() => setOpen(null)}
