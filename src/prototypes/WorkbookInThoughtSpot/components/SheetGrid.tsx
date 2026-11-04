@@ -122,10 +122,14 @@ export interface SheetGridProps {
   focus?: { c: number; r: number };
   /** Double-click a column header to rename it. */
   onRenameColumn?: (c: number) => void;
+  /** The header's ▾ (on hover) or a right-click opens the column menu, anchored to the header's box. */
+  onColumnMenu?: (c: number, box: { x: number; y: number; width: number; height: number }) => void;
+  /** The thin + column after the last one (Vivek, 4 Nov): adds a column. */
+  onAddColumn?: (box: { x: number; y: number; width: number; height: number }) => void;
 }
 
 export const SheetGrid = forwardRef<SheetGridHandle, SheetGridProps>(function SheetGrid(
-  { wb, sheetId, selection, onSelection, onEdits, onPointCell, refHighlights, onBlocked, onPointColumn, showFormulas, onKey, showSearch, onSearchClose, editingCell, focus, onRenameColumn },
+  { wb, sheetId, selection, onSelection, onEdits, onPointCell, refHighlights, onBlocked, onPointColumn, showFormulas, onKey, showSearch, onSearchClose, editingCell, focus, onRenameColumn, onColumnMenu, onAddColumn },
   ref,
 ) {
   const isDark = useIsDarkMode();
@@ -137,14 +141,18 @@ export const SheetGrid = forwardRef<SheetGridHandle, SheetGridProps>(function Sh
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const theme = useMemo(() => radiantTheme(), [isDark]);
 
+  // A thin + column closes the table: there are no empty columns until you add one.
+  const plus = onAddColumn ? nCols : -1;
   const columns = useMemo<GridColumn[]>(
-    () =>
-      Array.from({ length: nCols }, (_, c) => {
+    () => [
+      ...Array.from({ length: nCols }, (_, c) => {
         const col = sheet.columns[c];
         const title = col?.title ?? sheet.cells[`${c},1`] ?? '';
-        return { id: String(c), title, width: col?.width ?? 104, group: colLetter(c) };
+        return { id: String(c), title, width: col?.width ?? 104, group: colLetter(c), hasMenu: !!onColumnMenu };
       }),
-    [sheet, nCols],
+      ...(onAddColumn ? [{ id: '+', title: '+', width: 36, group: '' }] : []),
+    ],
+    [sheet, nCols, onColumnMenu, onAddColumn],
   );
 
   // Cell backgrounds, strongest first: conditional rules, typed input values, then focus cell.
@@ -176,6 +184,7 @@ export const SheetGrid = forwardRef<SheetGridHandle, SheetGridProps>(function Sh
 
   const getCellContent = useCallback(
     ([c, gr]: Item): GridCell => {
+      if (c === plus) return { kind: GridCellKind.Text, data: '', displayData: '', allowOverlay: false, readonly: true };
       const r = gr + 2;
       const raw = rawOf(sheet, c, r);
       const v = valueOf(wb, sheet.name, c, r);
@@ -186,33 +195,36 @@ export const SheetGrid = forwardRef<SheetGridHandle, SheetGridProps>(function Sh
       const blocked = readOnlyReason(wb, sheetId, c, r);
       const negative = numeric && (v as number) < 0;
       const error = v instanceof FormulaError;
+      // Empty input cells invite a value, on every row and the next new one.
+      const col = sheet.columns[c];
+      const placeholder = sheet.kind === 'input' && col?.input && !drafting && text === '' && gr <= sheet.rows.length;
       return {
         kind: GridCellKind.Text,
         data: raw,
-        displayData: text,
+        displayData: placeholder ? 'Add value' : text,
         allowOverlay: !blocked,
         readonly: !!blocked,
         contentAlign: fmt?.align ?? (numeric && !drafting ? 'right' : 'left'),
         allowWrapping: fmt?.wrap,
-        themeOverride: { ...cellBackground(c, r, v), ...(error || negative ? { textDark: tok('content-failure') } : {}) },
+        themeOverride: { ...cellBackground(c, r, v), ...(error || negative ? { textDark: tok('content-failure') } : {}), ...(placeholder ? { textDark: tok('content-tertiary') } : {}) },
       };
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [wb, sheet, sheetId, showFormulas, editingCell, focus, scales],
+    [wb, sheet, sheetId, showFormulas, editingCell, focus, scales, plus],
   );
 
   const onCellEdited = useCallback(([c, gr]: Item, v: EditableGridCell) => {
-    if (v.kind !== GridCellKind.Text) return;
+    if (v.kind !== GridCellKind.Text || c === plus) return;
     onEdits([{ c, r: gr + 2, text: v.data }]);
-  }, [onEdits]);
+  }, [onEdits, plus]);
 
   const onCellsEdited = useCallback((items: readonly EditListItem[]) => {
     const edits = items
-      .filter((it) => it.value.kind === GridCellKind.Text && !readOnlyReason(wb, sheetId, it.location[0], it.location[1] + 2))
+      .filter((it) => it.location[0] !== plus && it.value.kind === GridCellKind.Text && !readOnlyReason(wb, sheetId, it.location[0], it.location[1] + 2))
       .map((it) => ({ c: it.location[0], r: it.location[1] + 2, text: (it.value as { data: string }).data }));
     if (edits.length) onEdits(edits);
     return true;
-  }, [onEdits, wb, sheetId]);
+  }, [onEdits, wb, sheetId, plus]);
 
   // Fill handle: formulas move their relative references, as in Sheets and Excel.
   const onFillPattern = useCallback((e: FillPatternEventArgs) => {
@@ -225,11 +237,11 @@ export const SheetGrid = forwardRef<SheetGridHandle, SheetGridProps>(function Sh
         const sy = p.y + ((((y - p.y) % p.height) + p.height) % p.height);
         const sx = p.x + ((((x - p.x) % p.width) + p.width) % p.width);
         const src = rawOf(sheet, sx, sy + 2);
-        if (readOnlyReason(wb, sheetId, x, y + 2)) continue;
+        if (x === plus || readOnlyReason(wb, sheetId, x, y + 2)) continue;
         edits.push({ c: x, r: y + 2, text: src.startsWith('=') ? shiftFormula(src, y - sy) : src });
       }
     if (edits.length) onEdits(edits);
-  }, [sheet, wb, sheetId, onEdits]);
+  }, [sheet, wb, sheetId, onEdits, plus]);
 
   const highlightRegions = useMemo<Highlight[] | undefined>(() =>
     refHighlights?.map((h) => ({
@@ -268,6 +280,7 @@ export const SheetGrid = forwardRef<SheetGridHandle, SheetGridProps>(function Sh
       onCellsEdited={onCellsEdited}
       onFillPattern={onFillPattern}
       onCellClicked={([c, gr], e) => {
+        if (c === plus) { e.preventDefault(); return; }
         if (onPointCell?.(c, gr + 2)) e.preventDefault();
         else {
           const reason = readOnlyReason(wb, sheetId, c, gr + 2);
@@ -275,8 +288,15 @@ export const SheetGrid = forwardRef<SheetGridHandle, SheetGridProps>(function Sh
         }
       }}
       onHeaderClicked={(c, e) => {
+        if (c === plus) { e.preventDefault(); onAddColumn?.(e.bounds); return; }
         if (onPointColumn?.(c)) { e.preventDefault(); return; }
         if (e.isDoubleClick) onRenameColumn?.(c);
+      }}
+      onHeaderMenuClick={(c, box) => onColumnMenu?.(c, box)}
+      onHeaderContextMenu={(c, e) => {
+        e.preventDefault();
+        if (c === plus) return;
+        onColumnMenu?.(c, e.bounds);
       }}
       onKeyDown={(e) => {
         if (onKey?.({ key: e.key, ctrl: e.ctrlKey || e.metaKey, alt: e.altKey, shift: e.shiftKey })) e.cancel();

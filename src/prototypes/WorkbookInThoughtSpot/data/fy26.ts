@@ -21,14 +21,17 @@ export function fy26Workbook(): Workbook {
     name: 'Plan',
     kind: 'input',
     columns: [
-      { title: 'Region', type: 'text', width: 96, fromModel: true },
-      { title: 'Month', type: 'date', width: 100, fromModel: true },
+      { title: 'Region', type: 'text', width: 96, fromModel: true, key: true, keyFrom: finance.name },
+      { title: 'Month', type: 'date', width: 100, fromModel: true, key: true, keyFrom: finance.name },
       { title: 'Plan revenue', type: 'currency', width: 140, input: true },
     ],
     rows: [...planBy.entries()].map(([k, v]) => [...k.split('|'), Math.round(v)]),
     cells: {},
     source: 'Writes to FINANCE.PLANNING.PLAN_BY_REGION in your warehouse',
+    writesTo: 'FINANCE.PLANNING.PLAN_BY_REGION',
   };
+  // What the warehouse holds now, so edits count as unsaved changes until Save.
+  plan.savedRows = plan.rows.map((r) => [...r]);
 
   // Assumptions: values that live only in this workbook.
   const assumptions: Sheet = {

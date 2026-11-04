@@ -26,7 +26,8 @@ const KIND_HELP: Record<SheetKind, string> = {
 
 export type SheetAction =
   | 'duplicate' | 'copy-link' | 'move-left' | 'move-right' | 'refresh'
-  | 'pin' | 'make-app' | 'download-csv' | 'delete' | 'pivot';
+  | 'pin' | 'make-app' | 'download-csv' | 'delete' | 'pivot'
+  | 'save-input' | 'discard-input';
 
 export interface Aggregate { sum: number; count: number; numbers: number }
 
@@ -148,6 +149,13 @@ export const SheetFooter: React.FC<SheetFooterProps> = ({ sheets, activeId, onSe
                     <ActionMenu.Item label="Move left" icon={<Icon name="arrow-left" size="s" />} disabled={index === 0} onClick={act('move-left')} />
                     <ActionMenu.Item label="Move right" icon={<Icon name="arrow-right" size="s" />} disabled={index === sheets.length - 1} onClick={act('move-right')} />
                   </ActionMenu.Group>
+                  {/* Input tables save at sheet level (Vivek, 3 Nov): Save to warehouse / Discard. */}
+                  {active.kind === 'input' && (
+                    <ActionMenu.Group>
+                      <ActionMenu.Item label="Save to warehouse" icon={<Icon name="upload" size="s" />} onClick={act('save-input')} />
+                      <ActionMenu.Item label="Discard changes" icon={<Icon name="undo" size="s" />} onClick={act('discard-input')} />
+                    </ActionMenu.Group>
+                  )}
                   {active.kind === 'live' && !active.pivot && (
                     <ActionMenu.Group>
                       <ActionMenu.Item label="Refresh data" icon={<Icon name="refresh" size="s" />} onClick={act('refresh')} />

@@ -17,6 +17,7 @@ import {
   onPlanAnswer, pinAnswer, isShareApp, THINK_SHARE_APP, SHARE_APP_ANSWER, pivotAnswer, quarterFacts, thinkPin,
 } from '../data/agentScript';
 import type { Workbook } from '../engine/workbook';
+import { SpotterDock } from './SpotterDock';
 import styles from './CreateFlow.module.css';
 
 // Opening an existing workbook (the edit scenario, Vivek 3 Nov): like opening a saved App in Faris's
@@ -163,7 +164,7 @@ export const OpenWorkbook: React.FC<{ build: () => Workbook; onDeleted?: () => v
     <div className={styles.root}>
       <RadianceBackground pattern="spotterx" state={busy ? radiance : 'answered'} />
       <div className={styles.split}>
-        <div className={styles.chat}>
+        <SpotterDock>
           <div ref={scrollRef} className={styles.thread}>
             <Vertical gap={20} ref={contentRef}>
               {turns.map((t, i) => {
@@ -251,7 +252,7 @@ export const OpenWorkbook: React.FC<{ build: () => Workbook; onDeleted?: () => v
               onOpenMenuChange={setOpenMenu}
             />
           </Vertical>
-        </div>
+        </SpotterDock>
         <div className={styles.canvas}>
           <WorkbookLive initial={initial} publishedAlready onDeleted={onDeleted} agent={agent} />
         </div>

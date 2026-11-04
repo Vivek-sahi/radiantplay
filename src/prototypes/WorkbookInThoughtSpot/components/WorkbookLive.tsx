@@ -10,10 +10,13 @@ import { VariantContext } from './variant';
 import { WorkbookHeader } from './WorkbookHeader';
 import { CreatePivotDialog, InsertFunctionDialog, PinDialog } from './WorkbookDialogs';
 import { PivotPanel } from './PivotPanel';
+import { AddColumnMenu, ColumnMenu, type ColumnAction, type NewColumnType } from './ColumnMenu';
+import { NewInputTableDialog, SaveInputDialog } from './InputTableDialogs';
+import { Button } from '@components/Button';
 import { colLetter, parseRef, refsIn } from '../engine/formula';
 import {
   addAppSheet, makeInputSheet, type AppSpec,
-  addCsvSheet, addRule, addSheet, createPivot, setPivot, sheetRange, defineName, deleteSheet, duplicateSheet, lastDataRow, moveSheet, pinLiveness, renameSheet, setFormat, sheetCsv, sortRows, typeOf, rawOf, readOnlyReason, refFor, setCell, shiftFormula, valueOf, type ColFormat, type Workbook,
+  addCsvSheet, addRule, addSheet, createPivot, duplicateColumn, insertColumn, removeColumn, appendColumn, newInputTable, unsavedCount, saveInput, discardInput, joinInput, setPivot, sheetRange, defineName, deleteSheet, duplicateSheet, lastDataRow, moveSheet, pinLiveness, renameSheet, setFormat, sheetCsv, sortRows, typeOf, rawOf, readOnlyReason, refFor, setCell, shiftFormula, valueOf, type ColFormat, type Workbook,
 } from '../engine/workbook';
 import styles from './WorkbookLive.module.css';
 
@@ -112,6 +115,10 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
   const [insertFn, setInsertFn] = useState(false);
   const [pin, setPin] = useState<{ what: string; live: boolean; reason?: string } | null>(null);
   const [pivotFrom, setPivotFrom] = useState<string | null>(null);
+  const [colMenu, setColMenu] = useState<{ c: number; x: number; y: number; w: number; h: number; n: number } | null>(null);
+  const [addCol, setAddCol] = useState<{ x: number; y: number; w: number; h: number; n: number } | null>(null);
+  const [newInput, setNewInput] = useState(false);
+  const [saveFor, setSaveFor] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const grid = useRef<SheetGridHandle>(null);
   const bar = useRef<FormulaBarHandle>(null);
@@ -210,11 +217,12 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
   const { menuBar } = useContext(VariantContext);
   const addTab = (kind: 'blank' | 'input' | 'app') => {
     if (kind === 'app') { setNote('Ask Spotter for an app: it builds one as an App tab beside your sheets'); return; }
-    const out = addSheet(wb, kind === 'input' ? 'input' : 'local');
+    if (kind === 'input') { setNewInput(true); return; }
+    const out = addSheet(wb, 'local');
     commitWb(out.wb);
     setActiveId(out.id);
     setSel(cellSel(0, 0));
-    setNote(kind === 'input' ? 'New input table: values you type here are meant to save back to your warehouse' : null);
+    setNote(null);
   };
   const [headerOpen, setHeaderOpen] = useState<{ what: 'share' | 'versions' | 'details' | 'delete'; n: number }>();
   const publish = () => {
@@ -239,13 +247,18 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
   const applyEdits = useCallback((edits: { c: number; r: number; text: string }[], sheetId = activeId) => {
     let next = wb;
     let lastNote: string | undefined;
+    let rejected = 0;
     for (const e of edits) {
       if (readOnlyReason(next, sheetId, e.c, e.r)) continue;
       const out = setCell(next, sheetId, e.c, e.r, e.text);
       next = out.wb;
+      if (out.rejected) rejected++;
       lastNote = out.note ?? lastNote;
     }
+    // A paste with some wrong-type values: the rest go in, and the note says how many didn't.
+    if (rejected > 1) lastNote = `${rejected} values weren't added: they don't match their column's type. ${lastNote ?? ''}`.trim();
     if (next !== wb) { commitWb(next); setNote(lastNote ?? lookupNote(next, edits) ?? null); }
+    else if (rejected) setNote(lastNote ?? null);
   }, [wb, activeId, commitWb]);
 
   // ── editing in the formula bar ─────────────────────────────────────────────
@@ -412,6 +425,61 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
     }
   };
 
+  // ── column actions (the column header ▾ menu) ───────────────────────────────
+  const colName = (c: number) => sheet.columns[c]?.title || sheet.cells[`${c},1`] || colLetter(c);
+  const selectColumn = (c: number) => setSel({ current: undefined, columns: CompactSelection.fromSingleSelection(c), rows: CompactSelection.empty() });
+  const renameColumn = (c: number) => {
+    setEditing({ sheetId: activeId, c, r: 1, draft: sheet.columns[c]?.title ?? sheet.cells[`${c},1`] ?? '' });
+    requestAnimationFrame(() => bar.current?.focus());
+    setNote(sheet.columns[c]?.fromModel ? 'Renames the column in this workbook only; the model keeps its name' : null);
+  };
+  const onColumnAction = (c: number, a: ColumnAction) => {
+    const name = colName(c);
+    const colRange = { c1: c, c2: c, r1: 2, r2: Math.max(2, sheet.rows.length ? lastDataRow(sheet) : 60) };
+    const formatCol = (patch: (f: ColFormat) => ColFormat, said: string) => { commitWb(setFormat(wb, activeId, [c], patch)); setNote(said); };
+    switch (a) {
+      case 'insert-left': case 'insert-right': {
+        const at = a === 'insert-left' ? c : c + 1;
+        commitWb(insertColumn(wb, activeId, at));
+        selectColumn(at);
+        setNote(`Inserted a column ${a === 'insert-left' ? 'left' : 'right'} of ${name}. Formulas that point past it moved with it.`);
+        break;
+      }
+      case 'calculated': {
+        commitWb(insertColumn(wb, activeId, c + 1));
+        setSel(cellSel(c + 1, 0));
+        setEditing({ sheetId: activeId, c: c + 1, r: 2, draft: '=' });
+        requestAnimationFrame(() => bar.current?.focus());
+        setNote(sheet.kind === 'live' ? 'Type a formula for row 2, like =C2-D2. It runs for every row.' : 'Type a formula, then fill it down');
+        break;
+      }
+      case 'sort-asc': case 'sort-desc':
+        commitWb(sortRows(wb, activeId, c, a === 'sort-asc' ? 1 : -1));
+        setNote(`Sorted by ${name}, over all ${sheet.rows.length.toLocaleString()} rows`);
+        break;
+      case 'filter': case 'input-type': case 'input-key': case 'input-required': case 'input-allowed': case 'input-default':
+        setNote('Not in this prototype yet'); break;
+      case 'fmt-number': formatCol((f) => ({ ...f, type: 'number', decimals: 2 }), `${name} formatted as number`); break;
+      case 'fmt-currency': formatCol((f) => ({ ...f, type: 'currency', decimals: undefined }), `${name} formatted as currency`); break;
+      case 'fmt-percent': formatCol((f) => ({ ...f, type: 'percent', decimals: undefined }), `${name} formatted as percent`); break;
+      case 'fmt-auto': formatCol(() => ({}), `${name} back to automatic`); break;
+      case 'wrap': formatCol((f) => ({ ...f, wrap: !f.wrap }), `Wrapping turned ${sheet.formats?.[c]?.wrap ? 'off' : 'on'} for ${name}`); break;
+      case 'cf-scale': commitWb(addRule(wb, activeId, { ...colRange, kind: 'scale' })); setNote('Colour scale added: red is lowest, green is highest'); break;
+      case 'cf-negative': commitWb(addRule(wb, activeId, { ...colRange, kind: 'negative' })); setNote('Values below zero are highlighted'); break;
+      case 'rename': renameColumn(c); break;
+      case 'duplicate':
+        commitWb(duplicateColumn(wb, activeId, c));
+        selectColumn(c + 1);
+        setNote(`Duplicated ${name}`);
+        break;
+      case 'remove':
+        commitWb(removeColumn(wb, activeId, c));
+        setSel(cellSel(Math.max(0, c - 1), 0));
+        setNote(`Removed ${name}${sheet.columns[c]?.fromModel ? ' from this workbook; the model keeps it' : ''}. Ctrl+Z brings it back.`);
+        break;
+    }
+  };
+
   // ── sheet-level actions (the tab ▾ menu) ───────────────────────────────────
   const onSheetAction = (id: string, a: SheetAction) => {
     const s = wb.sheets.find((x) => x.id === id)!;
@@ -424,6 +492,15 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
       case 'refresh': setNote(`${s.name} refreshed from the ${wb.model} model just now`); break;
       case 'pin': if (publishCount === 0 || dirty) { setNote(PIN_NEEDS_PUBLISH); break; } setActiveId(id); setPin({ what: `the ${s.name} sheet`, ...pinLiveness(wb, id, { c1: 0, c2: Math.max(0, s.columns.length - 1), r1: 1, r2: s.rows.length ? lastDataRow(s) : 60 }) }); break;
       case 'make-app': setNote('Make an app comes next: it opens as an App tab beside your sheets'); break;
+      case 'save-input':
+        if (!unsavedCount(s)) { setNote(`Nothing to save: ${s.name} matches ${s.writesTo ?? 'the warehouse'}`); break; }
+        setSaveFor(id);
+        break;
+      case 'discard-input':
+        if (!unsavedCount(s)) { setNote('No unsaved changes'); break; }
+        commitWb(discardInput(wb, id));
+        setNote(`Discarded ${unsavedCount(s)} unsaved changes. Ctrl+Z brings them back.`);
+        break;
       case 'download-csv': {
         const url = URL.createObjectURL(new Blob([sheetCsv(wb, id)], { type: 'text/csv' }));
         const link = document.createElement('a');
@@ -482,7 +559,14 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
     <>
       {pointing && <span>Point · click a cell, a column or another tab to insert it</span>}
       {sheet.kind === 'live' && <span>Live · {wb.model} model · {sheet.rows.length.toLocaleString()} rows</span>}
-      {sheet.kind === 'input' && <span>Input · {sheet.rows.length.toLocaleString()} rows · saves back to the warehouse</span>}
+      {sheet.kind === 'input' && (unsavedCount(sheet) ? (
+        <>
+          <span>Input table · {unsavedCount(sheet).toLocaleString()} unsaved {unsavedCount(sheet) === 1 ? 'change' : 'changes'}</span>
+          <Button variant="secondary" size="small" onClick={() => setSaveFor(sheet.id)}>Save input table</Button>
+        </>
+      ) : (
+        <span>Input · {sheet.rows.length.toLocaleString()} rows · {sheet.writesTo ? `saved to ${sheet.writesTo}` : 'saves back to the warehouse'}</span>
+      ))}
       {sheet.kind === 'local' && <span>Local · lives in this workbook</span>}
     </>
   );
@@ -520,7 +604,7 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
         onRename={(name) => commitWb({ ...wb, name })}
         publishCount={publishCount}
         dirty={dirty}
-        unsavedInputs={0}
+        unsavedInputs={wb.sheets.reduce((n, x) => n + unsavedCount(x), 0)}
         versions={versions}
         onRestore={() => {
           const last = versions[versions.length - 1];
@@ -594,10 +678,25 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
           onKey={onKey}
           editingCell={editingHere ? { c: editingHere.c, r: editingHere.r, text: editingHere.draft } : undefined}
           focus={focusCell ? { c: ac, r: ar } : undefined}
-          onRenameColumn={(c) => {
-            setEditing({ sheetId: activeId, c, r: 1, draft: sheet.columns[c]?.title ?? sheet.cells[`${c},1`] ?? '' });
-            requestAnimationFrame(() => bar.current?.focus());
-            setNote(sheet.columns[c]?.fromModel ? 'Renames the column in this workbook only; the model keeps its name' : null);
+          onRenameColumn={renameColumn}
+          onAddColumn={sheet.pivot || sheet.kind === 'local' ? undefined : (b) => {
+            if (editing) return;
+            if (sheet.kind === 'live') {
+              // The formula flow: a new column at the end, with a formula started on row 2.
+              const out = appendColumn(wb, activeId, { title: '', type: 'text', width: 120 });
+              commitWb(out.wb);
+              setSel(cellSel(out.c, 0));
+              setEditing({ sheetId: activeId, c: out.c, r: 2, draft: '=' });
+              requestAnimationFrame(() => bar.current?.focus());
+              setNote('Type a formula for row 2, like =D2-E2. It runs for every row.');
+              return;
+            }
+            setAddCol((m) => ({ x: b.x, y: b.y, w: b.width, h: b.height, n: (m?.n ?? 0) + 1 }));
+          }}
+          onColumnMenu={sheet.pivot ? undefined : (c, b) => {
+            if (editing) return;
+            selectColumn(c);
+            setColMenu((m) => ({ c, x: b.x, y: b.y, w: b.width, h: b.height, n: (m?.n ?? 0) + 1 }));
           }}
           showSearch={search}
           onSearchClose={() => setSearch(false)}
@@ -616,7 +715,7 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
       <SheetFooter
         sheets={wb.sheets}
         activeId={activeId}
-        onSelect={(id) => { if (id !== activeId) setNote(null); setActiveId(id); if (!editing) setSel(cellSel(0, 0)); }}
+        onSelect={(id) => { if (id !== activeId) setNote(null); setColMenu(null); setActiveId(id); if (!editing) setSel(cellSel(0, 0)); }}
         onAdd={addTab}
         onRename={(id, name) => {
           const next = renameSheet(wb, id, name);
@@ -648,6 +747,67 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
             setNote('Add a field to Rows, Columns or Values to build the pivot, or pick a suggestion');
           }}
         />
+      )}
+      {addCol && (
+        <AddColumnMenu
+          key={addCol.n}
+          at={addCol}
+          onClose={() => setAddCol(null)}
+          onPick={(type: NewColumnType) => {
+            const n = sheet.columns.filter((x) => x.input).length + 1;
+            const out = appendColumn(wb, activeId, { title: `Column ${n}`, type, width: 140, input: true });
+            commitWb(out.wb);
+            setSel(cellSel(out.c, 0));
+            setEditing({ sheetId: activeId, c: out.c, r: 1, draft: `Column ${n}` });
+            requestAnimationFrame(() => bar.current?.focus());
+            setNote('Name the column, then type or paste its values');
+          }}
+        />
+      )}
+      {newInput && (
+        <NewInputTableDialog
+          isOpen
+          wb={wb}
+          defaultName={`Input table ${wb.sheets.filter((x) => x.kind === 'input').length + 1}`}
+          onClose={() => setNewInput(false)}
+          onCreate={(spec) => {
+            setNewInput(false);
+            if (wb.sheets.some((x) => x.name.toLowerCase() === spec.name.toLowerCase())) { setNote(`There's already a sheet called “${spec.name}”`); return; }
+            const out = newInputTable(wb, spec);
+            commitWb(out.wb);
+            setActiveId(out.id);
+            setSel(cellSel(0, 0));
+            const keys = out.wb.sheets.find((x) => x.id === out.id)!.columns.map((k) => k.title).join(' and ');
+            setNote(spec.keysFrom ? `${out.rows.toLocaleString()} rows, one for each ${keys}. Add a column with +.` : 'Add a column with +, then type or paste rows');
+          }}
+        />
+      )}
+      {saveFor && (() => {
+        const s = wb.sheets.find((x) => x.id === saveFor)!;
+        return (
+          <SaveInputDialog
+            isOpen
+            sheet={s}
+            changes={unsavedCount(s)}
+            joined={!!s.joinedTo}
+            onClose={() => setSaveFor(null)}
+            onSave={(join) => {
+              setSaveFor(null);
+              let next = saveInput(wb, s.id);
+              let said = `Saved ${s.name} to ${s.writesTo}`;
+              if (join) {
+                const out = joinInput(next, s.id);
+                next = out.wb;
+                if (out.added.length) said += `. Added ${out.added.join(', ')} to ${out.target}, matched by ${s.columns.filter((k) => k.key).map((k) => k.title).join(' and ')}.`;
+              }
+              commitWb(next);
+              setNote(said);
+            }}
+          />
+        );
+      })()}
+      {colMenu && sheet.kind !== 'app' && (
+        <ColumnMenu key={colMenu.n} sheet={sheet} at={colMenu} onAction={onColumnAction} onClose={() => setColMenu(null)} />
       )}
       {pin && (
         <PinDialog

@@ -1,0 +1,29 @@
+/* Sits over the clicked column header (the grid is a canvas, so the menu anchors to a box placed
+   where the header is drawn). The header stays clickable underneath only through the menu. */
+.host {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.host > * {
+  pointer-events: auto;
+}
+
+.trigger {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+/* ActionMenu wraps the trigger in an inline-block container; stretch it over the header. */
+.host > div {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

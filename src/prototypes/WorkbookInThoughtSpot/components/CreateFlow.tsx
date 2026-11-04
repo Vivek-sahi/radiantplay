@@ -12,6 +12,7 @@ import { ModelPickerDialog } from './WorkbookDialogs';
 import { blankWorkbook, financeWorkbook } from '../data/finance';
 import { ActionRow, AskedAQuestion, ShowWork, StreamingText, WorkingChecklist, agentTextStyle, streamMs, userBubbleStyle } from './ChatTurns';
 import { CHAT_QUESTION, SOURCES, buildSteps, type SourceId } from '../data/create';
+import { SpotterDock } from './SpotterDock';
 import styles from './CreateFlow.module.css';
 
 // Creating a workbook with Spotter (Vivek, 3 Nov 2026).
@@ -226,10 +227,10 @@ export const CreateFlow: React.FC<CreateFlowProps> = ({ seedPrompt, startSource,
         </div>
       ) : (
         <div className={styles.split}>
-          <div className={styles.chat}>
+          <SpotterDock>
             {thread}
             {composer}
-          </div>
+          </SpotterDock>
           <div className={styles.canvas}>
             {built ? <WorkbookLive onDeleted={onDeleted} initial={src === 'blank' ? blankWorkbook(workbookName) : financeWorkbook(src === 'model' ? detail : 'Finance', workbookName)} /> : <WorkbookLoading name={workbookName} status="Loading Sheet 1" />}
           </div>

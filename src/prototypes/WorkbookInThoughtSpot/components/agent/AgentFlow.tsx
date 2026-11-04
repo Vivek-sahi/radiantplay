@@ -13,6 +13,7 @@ import { WorkbookLive } from '../WorkbookLive';
 import { fy26Workbook } from '../../data/fy26';
 import { ASK_MODEL, BLANK, BLANK_NEXT, BUILD_STEPS, BUILT, NEXT, PLAN, PLAN_INTRO, THINK_GOAL, isGoal, thinkModel } from '../../data/agentScript';
 import { blankWorkbook } from '../../data/finance';
+import { SpotterDock } from '../SpotterDock';
 import styles from '../CreateFlow.module.css';
 
 // The agent-led workbook (Vivek, 3 Nov 2026). The user gives every command to Spotter; the work they
@@ -235,10 +236,10 @@ export const AgentFlow: React.FC<AgentFlowProps> = ({ seedPrompt, runId, onDelet
         </div>
       ) : (
         <div className={styles.split}>
-          <div className={styles.chat}>
+          <SpotterDock>
             {thread}
             {composer}
-          </div>
+          </SpotterDock>
           <div className={styles.canvas}>
             {buildState === 'built'
               ? <WorkbookLive initial={goal ? fy26Workbook() : blankWorkbook(BLANK.title)} onDeleted={onDeleted} />

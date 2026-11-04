@@ -2,7 +2,7 @@
 // row 1 is the header row, data starts on row 2). A Live tab's rows come from the data model; a
 // formula typed beside them becomes one column formula for every row. Input tabs take typed
 // values that write back; Local tabs live only in the workbook.
-import { colIndex, evaluate, FormulaError, parseRef, type EvalContext, type Ref, type Result } from './formula';
+import { colIndex, colLetter, evaluate, FormulaError, parseRef, refsIn, type EvalContext, type Ref, type Result } from './formula';
 
 /** app: an App tab Spotter builds from the workbook (Vivek, 3 Nov), rendered as an app, not a grid. */
 export type SheetKind = 'live' | 'input' | 'local' | 'app';
@@ -18,6 +18,10 @@ export interface Column {
   formula?: string;
   /** Typed values on an Input tab. */
   input?: boolean;
+  /** An input table's key: its values say what each row stands for (Region, Month). Read-only. */
+  key?: boolean;
+  /** The tab a key column was brought from. */
+  keyFrom?: string;
 }
 
 export interface Sheet {
@@ -39,6 +43,12 @@ export interface Sheet {
   pivot?: PivotConfig;
   /** An App tab: what the app is for and who uses it. */
   app?: AppSpec;
+  /** An input table: the warehouse table it saves to. */
+  writesTo?: string;
+  /** An input table: the rows as last saved to the warehouse, to count and discard unsaved changes. */
+  savedRows?: (string | number | null)[][];
+  /** An input table whose columns are joined onto another tab (by the keys). */
+  joinedTo?: string;
 }
 
 export interface AppSpec {
@@ -99,7 +109,11 @@ export const EXTRA_COLS = 6;
 export const key = (c: number, r: number) => `${c},${r}`;
 export const lastDataRow = (s: Sheet) => s.rows.length + 1;
 export const rowCount = (s: Sheet) => Math.max(s.rows.length + EXTRA_ROWS, 60);
-export const colCount = (s: Sheet) => s.columns.length + EXTRA_COLS;
+/** Columns in use: the defined ones, and any free cell typed past them. */
+export const usedCols = (s: Sheet) => Math.max(s.columns.length, ...Object.keys(s.cells).map((k) => Number(k.split(',')[0]) + 1));
+/** Live and Input tabs are tables: only the columns there are, then a thin + to add one (Vivek, 4 Nov).
+ *  Local tabs stay an open grid, as in Sheets. */
+export const colCount = (s: Sheet) => usedCols(s) + (s.kind === 'local' ? EXTRA_COLS : 0);
 
 /** The raw text the user would edit in a cell: a formula, a typed value or a model value. */
 export function rawOf(s: Sheet, c: number, r: number): string {
@@ -185,6 +199,8 @@ export interface EditOutcome {
   wb: Workbook;
   /** What the workbook did with the edit, said once in the formula bar. */
   note?: string;
+  /** The value didn't go in (wrong type for the column). */
+  rejected?: boolean;
 }
 
 const updateSheet = (wb: Workbook, id: string, fn: (s: Sheet) => Sheet): Workbook => ({
@@ -206,20 +222,37 @@ export function setCell(wb: Workbook, sheetId: string, c: number, r: number, tex
   // On a Live tab, a same-row formula typed beside the data becomes one column formula.
   if (s.kind === 'live' && di >= 0 && di < s.rows.length && text.startsWith('=')) {
     const anchored = shiftFormula(text, -di);
-    if (!col) {
+    // An empty column (past the data, or one inserted from the column menu) takes the formula for every row.
+    const blank = !col || (!col.fromModel && !col.formula && !col.input && s.rows.every((row) => row[c] === null || row[c] === undefined));
+    if (blank) {
       const n = s.columns.filter((k) => k.formula).length + 1;
       const columns = [...s.columns];
       while (columns.length < c) columns.push({ title: '', type: 'text', width: 120 });
       // Formatting follows the columns it uses: revenue − cost stays currency; a ratio becomes a percent.
       const used = (anchored.match(/\b([A-Z]{1,3})\d+/g) ?? []).map((m) => s.columns[colIndex(m.replace(/\d+/g, ''))]?.type);
       const type: ColType = /\//.test(anchored) && used.every((t) => t === 'currency') && used.length >= 2 ? 'percent' : used.includes('currency') ? 'currency' : 'number';
-      columns[c] = { title: `Formula ${n}`, type, width: 128, formula: anchored };
+      columns[c] = { title: col?.title || `Formula ${n}`, type, width: 128, formula: anchored };
       const rows = s.rows.map((row) => { const x = [...row]; while (x.length <= c) x.push(null); return x; });
       return { wb: updateSheet(wb, sheetId, (x) => ({ ...x, columns, rows })), note: `Saved as one column formula for all ${s.rows.length.toLocaleString()} rows` };
     }
-    if (col.formula) {
+    if (col?.formula) {
       return { wb: updateSheet(wb, sheetId, (x) => ({ ...x, columns: x.columns.map((k, i) => (i === c ? { ...k, formula: anchored } : k)) })), note: `Column formula updated for all ${s.rows.length.toLocaleString()} rows` };
     }
+  }
+
+  // An input column checks what's typed against its type, and typing below the last row adds rows.
+  if (s.kind === 'input' && col?.input && di >= 0) {
+    const v = literal(text);
+    if (text.trim() !== '' && col.type !== 'text' && col.type !== 'date' && typeof v !== 'number')
+      return { wb, note: `${col.title} takes ${col.type === 'percent' ? 'percentages' : 'numbers'}. “${text}” wasn't added (row ${r}).`, rejected: true };
+    return {
+      wb: updateSheet(wb, sheetId, (x) => {
+        const rows = x.rows.map((row) => [...row]);
+        while (rows.length <= di) rows.push(x.columns.map(() => null));
+        rows[di][c] = v as string | number | null;
+        return { ...x, rows };
+      }),
+    };
   }
 
   // Typed values in an Input column or anywhere on Input / Local tabs, and below the data.
@@ -242,6 +275,8 @@ export function readOnlyReason(wb: Workbook, sheetId: string, c: number, r: numb
   const col = s.columns[c];
   const di = r - 2;
   if (s.pivot && col && di >= 0 && di < s.rows.length) return 'Pivot values update from the field panel on the right.';
+  if (s.kind === 'input' && col?.key && di >= 0 && di < s.rows.length)
+    return `${col.title} is a key${col.keyFrom ? ` from ${col.keyFrom}` : ''}: it says what each row stands for. Type in the other columns.`;
   if (s.kind === 'live' && col?.fromModel && di >= 0 && di < s.rows.length)
     return `${col.title} comes from the ${wb.model} model. Type in an empty column, or on an Input or Local tab.`;
   return null;
@@ -578,4 +613,191 @@ export function addCsvSheet(wb: Workbook, fileName: string, text: string): { wb:
   while (wb.sheets.some((s) => s.name === name)) name = `${fileName.replace(/\.[^.]+$/, '')} (${n++})`;
   const id = `u${Date.now()}`;
   return { wb: { ...wb, sheets: [...wb.sheets, { id, name, kind: 'local', columns, rows, cells: {}, source: `Uploaded from ${fileName}` }] }, id, rows: rows.length };
+}
+
+// ── Column operations (the column header ▾ menu, Vivek, 4 Nov) ───────────────
+// Insert, remove and duplicate move everything to the right of the change, and every formula,
+// name and formatting rule that points there, the way Sheets and Excel do. A reference to a removed
+// column becomes #REF!.
+
+const sheetOfPrefix = (p: string | undefined) => (p ? p.slice(0, -1).replace(/^'(.*)'$/, '$1').replace(/''/g, "'") : undefined);
+
+function moveColumnRefs(f: string, formulaSheet: string, target: string, at: number, by: 1 | -1): string {
+  if (!f.startsWith('=')) return f;
+  let out = '';
+  let last = 0;
+  for (const r of refsIn(f)) {
+    const raw = f.slice(r.start, r.end);
+    const m = /^((?:'[^']*(?:''[^']*)*'|[A-Za-z_][\w.]*)!)?(.*)$/.exec(raw)!;
+    const onSheet = (sheetOfPrefix(m[1]) ?? formulaSheet).toLowerCase() === target.toLowerCase();
+    out += f.slice(last, r.start);
+    last = r.end;
+    if (!onSheet) { out += raw; continue; }
+    const ends = [...m[2].matchAll(/(\$?)([A-Za-z]{1,3})/g)].map((x) => colIndex(x[2]));
+    let a = ends[0];
+    let b = ends[ends.length - 1];
+    if (by === 1) { if (a >= at) a++; if (b >= at) b++; }
+    else {
+      if (a > at) a--;
+      if (b >= at) b--;
+      if (b < a || (ends.length === 1 && ends[0] === at)) { out += '#REF!'; continue; }
+    }
+    let i = 0;
+    const body = m[2].replace(/(\$?)([A-Za-z]{1,3})/g, (_x, d) => `${d}${colLetter(i++ === 0 ? a : b)}`);
+    out += `${m[1] ?? ''}${body}`;
+  }
+  return out + f.slice(last);
+}
+
+/** Moves column-keyed things on one sheet (cells, formats, rules) and references across the workbook. */
+function reshapeColumns(wb: Workbook, sheetId: string, at: number, by: 1 | -1): Workbook {
+  const target = wb.sheets.find((s) => s.id === sheetId)!;
+  const moveIdx = (c: number) => (by === 1 ? (c >= at ? c + 1 : c) : c > at ? c - 1 : c === at ? null : c);
+  const fix = (f: string, sheetName: string) => moveColumnRefs(f, sheetName, target.name, at, by);
+  const sheets = wb.sheets.map((s) => {
+    let next: Sheet = {
+      ...s,
+      cells: Object.fromEntries(Object.entries(s.cells).map(([k, v]) => [k, fix(v, s.name)])),
+      columns: s.columns.map((c) => (c.formula ? { ...c, formula: fix(c.formula, s.name) } : c)),
+    };
+    if (s.id !== sheetId) return next;
+    const cells: Record<string, string> = {};
+    for (const [k, v] of Object.entries(next.cells)) {
+      const [c, r] = k.split(',').map(Number);
+      const nc = moveIdx(c);
+      if (nc !== null) cells[key(nc, r)] = v;
+    }
+    const formats: Record<number, ColFormat> = {};
+    for (const [k, v] of Object.entries(next.formats ?? {})) { const nc = moveIdx(Number(k)); if (nc !== null) formats[nc] = v; }
+    const rules = (next.rules ?? []).flatMap((rule) => {
+      const c1 = by === 1 ? (rule.c1 >= at ? rule.c1 + 1 : rule.c1) : rule.c1 > at ? rule.c1 - 1 : rule.c1;
+      const c2 = by === 1 ? (rule.c2 >= at ? rule.c2 + 1 : rule.c2) : rule.c2 >= at ? rule.c2 - 1 : rule.c2;
+      return c2 < c1 ? [] : [{ ...rule, c1, c2 }];
+    });
+    const columns = [...next.columns];
+    let rows = next.rows;
+    if (at < columns.length) {
+      if (by === 1) {
+        columns.splice(at, 0, { title: '', type: 'text', width: 120 });
+        rows = rows.map((row) => { const x = [...row]; x.splice(at, 0, null); return x; });
+      } else {
+        columns.splice(at, 1);
+        rows = rows.map((row) => { const x = [...row]; x.splice(at, 1); return x; });
+      }
+    }
+    next = { ...next, cells, formats, rules, columns, rows };
+    return next;
+  });
+  const names = Object.fromEntries(Object.entries(wb.names).map(([n, r]) => [n, moveColumnRefs(`=${r}`, '', target.name, at, by).slice(1)]));
+  return { ...wb, sheets, names };
+}
+
+export const insertColumn = (wb: Workbook, sheetId: string, at: number): Workbook => reshapeColumns(wb, sheetId, at, 1);
+export const removeColumn = (wb: Workbook, sheetId: string, at: number): Workbook => reshapeColumns(wb, sheetId, at, -1);
+
+/** A copy of column c, right beside it: same title (with "copy"), values, formula and format. */
+export function duplicateColumn(wb: Workbook, sheetId: string, c: number): Workbook {
+  const next = insertColumn(wb, sheetId, c + 1);
+  return updateSheet(next, sheetId, (s) => {
+    const cells = { ...s.cells };
+    for (const [k, v] of Object.entries(s.cells)) {
+      const [kc, r] = k.split(',').map(Number);
+      if (kc === c) cells[key(c + 1, r)] = r === 1 ? `${v} copy` : v;
+    }
+    const columns = [...s.columns];
+    if (columns[c]) columns[c + 1] = { ...columns[c], title: `${columns[c].title} copy` };
+    const rows = s.rows.map((row) => { const x = [...row]; if (c < x.length) x[c + 1] = x[c]; return x; });
+    const formats = { ...(s.formats ?? {}) };
+    if (formats[c]) formats[c + 1] = formats[c];
+    return { ...s, cells, columns, rows, formats };
+  });
+}
+
+// ── Input tables, end to end (Vivek, 4 Nov) ─────────────────────────────────
+// New input table → keys from another tab (one or more; each distinct combination is a row) →
+// add typed columns with + → type or paste → Save to warehouse (sheet level) → optionally join the
+// saved columns onto the tab the keys came from, matched by the keys.
+
+export const warehouseName = (name: string, model: string) =>
+  `${(model || 'WORKBOOK').toUpperCase().replace(/\W+/g, '_')}.PLANNING.${name.toUpperCase().replace(/\W+/g, '_').replace(/^_|_$/g, '')}`;
+
+export interface NewInputSpec { name: string; keysFrom?: { sheetId: string; cols: number[] } }
+
+export function newInputTable(wb: Workbook, spec: NewInputSpec): { wb: Workbook; id: string; rows: number } {
+  const id = `i${Date.now()}`;
+  let columns: Column[] = [];
+  let rows: (string | number | null)[][] = [];
+  const src = spec.keysFrom && wb.sheets.find((x) => x.id === spec.keysFrom!.sheetId);
+  if (src && spec.keysFrom!.cols.length) {
+    const cols = spec.keysFrom!.cols;
+    columns = cols.map((c) => ({ title: src.columns[c].title, type: src.columns[c].type, width: src.columns[c].width, key: true, keyFrom: src.name }));
+    const seen = new Set<string>();
+    for (const row of src.rows) {
+      const k = cols.map((c) => row[c]);
+      const id2 = JSON.stringify(k);
+      if (!seen.has(id2)) { seen.add(id2); rows.push(k); }
+    }
+  }
+  const sheet: Sheet = { id, name: spec.name, kind: 'input', columns, rows, cells: {}, writesTo: warehouseName(spec.name, wb.model), savedRows: rows.map((r) => [...r]), source: src ? `Keys from ${src.name}` : 'Typed in this workbook' };
+  return { wb: { ...wb, sheets: [...wb.sheets, sheet] }, id, rows: rows.length };
+}
+
+/** A new column at the end of a tab (the thin + column). */
+export function appendColumn(wb: Workbook, sheetId: string, col: Column): { wb: Workbook; c: number } {
+  const s = wb.sheets.find((x) => x.id === sheetId)!;
+  const c = usedCols(s);
+  return {
+    c,
+    wb: updateSheet(wb, sheetId, (x) => {
+      const columns = [...x.columns];
+      while (columns.length < c) columns.push({ title: '', type: 'text', width: 120 });
+      columns[c] = col;
+      return { ...x, columns, rows: x.rows.map((row) => { const r = [...row]; while (r.length <= c) r.push(null); return r; }) };
+    }),
+  };
+}
+
+/** Typed values that differ from what was last saved. */
+export function unsavedCount(s: Sheet): number {
+  if (s.kind !== 'input' || !s.savedRows) return 0;
+  let n = 0;
+  const len = Math.max(s.rows.length, s.savedRows.length);
+  for (let i = 0; i < len; i++)
+    for (let c = 0; c < s.columns.length; c++) {
+      if (s.columns[c].key) continue;
+      const a = s.rows[i]?.[c] ?? null;
+      const b = s.savedRows[i]?.[c] ?? null;
+      if (a !== b) n++;
+    }
+  return n;
+}
+
+export const saveInput = (wb: Workbook, id: string): Workbook => updateSheet(wb, id, (s) => ({ ...s, savedRows: s.rows.map((r) => [...r]) }));
+export const discardInput = (wb: Workbook, id: string): Workbook =>
+  updateSheet(wb, id, (s) => ({ ...s, rows: (s.savedRows ?? []).map((r) => s.columns.map((_, c) => r[c] ?? null)) }));
+
+/** The join: each saved number column becomes a column on the keys' tab, matched by the keys. */
+export function joinInput(wb: Workbook, inputId: string): { wb: Workbook; added: string[]; target?: string } {
+  const inp = wb.sheets.find((x) => x.id === inputId)!;
+  const keys = inp.columns.map((k, i) => ({ k, i })).filter((x) => x.k.key);
+  const target = wb.sheets.find((x) => x.name === keys[0]?.k.keyFrom);
+  if (!target || !keys.length) return { wb, added: [] };
+  const tq = quoteName(inp.name);
+  const col = (i: number) => `${tq}!${colLetter(i)}:${colLetter(i)}`;
+  const tcol = (title: string) => target.columns.findIndex((x) => x.title === title);
+  let next = wb;
+  const added: string[] = [];
+  for (const [i, k] of inp.columns.entries()) {
+    if (k.key || !k.input || k.type === 'text' || k.type === 'date') continue;
+    const crit = keys.map((x) => `${col(x.i)}, ${colLetter(tcol(x.k.title))}2`).join(', ');
+    const formula = keys.length === 1
+      ? `=XLOOKUP(${colLetter(tcol(keys[0].k.title))}2, ${col(keys[0].i)}, ${col(i)}, 0)`
+      : `=SUMIFS(${col(i)}, ${crit})`;
+    const t = next.sheets.find((x) => x.id === target.id)!;
+    const title = t.columns.some((x) => x.title === k.title) ? `${k.title} (${inp.name})` : k.title;
+    next = appendColumn(next, target.id, { title, type: k.type, width: 140, formula }).wb;
+    added.push(title);
+  }
+  next = updateSheet(next, inputId, (x) => ({ ...x, joinedTo: target.name }));
+  return { wb: next, added, target: target.name };
 }

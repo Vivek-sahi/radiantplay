@@ -49,6 +49,35 @@
   padding: var(--spacing-6);
 }
 
+/* The collapse toggle sits at the panel's top right, beside the workbook. */
+.chatHead {
+  display: flex;
+  justify-content: flex-end;
+  margin: calc(-1 * var(--spacing-4)) calc(-1 * var(--spacing-3)) 0 0;
+  flex-shrink: 0;
+}
+
+.chatBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Collapsed: a slim rail with only the toggle. */
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 56px;
+  flex-shrink: 0;
+  padding-top: var(--spacing-4);
+}
+
+.hidden {
+  display: none;
+}
+
 .canvas {
   flex: 1;
   min-width: 0;
