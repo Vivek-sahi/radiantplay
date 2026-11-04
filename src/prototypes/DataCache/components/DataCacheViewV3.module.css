@@ -25,9 +25,16 @@
   padding: var(--spacing-6) var(--spacing-7);
   justify-content: center;
 }
-.fit {
-  max-width: 260px;
-  padding-top: var(--spacing-2);
+/* The plan line as a strip: a quiet surface, the two allowances side by side. */
+.planStrip {
+  align-self: flex-start;
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-md);
+  background-color: var(--rd-sys-color-background-subtle);
+}
+/* The estimate basis wraps to two lines under the figure (Vivek, 4 Nov). */
+.basis {
+  max-width: 280px;
 }
 .adjust {
   padding-top: var(--spacing-1);
@@ -58,4 +65,14 @@
 }
 .tileLabel {
   min-height: var(--spacing-6);
+}
+
+/* The action column: status and buttons share one width, right-aligned (Vivek, 4 Nov). */
+.actionSlot {
+  width: 112px;
+  margin-left: auto;
+}
+.actionSlot > * {
+  width: 100%;
+  justify-content: center;
 }

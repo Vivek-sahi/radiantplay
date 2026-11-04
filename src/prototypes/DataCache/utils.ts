@@ -2,7 +2,7 @@
  * Data Cache — formatting, allowance and savings helpers
  */
 
-import type { DataModel, EstimateInputs, Frequency, Plan, Schedule, Weekday, WindowMonths } from './types';
+import type { DataModel, EstimateInputs, Frequency, Org, Plan, Schedule, Weekday, WindowMonths } from './types';
 
 /** 256 → "256 MB"; 35020 → "34.2 GB" */
 export function formatSizeMB(mb: number): string {
@@ -178,3 +178,14 @@ export const queryTimeAvoidedHours = (models: DataModel[]): number =>
 
 /** Does this one model fit in what the free hours have left? (v2: per row, not cumulative.) */
 export const fitsFreeHours = (m: DataModel, used: number, plan: Plan): boolean => cacheHours(m) <= plan.freeHours - used;
+
+/**
+ * The PM's coverage maths (Data Cache Hook, 2 Nov): how much of the org's cacheable
+ * models the plan's query hours cover, org-wide. Cache hours 1:1 with warehouse hours.
+ */
+export function planCoverage(org: Org, plan: Plan): { pct: number; fit: number; total: number } {
+  const all = Math.round((org.cacheableHours30d * CACHE_FACTOR + org.cacheableModels * REFRESH_HOURS) / 10) * 10;
+  const pct = all > 0 ? Math.min(100, Math.round((plan.freeHours / all) * 100)) : 100;
+  const fit = pct === 100 ? org.cacheableModels : Math.round((org.cacheableModels * pct) / 100);
+  return { pct, fit, total: org.cacheableModels };
+}

@@ -137,7 +137,7 @@
   white-space: nowrap;
 }
 .colText {
-  max-width: 420px;
+  max-width: 520px; /* 4 lines for the description (Vivek, 4 Nov) */
 }
 .colRight {
   flex: 0 0 640px;

@@ -9,8 +9,8 @@ import type { RunStatus } from '../types';
 // ── StatusPill ────────────────────────────────────────────────────────────────
 export type PillKind = 'success' | 'failure' | 'warning' | 'info' | 'neutral';
 
-export const StatusPill: React.FC<{ kind: PillKind; label: string; icon?: IconName; compact?: boolean }> = ({ kind, label, icon, compact }) => (
-  <span className={`${styles.pill} ${styles[kind]} ${compact ? styles.compact : ''}`}>
+export const StatusPill: React.FC<{ kind: PillKind; label: string; icon?: IconName; compact?: boolean; asButton?: boolean }> = ({ kind, label, icon, compact, asButton }) => (
+  <span className={`${styles.pill} ${styles[kind]} ${compact ? styles.compact : ''} ${asButton ? styles.asButton : ''}`}>
     {icon && <Icon name={icon} size="xs" aria-hidden />}
     {label}
   </span>

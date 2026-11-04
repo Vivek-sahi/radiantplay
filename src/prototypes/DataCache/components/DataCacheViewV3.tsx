@@ -3,7 +3,8 @@ import { Alert, Button, Card, Icon, Link, Modal, ModalFooter, ProgressBar, Table
 import type { IconName, TableColumn } from '@/components';
 import { StatusPill, SectionHeader, FloatingToast, type PillKind } from './primitives';
 import { AddHoursModal } from './AddHoursModal';
-import { EstimateModal, fitLine } from './EstimateModal';
+import { LimitBanner, type Limit } from './LimitBanner';
+import { EstimateModal } from './EstimateModal';
 import { CalculatorInputs, ReceiptLines } from './HookBoxes';
 import { c, spacing } from '../styles';
 import styles from './DataCacheViewV3.module.css';
@@ -11,24 +12,34 @@ import {
   allowancePct,
   computeEstimate,
   fitsFreeHours,
+  planCoverage,
   formatCompact,
   formatRowsFull,
   gbUsed,
   hoursUsed,
   isCacheable,
-  savedSoFarPerYear,
   savingPerYear,
   usd,
   usdRange,
   warehouseHours,
   RATE_PER_QUERY,
 } from '../utils';
-import type { Cacheability, DataModel, EstimateInputs, Org, Plan } from '../types';
+import type { DataModel, EstimateInputs, Org, Plan } from '../types';
 
 /** The proposed designs (4 Nov): banner 1 with the calculator folded in, four ways. */
 export type BannerStyle = 'inline' | 'modal' | 'receipt' | 'expand';
 /** The tag beside the page title: nothing (the convention), a short neutral label, or the green pill. */
 export type TitleTag = 'none' | 'neutral' | 'pill';
+
+/** Ways to make the plan line under the title stand out (Vivek, 4 Nov). */
+export type PlanLine = 'plain' | 'bold' | 'pills' | 'strip';
+export const PLAN_LINE_OPTIONS: { id: PlanLine; label: string }[] = [
+  { id: 'plain', label: 'Plain' },
+  { id: 'bold', label: 'Bold' },
+  { id: 'pills', label: 'Pills' },
+  { id: 'strip', label: 'Strip' },
+];
+
 export const TITLE_TAG_OPTIONS: { id: TitleTag; label: string }[] = [
   { id: 'none', label: 'None' },
   { id: 'neutral', label: 'Included' },
@@ -42,7 +53,7 @@ export const BANNER_OPTIONS: { id: BannerStyle; label: string }[] = [
 ];
 
 const NOT_ENABLED = 'Contact your ThoughtSpot rep to enable caching.';
-const TOP = 6;
+const TOP = 10;
 const ORG_SCOPE = 'Last 30 days, on your cacheable models';
 
 /** Starting inputs for the org-level estimate: the queries on the cacheable models, at the ceiling and rate. */
@@ -59,18 +70,7 @@ const cacheStatus = (m: DataModel): { kind: PillKind; label: string } => {
   if (cache.status === 'purged') return { kind: 'neutral', label: 'Purged' };
   if (cache.runs.some((r) => r.status === 'In progress')) return { kind: 'neutral', label: 'In progress' };
   if (cache.lastRunStatus === 'Error') return { kind: 'failure', label: 'Error' };
-  return { kind: 'success', label: 'Success' };
-};
-const lastRefreshed = (m: DataModel): string | null => {
-  const done = m.cache!.runs.find((r) => (r.runType === 'Scheduled' || r.runType === 'Ad-hoc') && r.status === 'Success' && r.endTime);
-  return done?.endTime ?? null;
-};
-const BLOCKED_REASON: Record<NonNullable<Cacheability['reasonCode']>, string> = {
-  OAUTH_CONNECTION: 'OAuth connection',
-  UNSUPPORTED_CONNECTOR: 'Source not supported yet',
-  PASSTHROUGH_SQL: 'Passthrough SQL',
-  MISSING_CUSTOM_CALENDAR: 'Custom calendar',
-  CACHING_DISABLED_ON_ORG: 'Not enabled',
+  return { kind: 'success', label: 'Cached' };
 };
 const queries = (m: DataModel) => m.usage?.warehouseQueries30d ?? 0;
 
@@ -86,7 +86,7 @@ const Tile: React.FC<{ icon: IconName; label: string; value: string; of?: string
         {of && <Typography variant="footnote" color="gray-light" as="span" noMargin>{of}</Typography>}
       </Horizontal>
       {meter !== undefined && <ProgressBar value={meter} color="blue" />}
-      <Typography variant="footnote" color="gray-light" noMargin>{sub}</Typography>
+      {sub && <Typography variant="footnote" color="gray-light" noMargin>{sub}</Typography>}
     </Vertical>
   </Card>
 );
@@ -104,12 +104,16 @@ export const DataCacheViewV3: React.FC<{
   enabled: boolean;
   banner: BannerStyle;
   titleTag: TitleTag;
+  planLine: PlanLine;
+  /** A plan limit reached: query hours used up, or storage full. */
+  limit: Limit;
+  /** Below the threshold the saving column is hidden; on, it shows for every org (open question). */
+  savingForAll: boolean;
   estimate: EstimateInputs;
   onEstimate: (next: EstimateInputs) => void;
   onOpenModel: (modelId: string) => void;
   onCacheModel: (modelId: string) => void;
-}> = ({ org, models, plan, enabled, banner, titleTag, estimate, onEstimate, onOpenModel, onCacheModel }) => {
-  const [showAll, setShowAll] = useState(false);
+}> = ({ org, models, plan, enabled, banner, titleTag, planLine, limit, savingForAll, estimate, onEstimate, onOpenModel, onCacheModel }) => {
   const [addFor, setAddFor] = useState<DataModel | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [open, setOpen] = useState<null | 'calc' | 'receipt'>(null);
@@ -127,59 +131,50 @@ export const DataCacheViewV3: React.FC<{
   const hitPct = onCached > 0 ? Math.round((fromCache / onCached) * 100) : 0;
   const saved = fromCache * RATE_PER_QUERY;
   const est = computeEstimate(estimate, plan);
-  const fit = fitLine(estimate, plan);
 
   // ── the one list: the PM's table ──
   const byQueries = (a: DataModel, b: DataModel) => queries(b) - queries(a);
   const ordered = [...models.filter(isCacheable).sort(byQueries), ...models.filter((m) => !isCacheable(m)).sort(byQueries)];
-  const list = showAll ? ordered : ordered.slice(0, TOP);
+  const list = ordered.slice(0, TOP); // top 10, no Show all (Vivek, 4 Nov)
   const fits = (m: DataModel) => fitsFreeHours(m, used, plan);
   const action = (row: DataModel) => {
     if (row.cache) {
       const s = cacheStatus(row);
-      const when = lastRefreshed(row);
-      return (
-        <Horizontal gap={spacing.B} align="center" wrap justify="end">
-          <StatusPill kind={s.kind} label={s.label} />
-          {when && <Typography variant="footnote" color="gray-light" as="span" noMargin>Refreshed {when}</Typography>}
-        </Horizontal>
-      );
+      return limit === 'hours' ? <StatusPill kind="warning" label="Paused" asButton /> : <StatusPill kind={s.kind} label={s.label} asButton />;
     }
-    if (!isCacheable(row)) {
-      const code = row.cacheability?.reasonCode;
-      return <Typography variant="footnote" color="gray-light" as="span" noMargin>Not cacheable{code ? ` · ${BLOCKED_REASON[code]}` : ''}</Typography>;
-    }
-    return fits(row) ? (
+    // Not cacheable: a disabled Cache Model button in place of the reason text (Vivek, 4 Nov).
+    if (!isCacheable(row)) return <Button variant="secondary" size="small" disabled>Cache Model</Button>;
+    // Storage full: nothing new can be cached. Hours used up: every row asks for hours (the PM's frame).
+    if (limit === 'storage') return <Button variant="secondary" size="small" disabled>Cache Model</Button>;
+    return fits(row) && limit !== 'hours' ? (
       <Button variant="secondary" size="small" disabled={!enabled} onClick={() => onCacheModel(row.id)}>Cache Model</Button>
     ) : (
       <Button variant="secondary" size="small" disabled={!enabled} onClick={() => setAddFor(row)}>Add hours</Button>
     );
   };
-  const money = (text: string) => <Typography variant="content-label" color="base" as="span" noMargin>{text}</Typography>;
   const columns: TableColumn<DataModel>[] = [
     { key: 'name', label: 'Model', render: (_v, row) => <Link href="#" onClick={(e) => { e.preventDefault(); onOpenModel(row.id); }}>{row.name}</Link> },
     { key: 'queries', label: 'Warehouse queries, 30 d', render: (_v, row) => formatRowsFull(queries(row)) },
     { key: 'hours', label: 'Query hours, 30 d', render: (_v, row) => `${formatRowsFull(warehouseHours(row))} h` },
-    ...(org.aboveThreshold
+    ...(org.aboveThreshold || savingForAll
       ? [{
           key: 'saving',
           label: 'Est. saving / yr',
           render: (_v: unknown, row: DataModel) => {
             if (!isCacheable(row)) return '—';
-            if (row.cache) { const s = savedSoFarPerYear(row); return s !== null ? <Typography variant="content-label" color="success" as="span" noMargin>~{usd(s)} so far</Typography> : 'Counting'; }
+            // Same estimate before, during and after caching (Vivek, 4 Nov).
             return <Typography variant="content-label" color="success" as="span" noMargin>{usdRange(savingPerYear(queries(row)))}</Typography>;
           },
         }]
       : []),
-    { key: 'action', label: '', width: '220px', align: 'right', render: (_v, row) => action(row) },
+    { key: 'action', label: '', width: '220px', align: 'right', render: (_v, row) => <div className={styles.actionSlot}>{action(row)}</div> },
   ];
 
   // ── the banner ──
   const hero = (
     <Vertical gap={spacing.A} className={styles.hero}>
       <Typography variant="headline-large" color="success" as="span" noMargin>{usdRange(est.savingPerYear).replace(' to ', '–')}/yr</Typography>
-      <Typography variant="footnote" color="gray-light" noMargin>estimated warehouse cost savings</Typography>
-      <Typography variant="footnote" color={fit.ok ? 'gray-light' : 'warning'} noMargin className={styles.fit}>{fit.text}</Typography>
+      <Typography variant="footnote" color="gray-light" noMargin className={styles.basis}>At ${estimate.ratePerQuery.toFixed(2)} per warehouse query, with {estimate.hitPct}% queries served from DataCache</Typography>
       {banner === 'expand' && (
         <div className={styles.adjust}>
           <Button variant="tertiary" size="small" onClick={() => setExpanded((v) => !v)}>{expanded ? 'Done' : 'Adjust'}</Button>
@@ -187,11 +182,14 @@ export const DataCacheViewV3: React.FC<{
       )}
     </Vertical>
   );
+  // Coverage copy: Vivek's line (4 Nov), the % from the PM's coverage maths.
+  const cov = planCoverage(org, plan);
+  const em = (text: string) => <Typography variant="content-label-subhead" color="base" as="span" noMargin>{text}</Typography>;
   const copy = (
     <Vertical gap={spacing.A}>
-      <Typography variant="section-label" color="base" as="h2" noMargin>Estimated cost savings with DataCache</Typography>
+      <Typography variant="section-label" color="base" as="h2" noMargin>Estimated cost savings</Typography>
       <Typography variant="body-normal" color="gray-light" noMargin>
-        With DataCache, 60-80% of your warehouse queries on cacheable models can be executed extremely fast and at no cost. Your DataCache plan includes {formatRowsFull(plan.freeHours)} query hours and {plan.freeGB} GB storage.
+        With DataCache, 60-80% of your warehouse queries on cacheable models can be executed extremely fast and at no cost. Your plan includes {formatRowsFull(plan.freeHours)} query hours, enough to cache {em(`${cov.pct}%`)} of your models.
       </Typography>
     </Vertical>
   );
@@ -219,37 +217,66 @@ export const DataCacheViewV3: React.FC<{
           {enabled && titleTag === 'pill' && <StatusPill kind="success" icon="checkmark" label="Included in your plan" />}
           {enabled && titleTag === 'neutral' && <StatusPill kind="neutral" label="Included" />}
         </Horizontal>
-        <Typography variant="body-normal" color="gray-light" noMargin>
-          Your plan includes {formatRowsFull(plan.freeHours)} query hours and {plan.freeGB} GB of cache storage a month.
-        </Typography>
+        {planLine === 'plain' && (
+          <Typography variant="body-normal" color="gray-light" noMargin>
+            Your plan includes {formatRowsFull(plan.freeHours)} query hours and {plan.freeGB} GB of cache storage a month.
+          </Typography>
+        )}
+        {planLine === 'bold' && (
+          <Typography variant="body-normal" color="gray-light" noMargin>
+            Your plan includes {em(`${formatRowsFull(plan.freeHours)} query hours`)} and {em(`${plan.freeGB} GB of cache storage`)} a month.
+          </Typography>
+        )}
+        {planLine === 'pills' && (
+          <Horizontal gap={spacing.B} align="center" wrap>
+            <Typography variant="body-normal" color="gray-light" noMargin>Your plan includes</Typography>
+            <StatusPill kind="success" icon="clock" label={`${formatRowsFull(plan.freeHours)} query hours a month`} />
+            <StatusPill kind="success" icon="database" label={`${plan.freeGB} GB of cache storage`} />
+          </Horizontal>
+        )}
+        {planLine === 'strip' && (
+          <Horizontal gap={spacing.F} align="center" wrap className={styles.planStrip}>
+            <Typography variant="content-label" color="success" noMargin>Included in your plan</Typography>
+            <Horizontal gap={spacing.B} align="center">
+              <Icon name="clock" size="m" color={c['content-secondary']} />
+              {em(`${formatRowsFull(plan.freeHours)} query hours`)}
+              <Typography variant="body-normal" color="gray-light" as="span" noMargin>a month</Typography>
+            </Horizontal>
+            <Horizontal gap={spacing.B} align="center">
+              <Icon name="database" size="m" color={c['content-secondary']} />
+              {em(`${plan.freeGB} GB`)}
+              <Typography variant="body-normal" color="gray-light" as="span" noMargin>of cache storage</Typography>
+            </Horizontal>
+          </Horizontal>
+        )}
       </Vertical>
       {!enabled && <Alert status="info" variant="section" dismissible={false} message={NOT_ENABLED} />}
+      <LimitBanner limit={limit} plan={plan} />
 
       {bannerEl}
 
       <Horizontal gap={spacing.D} align="stretch" wrap className={styles.tileRow}>
-        <Tile icon="clock" label="Query hours" value={formatRowsFull(used)} of={`of ${formatRowsFull(plan.freeHours)}`} meter={allowancePct(used, plan.freeHours)} sub={n ? `Used by your ${n} cached ${n === 1 ? 'model' : 'models'} this month` : 'Nothing cached yet'} />
-        <Tile icon="database" label="Storage" value={gb >= 1 ? `${gb.toFixed(gb < 10 ? 1 : 0)} GB` : gb > 0 ? `${Math.round(gb * 1024)} MB` : '0 GB'} of={`of ${plan.freeGB} GB`} meter={allowancePct(gb, plan.freeGB)} sub={n ? `${formatCompact(rows)} rows across ${n} ${n === 1 ? 'model' : 'models'}` : 'Nothing cached yet'} />
-        <Tile icon="chart" label="Queries served from cache" value={formatRowsFull(fromCache)} sub={fromCache ? `${hitPct}% of queries on cached models` : 'Counting from the first cache run'} />
+        <Tile icon="clock" label="Query hours" value={formatRowsFull(limit === 'hours' ? plan.freeHours : used)} of={`of ${formatRowsFull(plan.freeHours)}`} meter={limit === 'hours' ? 100 : allowancePct(used, plan.freeHours)} sub={limit === 'hours' ? 'Used up on 22 Nov. Resets 1 Dec' : n ? `Used by your ${n} cached ${n === 1 ? 'model' : 'models'} this month` : ''} />
+        <Tile icon="database" label="Storage" value={limit === 'storage' ? `${plan.freeGB} GB` : gb >= 1 ? `${gb.toFixed(gb < 10 ? 1 : 0)} GB` : gb > 0 ? `${Math.round(gb * 1024)} MB` : '0 GB'} of={`of ${plan.freeGB} GB`} meter={limit === 'storage' ? 100 : allowancePct(gb, plan.freeGB)} sub={limit === 'storage' ? 'Full' : n ? `${formatCompact(rows)} rows across ${n} ${n === 1 ? 'model' : 'models'}` : ''} />
+        <Tile icon="chart" label="Queries served from cache" value={formatRowsFull(fromCache)} sub={fromCache ? `${hitPct}% of queries on cached models` : ''} />
         <Tile icon="chart" label="Warehouse cost avoided" value={fromCache ? `~${usd(saved)}` : '$0'} sub={fromCache ? `About ${usd(saved * 12)} a year at this rate` : 'Estimate at $0.05 per warehouse query'} />
       </Horizontal>
 
       <Vertical gap={spacing.D}>
         <SectionHeader title="Models" />
         <Table columns={columns as unknown as TableColumn[]} data={list as unknown as Record<string, unknown>[]} rowKey="id" hoverable bordered />
-        {ordered.length > TOP && (
-          <div>
-            <Button variant="tertiary" size="small" onClick={() => setShowAll((v) => !v)}>{showAll ? `Show top ${TOP}` : `Show all ${ordered.length} models`}</Button>
-          </div>
-        )}
+        {/* Shown, not wired: the interaction isn't part of this prototype (Vivek, 4 Nov). */}
+        <div>
+          <Button variant="tertiary" size="small">Show all {formatRowsFull(org.activeModels)} models</Button>
+        </div>
       </Vertical>
 
       {open === 'calc' && (
         <EstimateModal
           initial={estimate}
           plan={plan}
-          queriesHelp={ORG_SCOPE}
-          fit
+          queriesLabel="Queries on your cacheable models"
+          queriesHelp="Last 30 days"
           onSave={(next) => { onEstimate(next); setOpen(null); }}
           onClose={() => setOpen(null)}
         />

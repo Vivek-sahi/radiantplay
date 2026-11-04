@@ -86,6 +86,8 @@ export const CachingHook: React.FC<{
   model: DataModel;
   plan: Plan;
   enabled: boolean;
+  /** A plan limit is reached: Cache Model is disabled, the banner above says why. */
+  blocked?: boolean;
   onCache: () => void;
   onLearnMore: () => void;
   onEstimate: (next: EstimateInputs) => void;
@@ -96,7 +98,7 @@ export const CachingHook: React.FC<{
   icon: IconStyle;
   layout: HookLayout;
   background: HookBackground;
-}> = ({ model, plan, enabled, onCache, onLearnMore, onEstimate, boxStyle, hero, animation, icon, layout, background }) => {
+}> = ({ model, plan, enabled, blocked = false, onCache, onLearnMore, onEstimate, boxStyle, hero, animation, icon, layout, background }) => {
   const heroEl =
     hero === 'none' ? null
     : hero === 'animation' ? (animation === 'ledger' ? <LedgerAnimation /> : <CacheFlowAnimation />)
@@ -208,7 +210,7 @@ export const CachingHook: React.FC<{
             <Benefit figure="AI" title="Scale Spotter freely" sub="More AI questions, less warehouse load." />
           </Vertical>
           <Horizontal gap={spacing.C} align="center">
-            <Button variant="primary" onClick={onCache} disabled={!enabled}>Cache Model</Button>
+            <Button variant="primary" onClick={onCache} disabled={!enabled || blocked}>Cache Model</Button>
             <Button variant="tertiary" onClick={onLearnMore}>Learn more</Button>
           </Horizontal>
           {!enabled && <Alert status="info" variant="section" dismissible={false} message={NOT_ENABLED} />}
@@ -228,11 +230,11 @@ export const CachingHook: React.FC<{
         <Vertical gap={spacing.C} className={`${styles.colLeft} ${heroEl ? '' : styles.colLeftLifted}`}>
           <Typography variant="page-title" color="base" as="h2" noMargin className={styles.colTitle}>Cache to reduce query cost</Typography>
           <Typography variant="body-large" color="gray-light" noMargin className={styles.colText}>
-            Your ThoughtSpot plan includes {formatRowsFull(plan.freeHours)} query hours and {plan.freeGB} GB storage. ThoughtSpot refreshes the cache on the schedule you set.
+            Your data doesn't change every second. Cache your data in ThoughtSpot and refresh it on your schedule. Your plan includes {formatRowsFull(plan.freeHours)} query hours and {plan.freeGB} GB storage.
           </Typography>
           {heroEl && <div className={styles.colHero}>{heroEl}</div>}
           <Horizontal gap={spacing.C} align="center" className={styles.cta}>
-            <Button variant="primary" size="large" onClick={onCache} disabled={!enabled} className={styles.ctaButton}>Cache Model</Button>
+            <Button variant="primary" size="large" onClick={onCache} disabled={!enabled || blocked} className={styles.ctaButton}>Cache Model</Button>
             <Button variant="tertiary" onClick={onLearnMore}>Learn more</Button>
           </Horizontal>
           {!enabled && <Alert status="info" variant="section" dismissible={false} message={NOT_ENABLED} />}
@@ -254,7 +256,7 @@ export const CachingHook: React.FC<{
             Your ThoughtSpot plan includes {formatRowsFull(plan.freeHours)} query hours and {plan.freeGB} GB storage.
           </Typography>
           <div className={styles.cta}>
-            <Button variant="primary" size="large" onClick={onCache} disabled={!enabled} className={styles.ctaButton}>Cache Model</Button>
+            <Button variant="primary" size="large" onClick={onCache} disabled={!enabled || blocked} className={styles.ctaButton}>Cache Model</Button>
           </div>
           {!enabled && <Alert status="info" variant="section" dismissible={false} message={NOT_ENABLED} />}
         </Vertical>

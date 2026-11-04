@@ -6,9 +6,10 @@ import type { HookBoxStyle } from './components/HookBoxes';
 import type { HeroStyle, HookLayout, HookBackground, AnimationStyle, IconStyle } from './components/CachingHook';
 import { DataCacheView } from './components/DataCacheView';
 import { DataCacheViewV2 } from './components/DataCacheViewV2';
-import { DataCacheViewV3, defaultOrgEstimate, type TitleTag } from './components/DataCacheViewV3';
+import { DataCacheViewV3, defaultOrgEstimate, type TitleTag, type PlanLine } from './components/DataCacheViewV3';
 import { DataObjectsView } from './components/DataObjectsView';
 import { ModelView } from './components/ModelView';
+import type { Limit } from './components/LimitBanner';
 import { orgs, plan } from './data';
 import { JUMPS, SCENARIOS, type ScenarioId } from './scenarios';
 import type { DataModel, EstimateInputs } from './types';
@@ -46,12 +47,15 @@ export const DataCache: React.FC = () => {
   const [background, setBackground] = useState<HookBackground>('dots');
   const [navBadge, setNavBadge] = useState<NavBadge>('new');
   const [titleTag, setTitleTag] = useState<TitleTag>('none');
+  const [planLine, setPlanLine] = useState<PlanLine>('plain');
   const [enabled, setEnabled] = useState(true);
+  const [limit, setLimit] = useState<Limit>('none');
+  const [savingForAll, setSavingForAll] = useState(false);
   const [modelsByOrg, setModelsByOrg] = useState<Record<string, DataModel[]>>(() =>
     Object.fromEntries(Object.values(orgs).map((o) => [o.id, o.models])),
   );
   const [view, setView] = useState<View>({ kind: 'datacache' });
-  const [hookHighlight, setHookHighlight] = useState(0);
+  const [hookHighlight] = useState(0);
 
   const scenario = SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0];
   const org = orgs[scenario.org];
@@ -71,10 +75,8 @@ export const DataCache: React.FC = () => {
     if (id === 'objects' || id === 'datacache') setView({ kind: id });
     else setView({ kind: 'other', id });
   };
-  const learnMore = () => {
-    setHookHighlight((n) => n + 1);
-    setView({ kind: 'datacache' });
-  };
+  // Learn more will open the documentation page later; for now it goes nowhere (Vivek, 4 Nov).
+  const learnMore = () => {};
   const pickScenario = (id: ScenarioId) => {
     setScenarioId(id);
     setView({ kind: 'datacache' });
@@ -102,6 +104,9 @@ export const DataCache: React.FC = () => {
           enabled={enabled}
           banner={version}
           titleTag={titleTag}
+          planLine={planLine}
+          limit={limit}
+          savingForAll={savingForAll}
           estimate={orgEstimates[org.id] ?? defaultOrgEstimate(org)}
           onEstimate={(next) => setOrgEstimates((prev) => ({ ...prev, [org.id]: next }))}
           onOpenModel={(id) => openModel(id, 'datacache')}
@@ -153,6 +158,7 @@ export const DataCache: React.FC = () => {
         onChange={updateModel}
         plan={plan}
         enabled={enabled}
+        limit={limit}
         onLearnMore={learnMore}
         autoOpenSettings={view.openSettings}
         boxStyle={boxStyle}
@@ -170,7 +176,7 @@ export const DataCache: React.FC = () => {
       <Shell active={activeNav} onNavigate={navigate} navBadge={navBadge}>
         {renderContent()}
       </Shell>
-      <ProtoMenu version={version} onVersion={setVersion} boxStyle={boxStyle} onBoxStyle={setBoxStyle} hero={hero} onHero={setHero} animation={animation} onAnimation={setAnimation} icon={icon} onIcon={setIcon} layout={layout} onLayout={setLayout} background={background} onBackground={setBackground} navBadge={navBadge} onNavBadge={setNavBadge} titleTag={titleTag} onTitleTag={setTitleTag} scenario={scenarioId} onScenario={pickScenario} enabled={enabled} onEnabled={setEnabled} onJump={jump} onReset={resetScenario} />
+      <ProtoMenu version={version} onVersion={setVersion} boxStyle={boxStyle} onBoxStyle={setBoxStyle} hero={hero} onHero={setHero} animation={animation} onAnimation={setAnimation} icon={icon} onIcon={setIcon} layout={layout} onLayout={setLayout} background={background} onBackground={setBackground} navBadge={navBadge} onNavBadge={setNavBadge} titleTag={titleTag} onTitleTag={setTitleTag} planLine={planLine} onPlanLine={setPlanLine} scenario={scenarioId} onScenario={pickScenario} enabled={enabled} onEnabled={setEnabled} limit={limit} onLimit={setLimit} savingForAll={savingForAll} onSavingForAll={setSavingForAll} onJump={jump} onReset={resetScenario} />
     </>
   );
 };

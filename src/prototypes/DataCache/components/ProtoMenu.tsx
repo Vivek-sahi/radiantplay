@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Button, Card, Divider, SegmentedControl, Select, Toggle, Typography, Horizontal, Vertical } from '@/components';
 import { JUMPS, SCENARIOS, type ScenarioId } from '../scenarios';
 import { HOOK_BOX_OPTIONS, type HookBoxStyle } from './HookBoxes';
-import { BANNER_OPTIONS, TITLE_TAG_OPTIONS, type BannerStyle, type TitleTag } from './DataCacheViewV3';
+import { BANNER_OPTIONS, TITLE_TAG_OPTIONS, PLAN_LINE_OPTIONS, type BannerStyle, type TitleTag, type PlanLine } from './DataCacheViewV3';
 import type { NavBadge } from './Shell';
 import { HERO_OPTIONS, LAYOUT_OPTIONS, BACKGROUND_OPTIONS, ANIMATION_OPTIONS, ICON_OPTIONS, type HeroStyle, type HookLayout, type HookBackground, type AnimationStyle, type IconStyle } from './CachingHook';
+import { LIMIT_OPTIONS, type Limit } from './LimitBanner';
 import styles from './ProtoMenu.module.css';
 
 export type PageVersion = 'v1' | 'v2' | BannerStyle;
@@ -46,13 +47,19 @@ export const ProtoMenu: React.FC<{
   onNavBadge: (b: NavBadge) => void;
   titleTag: TitleTag;
   onTitleTag: (t: TitleTag) => void;
+  planLine: PlanLine;
+  onPlanLine: (p: PlanLine) => void;
   scenario: ScenarioId;
   onScenario: (id: ScenarioId) => void;
   enabled: boolean;
   onEnabled: (on: boolean) => void;
+  limit: Limit;
+  onLimit: (l: Limit) => void;
+  savingForAll: boolean;
+  onSavingForAll: (on: boolean) => void;
   onJump: (id: 'heavy' | 'low') => void;
   onReset: () => void;
-}> = ({ version, onVersion, boxStyle, onBoxStyle, hero, onHero, layout, onLayout, background, onBackground, animation, onAnimation, icon, onIcon, navBadge, onNavBadge, titleTag, onTitleTag, scenario, onScenario, enabled, onEnabled, onJump, onReset }) => {
+}> = ({ version, onVersion, boxStyle, onBoxStyle, hero, onHero, layout, onLayout, background, onBackground, animation, onAnimation, icon, onIcon, navBadge, onNavBadge, titleTag, onTitleTag, planLine, onPlanLine, scenario, onScenario, enabled, onEnabled, limit, onLimit, savingForAll, onSavingForAll, onJump, onReset }) => {
   const [open, setOpen] = useState(false);
   const seg = (opts: { id: string; label: string }[]) => opts.map((o) => ({ id: o.id, label: o.label }));
   return (
@@ -84,6 +91,10 @@ export const ProtoMenu: React.FC<{
             <Row label="Title tag">
               <SegmentedControl size="small" options={TITLE_TAG_OPTIONS.map((o) => ({ id: o.id, label: o.label }))} value={titleTag} onChange={(v) => onTitleTag(v as TitleTag)} />
             </Row>
+            <Row label="Plan line">
+              <SegmentedControl size="small" options={seg(PLAN_LINE_OPTIONS)} value={planLine} onChange={(v) => onPlanLine(v as PlanLine)} />
+            </Row>
+            <Row label="Saving column, small orgs"><SegmentedControl size="small" options={[{ id: 'hide', label: 'Hidden' }, { id: 'show', label: 'Shown' }]} value={savingForAll ? 'show' : 'hide'} onChange={(v) => onSavingForAll(v === 'show')} /></Row>
             <Row label="Proposed designs">
               <Select
                 size="small"
@@ -99,6 +110,7 @@ export const ProtoMenu: React.FC<{
             <Typography variant="overline" color="gray-light" noMargin>Data</Typography>
             <Row label="Scenario"><Select size="small" options={SCENARIOS.map((s) => ({ id: s.id, label: s.label }))} value={scenario} onChange={(v) => onScenario(v as ScenarioId)} aria-label="Scenario" /></Row>
             <Row label="Caching enabled on cluster"><Toggle checked={enabled} onChange={onEnabled} aria-label="Caching enabled on cluster" /></Row>
+            <Row label="Limit reached"><SegmentedControl size="small" options={seg(LIMIT_OPTIONS)} value={limit} onChange={(v) => onLimit(v as Limit)} /></Row>
             <Row label="Jump to">
               <Horizontal gap={8}>
                 {JUMPS.map((j) => (

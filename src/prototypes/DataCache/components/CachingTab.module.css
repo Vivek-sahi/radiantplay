@@ -17,3 +17,8 @@
 .perTableBlock {
   margin-top: var(--spacing-3, 12px);
 }
+
+/* A plan limit reached: the warning banner above the hook. */
+.limitBanner {
+  margin-bottom: var(--spacing-6);
+}

@@ -29,7 +29,9 @@ export const EstimateModal: React.FC<{
   queriesHelp?: string;
   /** Org level: show the average query time and the fit against the plan's query hours. */
   fit?: boolean;
-}> = ({ initial, plan, onSave, onClose, title = 'Estimate your saving', queriesHelp = 'Last 30 days', fit = false }) => {
+  /** The first input's label (the page's modal is org-wide, Vivek's wording 4 Nov). */
+  queriesLabel?: string;
+}> = ({ initial, plan, onSave, onClose, title = 'Estimate your saving', queriesHelp = 'Last 30 days', fit = false, queriesLabel }) => {
   const [draft, setDraft] = useState<EstimateInputs>(initial);
   const r = computeEstimate(draft, plan);
   const f = fitLine(draft, plan);
@@ -54,7 +56,7 @@ export const EstimateModal: React.FC<{
             <Typography variant="footnote" color={f.ok ? 'gray-light' : 'warning'} noMargin>{f.text}</Typography>
           )}
         </Vertical>
-        <CalculatorInputs inputs={draft} onChange={setDraft} queriesHelp={queriesHelp} />
+        <CalculatorInputs inputs={draft} onChange={setDraft} queriesHelp={queriesHelp} queriesLabel={queriesLabel} />
       </Vertical>
     </Modal>
   );

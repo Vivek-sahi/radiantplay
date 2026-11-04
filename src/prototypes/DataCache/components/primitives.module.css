@@ -81,3 +81,16 @@
 .sectionHeader {
   width: 100%;
 }
+
+/* Same box as a small secondary Button (the Cache Model button in the same column):
+   only the text and the colour say the state (Vivek, 4 Nov). */
+.asButton {
+  box-sizing: border-box;
+  height: 24px;
+  padding: 3px var(--spacing-3);
+  border-radius: var(--radius-xl);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-sm);
+  letter-spacing: 0.072px;
+}

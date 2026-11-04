@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { LimitBanner, type Limit } from './LimitBanner';
 import {
   Table,
   Alert,
@@ -64,6 +65,7 @@ export const CachingTab: React.FC<{
   onChange: (next: DataModel) => void;
   plan: Plan;
   enabled: boolean;
+  limit: Limit;
   onLearnMore: () => void;
   autoOpenSettings?: boolean;
   boxStyle: HookBoxStyle;
@@ -72,7 +74,7 @@ export const CachingTab: React.FC<{
   icon: IconStyle;
   layout: HookLayout;
   background: HookBackground;
-}> = ({ model, onChange, plan, enabled, onLearnMore, autoOpenSettings, boxStyle, hero, animation, icon, layout, background }) => {
+}> = ({ model, onChange, plan, enabled, limit, onLearnMore, autoOpenSettings, boxStyle, hero, animation, icon, layout, background }) => {
   const [modalOpen, setModalOpen] = useState(!!autoOpenSettings && !model.cache);
   const [modalIsEdit, setModalIsEdit] = useState(false);
   const [confirm, setConfirm] = useState<null | 'purge' | 'disable'>(null);
@@ -84,7 +86,8 @@ export const CachingTab: React.FC<{
   const modelRef = useRef(model);
   useEffect(() => { modelRef.current = model; }, [model]);
 
-  useEffect(() => () => { if (timerRef.current) window.clearTimeout(timerRef.current); }, []);
+  // No clear on unmount: the build keeps going when you leave the tab, so the run still
+  // finishes (it got stuck at In progress when you went back to the Data Cache page).
 
   const cache = model.cache;
 
@@ -242,10 +245,12 @@ export const CachingTab: React.FC<{
   if (!cache) {
     return (
       <>
+        {limit !== 'none' && <div className={styles.limitBanner}><LimitBanner limit={limit} plan={plan} /></div>}
         <CachingHook
           model={model}
           plan={plan}
           enabled={enabled}
+          blocked={limit !== 'none'}
           onCache={() => { setModalIsEdit(false); setModalOpen(true); }}
           onLearnMore={onLearnMore}
           onEstimate={(estimate) => onChange({ ...model, estimate })}
@@ -290,6 +295,7 @@ export const CachingTab: React.FC<{
   return (
     <>
       <Vertical gap={spacing.H}>
+        <LimitBanner limit={limit} plan={plan} />
         {/* Paused = warning (model changed → serving live); failure = error. Two
             distinct patterns. Purge feedback is a toast, not a persistent alert. */}
         {paused ? (

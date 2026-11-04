@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import type { Limit } from './LimitBanner';
 import { Tabs, Button, NoData, Typography, Horizontal, Vertical } from '@/components';
 import type { Tab } from '@/components';
 import { CachingTab } from './CachingTab';
@@ -23,6 +24,7 @@ export const ModelView: React.FC<{
   plan: Plan;
   /** Caching enabled on the cluster. Off: the CTA is disabled and a notice says who to contact. */
   enabled: boolean;
+  limit: Limit;
   onLearnMore: () => void;
   /** Open the Caching Settings modal straight away (arriving from "Cache Model" on the Data Cache page). */
   autoOpenSettings?: boolean;
@@ -32,7 +34,7 @@ export const ModelView: React.FC<{
   icon: IconStyle;
   layout: HookLayout;
   background: HookBackground;
-}> = ({ model, onChange, plan, enabled, onLearnMore, autoOpenSettings, boxStyle, hero, animation, icon, layout, background }) => {
+}> = ({ model, onChange, plan, enabled, limit, onLearnMore, autoOpenSettings, boxStyle, hero, animation, icon, layout, background }) => {
   const [activeTab, setActiveTab] = useState('caching');
 
   return (
@@ -58,7 +60,7 @@ export const ModelView: React.FC<{
       {/* Tab content */}
       <div className={styles.tabContent}>
         {activeTab === 'caching' ? (
-          <CachingTab model={model} onChange={onChange} plan={plan} enabled={enabled} onLearnMore={onLearnMore} autoOpenSettings={autoOpenSettings} boxStyle={boxStyle} hero={hero} animation={animation} icon={icon} layout={layout} background={background} />
+          <CachingTab model={model} onChange={onChange} plan={plan} enabled={enabled} limit={limit} onLearnMore={onLearnMore} autoOpenSettings={autoOpenSettings} boxStyle={boxStyle} hero={hero} animation={animation} icon={icon} layout={layout} background={background} />
         ) : (
           <NoData
             title="Not part of this prototype"
