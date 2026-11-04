@@ -572,14 +572,15 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
     <>
       {pointing && <span>Point · click a cell, a column or another tab to insert it</span>}
       {sheet.kind === 'live' && <span>Live · {wb.model} model · {sheet.rows.length.toLocaleString()} rows</span>}
-      {sheet.kind === 'input' && (unsavedCount(sheet) ? (
+      {sheet.kind === 'input' && (
         <>
-          <span>Input table · {unsavedCount(sheet).toLocaleString()} unsaved {unsavedCount(sheet) === 1 ? 'change' : 'changes'}</span>
-          <Button variant="secondary" size="small" onClick={() => setSaveFor(sheet.id)}>Save input table</Button>
+          {unsavedCount(sheet) ? (
+            <span>Input table · {unsavedCount(sheet).toLocaleString()} unsaved {unsavedCount(sheet) === 1 ? 'change' : 'changes'}</span>
+          ) : (
+            <span>Input · {sheet.rows.length.toLocaleString()} rows · {sheet.writesTo ? `saved to ${sheet.writesTo}` : 'saves back to the warehouse'}</span>
+          )}
         </>
-      ) : (
-        <span>Input · {sheet.rows.length.toLocaleString()} rows · {sheet.writesTo ? `saved to ${sheet.writesTo}` : 'saves back to the warehouse'}</span>
-      ))}
+      )}
       {sheet.kind === 'local' && <span>Local · lives in this workbook</span>}
     </>
   );
@@ -636,7 +637,12 @@ export const WorkbookLive: React.FC<WorkbookLiveProps> = ({ initial, publishedAl
 
       {menuBar && <MenuBar onItem={onMenu} />}
       <div className={styles.toolbar}>
-        <SheetToolbar onAction={onTool} active={[...(focusCell ? ['focus'] : []), ...(painter ? ['painter'] : [])]} />
+        <SheetToolbar
+          onAction={onTool}
+          active={[...(focusCell ? ['focus'] : []), ...(painter ? ['painter'] : [])]}
+          // Save to warehouse sits before the full screen icon on an input tab (Vivek, 4 Nov), live once there's something to save.
+          beforeExpand={sheet.kind === 'input' ? <Button variant="secondary" size="small" disabled={!unsavedCount(sheet)} onClick={() => setSaveFor(sheet.id)}>Save to warehouse</Button> : undefined}
+        />
       </div>
 
       <FormulaBar

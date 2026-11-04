@@ -70,9 +70,11 @@ export interface SheetToolbarProps {
   onAction?: (id: string) => void;
   /** Tools shown as on (Focus cell, Paint format). */
   active?: string[];
+  /** Sheet-level action shown before the full screen icon (Save to warehouse on an input tab, Vivek 4 Nov). */
+  beforeExpand?: React.ReactNode;
 }
 
-export const SheetToolbar: React.FC<SheetToolbarProps> = ({ onAction, active = [] }) => {
+export const SheetToolbar: React.FC<SheetToolbarProps> = ({ onAction, active = [], beforeExpand }) => {
   const button = (t: Tool, onClick?: () => void) => (
     <Button
       className={`${styles.tool} ${active.includes(t.id) ? styles.on : ''}`}
@@ -107,6 +109,7 @@ export const SheetToolbar: React.FC<SheetToolbarProps> = ({ onAction, active = [
         ))}
       </div>
       <div className={styles.group}>
+        {beforeExpand}
         {tool({ id: 'expand', label: 'Expand', icon: 'expand' })}
       </div>
     </div>

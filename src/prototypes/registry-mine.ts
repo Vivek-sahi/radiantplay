@@ -41,12 +41,23 @@ const SpotterPrep2 = React.lazy(() => import('./SpotterPrep2'));
 const NearStore = React.lazy(() => import('./NearStore'));
 const DataCache = React.lazy(() => import('./DataCache'));
 const WorkbookInThoughtSpot = React.lazy(() => import('./WorkbookInThoughtSpot'));
+const WorkbookInThoughtSpotHome = React.lazy(() => import('./WorkbookInThoughtSpot/Home'));
 const AgentDBMVP = React.lazy(() => import('./AgentDBMVP'));
 const AgentDBMVPHome = React.lazy(() => import('./AgentDBMVP/Home'));
 const SearchDataOnDataModelexplorations = React.lazy(() => import('./SearchDataOnDataModelexplorations'));
 const SearchDataOnDataModelFinal = React.lazy(() => import('./SearchDataOnDataModelFinal'));
 
 export const myRegistry: ProjectMeta[] = [
+  {
+    id: 'WorkbookInThoughtSpotHome',
+    name: 'Workbook in ThoughtSpot · Project home',
+    description: 'The landing for the Workbook project: the prototype, repo and the two workflow recordings. Sections are TBD.',
+    author: 'Vivek Sahi',
+    lastModified: '2026-11-04',
+    component: WorkbookInThoughtSpotHome,
+    section: 'mine',
+    theme: 'global',
+  },
   {
     id: 'WorkbookInThoughtSpot',
     name: 'Workbook in ThoughtSpot',

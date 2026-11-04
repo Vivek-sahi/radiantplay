@@ -79,3 +79,7 @@ tsconfig.node.tsbuildinfo
 
 # Handoff export output (generated on demand)
 handoff/
+
+# Workbook project home: recordings and internal documents stay local (Vivek, 4 Nov: video stays out of commits;
+# the PM docs, Klimt proposal and deck are internal and this site is public). Remove a line to publish that file.
+public/workbook/
