@@ -36,7 +36,11 @@ type View =
   | { kind: 'model'; modelId: string; origin: Origin; openSettings?: boolean };
 
 export const DataCache: React.FC = () => {
-  const [scenarioId, setScenarioId] = useState<ScenarioId>('retail');
+  // Deep links for the spec and for devs: ?scenario=global&limit=hours&enabled=0&model=<id>
+  const params = new URLSearchParams(window.location.search);
+  const initialScenario = SCENARIOS.some((x) => x.id === params.get('scenario')) ? (params.get('scenario') as ScenarioId) : 'retail';
+  const initialLimit: Limit = params.get('limit') === 'hours' || params.get('limit') === 'storage' ? (params.get('limit') as Limit) : 'none';
+  const [scenarioId, setScenarioId] = useState<ScenarioId>(initialScenario);
   const [version, setVersion] = useState<PageVersion>('modal');
   const [orgEstimates, setOrgEstimates] = useState<Record<string, EstimateInputs>>({});
   const [boxStyle, setBoxStyle] = useState<HookBoxStyle>('calculator');
@@ -48,13 +52,13 @@ export const DataCache: React.FC = () => {
   const [navBadge, setNavBadge] = useState<NavBadge>('new');
   const [titleTag, setTitleTag] = useState<TitleTag>('none');
   const [planLine, setPlanLine] = useState<PlanLine>('plain');
-  const [enabled, setEnabled] = useState(true);
-  const [limit, setLimit] = useState<Limit>('none');
+  const [enabled, setEnabled] = useState(params.get('enabled') !== '0');
+  const [limit, setLimit] = useState<Limit>(initialLimit);
   const [savingForAll, setSavingForAll] = useState(false);
   const [modelsByOrg, setModelsByOrg] = useState<Record<string, DataModel[]>>(() =>
     Object.fromEntries(Object.values(orgs).map((o) => [o.id, o.models])),
   );
-  const [view, setView] = useState<View>({ kind: 'datacache' });
+  const [view, setView] = useState<View>(() => (params.get('model') ? { kind: 'model', modelId: params.get('model')!, origin: 'objects' } : { kind: 'datacache' }));
   const [hookHighlight] = useState(0);
 
   const scenario = SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0];
@@ -80,6 +84,13 @@ export const DataCache: React.FC = () => {
   const pickScenario = (id: ScenarioId) => {
     setScenarioId(id);
     setView({ kind: 'datacache' });
+  };
+  // The handoff design: what the gear returns to when Design explorations is switched off.
+  const lockDesign = () => {
+    setVersion('modal'); setBoxStyle('calculator'); setHero('none'); setAnimation('planes'); setIcon('figma');
+    setLayout('columns'); setBackground('dots'); setNavBadge('new'); setTitleTag('none'); setPlanLine('plain');
+    setSavingForAll(false);
+    if (SCENARIOS.find((x) => x.id === scenarioId)?.exploration) setScenarioId('claims');
   };
   const resetScenario = () => {
     setModelsByOrg((prev) => ({ ...prev, [org.id]: org.models }));
@@ -176,7 +187,7 @@ export const DataCache: React.FC = () => {
       <Shell active={activeNav} onNavigate={navigate} navBadge={navBadge}>
         {renderContent()}
       </Shell>
-      <ProtoMenu version={version} onVersion={setVersion} boxStyle={boxStyle} onBoxStyle={setBoxStyle} hero={hero} onHero={setHero} animation={animation} onAnimation={setAnimation} icon={icon} onIcon={setIcon} layout={layout} onLayout={setLayout} background={background} onBackground={setBackground} navBadge={navBadge} onNavBadge={setNavBadge} titleTag={titleTag} onTitleTag={setTitleTag} planLine={planLine} onPlanLine={setPlanLine} scenario={scenarioId} onScenario={pickScenario} enabled={enabled} onEnabled={setEnabled} limit={limit} onLimit={setLimit} savingForAll={savingForAll} onSavingForAll={setSavingForAll} onJump={jump} onReset={resetScenario} />
+      <ProtoMenu version={version} onVersion={setVersion} boxStyle={boxStyle} onBoxStyle={setBoxStyle} hero={hero} onHero={setHero} animation={animation} onAnimation={setAnimation} icon={icon} onIcon={setIcon} layout={layout} onLayout={setLayout} background={background} onBackground={setBackground} navBadge={navBadge} onNavBadge={setNavBadge} titleTag={titleTag} onTitleTag={setTitleTag} planLine={planLine} onPlanLine={setPlanLine} scenario={scenarioId} onScenario={pickScenario} enabled={enabled} onEnabled={setEnabled} limit={limit} onLimit={setLimit} savingForAll={savingForAll} onSavingForAll={setSavingForAll} onJump={jump} onReset={resetScenario} onLockDesign={lockDesign} />
     </>
   );
 };

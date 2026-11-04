@@ -59,8 +59,13 @@ export const ProtoMenu: React.FC<{
   onSavingForAll: (on: boolean) => void;
   onJump: (id: 'heavy' | 'low') => void;
   onReset: () => void;
-}> = ({ version, onVersion, boxStyle, onBoxStyle, hero, onHero, layout, onLayout, background, onBackground, animation, onAnimation, icon, onIcon, navBadge, onNavBadge, titleTag, onTitleTag, planLine, onPlanLine, scenario, onScenario, enabled, onEnabled, limit, onLimit, savingForAll, onSavingForAll, onJump, onReset }) => {
+  /** Back to the handoff design when explorations are switched off. */
+  onLockDesign: () => void;
+}> = ({ version, onVersion, boxStyle, onBoxStyle, hero, onHero, layout, onLayout, background, onBackground, animation, onAnimation, icon, onIcon, navBadge, onNavBadge, titleTag, onTitleTag, planLine, onPlanLine, scenario, onScenario, enabled, onEnabled, limit, onLimit, savingForAll, onSavingForAll, onJump, onReset, onLockDesign }) => {
   const [open, setOpen] = useState(false);
+  // Handoff lock (4 Nov): the panel shows the states a dev walks through; the design
+  // explorations stay in the code behind this one switch, off by default.
+  const [explore, setExplore] = useState(false);
   const seg = (opts: { id: string; label: string }[]) => opts.map((o) => ({ id: o.id, label: o.label }));
   return (
     <div className={styles.protoControls}>
@@ -72,43 +77,8 @@ export const ProtoMenu: React.FC<{
               <Button variant="tertiary" size="small" icon="cross" iconOnly aria-label="Close" onClick={() => setOpen(false)}>Close</Button>
             </Horizontal>
 
-            <Typography variant="overline" color="gray-light" noMargin>Caching tab</Typography>
-            <Row label="Layout"><SegmentedControl size="small" options={seg(LAYOUT_OPTIONS.map((o) => ({ id: o.id, label: o.id === 'stacked' ? '1 column' : '2 columns' })))} value={layout} onChange={(v) => onLayout(v as HookLayout)} /></Row>
-            <Row label="Hero"><SegmentedControl size="small" options={seg(HERO_OPTIONS)} value={hero} onChange={(v) => onHero(v as HeroStyle)} /></Row>
-            {hero === 'animation' && <Row label="Animation"><Select size="small" options={ANIMATION_OPTIONS} value={animation} onChange={(v) => onAnimation(v as AnimationStyle)} aria-label="Which animation" /></Row>}
-            {hero === 'icon' && <Row label="Icon"><Select size="small" options={ICON_OPTIONS} value={icon} onChange={(v) => onIcon(v as IconStyle)} aria-label="Which icon" /></Row>}
-            <Row label="Background"><SegmentedControl size="small" options={seg(BACKGROUND_OPTIONS.map((o) => ({ id: o.id, label: o.id === 'dots' ? 'Dots' : o.id === 'lines' ? 'Lines' : 'None' })))} value={background} onChange={(v) => onBackground(v as HookBackground)} /></Row>
-            <Row label="Box"><SegmentedControl size="small" options={seg(HOOK_BOX_OPTIONS.map((o) => ({ id: o.id, label: o.id === 'original' ? 'Original' : o.id === 'receipt' ? 'Receipt' : 'Calculator' })))} value={boxStyle} onChange={(v) => onBoxStyle(v as HookBoxStyle)} /></Row>
-
-            <Divider />
-            <Typography variant="overline" color="gray-light" noMargin>Data Cache page</Typography>
-            <Row label="Earlier designs">
-              <SegmentedControl size="small" options={[{ id: 'v1', label: 'v1' }, { id: 'v2', label: 'v2' }]} value={EARLIER.some((o) => o.id === version) ? version : ''} onChange={(v) => onVersion(v as PageVersion)} />
-            </Row>
-            <Row label="Nav badge">
-              <SegmentedControl size="small" options={[{ id: 'included', label: 'Included' }, { id: 'new', label: 'New' }]} value={navBadge} onChange={(v) => onNavBadge(v as NavBadge)} />
-            </Row>
-            <Row label="Title tag">
-              <SegmentedControl size="small" options={TITLE_TAG_OPTIONS.map((o) => ({ id: o.id, label: o.label }))} value={titleTag} onChange={(v) => onTitleTag(v as TitleTag)} />
-            </Row>
-            <Row label="Plan line">
-              <SegmentedControl size="small" options={seg(PLAN_LINE_OPTIONS)} value={planLine} onChange={(v) => onPlanLine(v as PlanLine)} />
-            </Row>
-            <Row label="Saving column, small orgs"><SegmentedControl size="small" options={[{ id: 'hide', label: 'Hidden' }, { id: 'show', label: 'Shown' }]} value={savingForAll ? 'show' : 'hide'} onChange={(v) => onSavingForAll(v === 'show')} /></Row>
-            <Row label="Proposed designs">
-              <Select
-                size="small"
-                options={PROPOSED.map((o) => ({ id: o.id, label: o.label.replace('Banner · ', '') }))}
-                value={PROPOSED.some((o) => o.id === version) ? version : undefined}
-                placeholder="Pick a banner"
-                onChange={(v) => onVersion(v as PageVersion)}
-                aria-label="Proposed designs"
-              />
-            </Row>
-
-            <Divider />
-            <Typography variant="overline" color="gray-light" noMargin>Data</Typography>
-            <Row label="Scenario"><Select size="small" options={SCENARIOS.map((s) => ({ id: s.id, label: s.label }))} value={scenario} onChange={(v) => onScenario(v as ScenarioId)} aria-label="Scenario" /></Row>
+            <Typography variant="overline" color="gray-light" noMargin>States</Typography>
+            <Row label="Scenario"><Select size="small" options={SCENARIOS.filter((s) => explore || !s.exploration).map((s) => ({ id: s.id, label: s.label }))} value={scenario} onChange={(v) => onScenario(v as ScenarioId)} aria-label="Scenario" /></Row>
             <Row label="Caching enabled on cluster"><Toggle checked={enabled} onChange={onEnabled} aria-label="Caching enabled on cluster" /></Row>
             <Row label="Limit reached"><SegmentedControl size="small" options={seg(LIMIT_OPTIONS)} value={limit} onChange={(v) => onLimit(v as Limit)} /></Row>
             <Row label="Jump to">
@@ -121,6 +91,45 @@ export const ProtoMenu: React.FC<{
             <div className={styles.reset}>
               <Button variant="tertiary" size="small" icon="reset" iconPosition="leading" onClick={onReset}>Reset scenario</Button>
             </div>
+            <Divider />
+            <Row label="Design explorations"><Toggle checked={explore} onChange={(on) => { setExplore(on); if (!on) onLockDesign(); }} aria-label="Design explorations" /></Row>
+            {explore && (
+              <>
+                <Typography variant="overline" color="gray-light" noMargin>Caching tab</Typography>
+                <Row label="Layout"><SegmentedControl size="small" options={seg(LAYOUT_OPTIONS.map((o) => ({ id: o.id, label: o.id === 'stacked' ? '1 column' : '2 columns' })))} value={layout} onChange={(v) => onLayout(v as HookLayout)} /></Row>
+                <Row label="Hero"><SegmentedControl size="small" options={seg(HERO_OPTIONS)} value={hero} onChange={(v) => onHero(v as HeroStyle)} /></Row>
+                {hero === 'animation' && <Row label="Animation"><Select size="small" options={ANIMATION_OPTIONS} value={animation} onChange={(v) => onAnimation(v as AnimationStyle)} aria-label="Which animation" /></Row>}
+                {hero === 'icon' && <Row label="Icon"><Select size="small" options={ICON_OPTIONS} value={icon} onChange={(v) => onIcon(v as IconStyle)} aria-label="Which icon" /></Row>}
+                <Row label="Background"><SegmentedControl size="small" options={seg(BACKGROUND_OPTIONS.map((o) => ({ id: o.id, label: o.id === 'dots' ? 'Dots' : o.id === 'lines' ? 'Lines' : 'None' })))} value={background} onChange={(v) => onBackground(v as HookBackground)} /></Row>
+                <Row label="Box"><SegmentedControl size="small" options={seg(HOOK_BOX_OPTIONS.map((o) => ({ id: o.id, label: o.id === 'original' ? 'Original' : o.id === 'receipt' ? 'Receipt' : 'Calculator' })))} value={boxStyle} onChange={(v) => onBoxStyle(v as HookBoxStyle)} /></Row>
+
+                <Divider />
+                <Typography variant="overline" color="gray-light" noMargin>Data Cache page</Typography>
+                <Row label="Earlier designs">
+                  <SegmentedControl size="small" options={[{ id: 'v1', label: 'v1' }, { id: 'v2', label: 'v2' }]} value={EARLIER.some((o) => o.id === version) ? version : ''} onChange={(v) => onVersion(v as PageVersion)} />
+                </Row>
+                <Row label="Nav badge">
+                  <SegmentedControl size="small" options={[{ id: 'included', label: 'Included' }, { id: 'new', label: 'New' }]} value={navBadge} onChange={(v) => onNavBadge(v as NavBadge)} />
+                </Row>
+                <Row label="Title tag">
+                  <SegmentedControl size="small" options={TITLE_TAG_OPTIONS.map((o) => ({ id: o.id, label: o.label }))} value={titleTag} onChange={(v) => onTitleTag(v as TitleTag)} />
+                </Row>
+                <Row label="Plan line">
+                  <SegmentedControl size="small" options={seg(PLAN_LINE_OPTIONS)} value={planLine} onChange={(v) => onPlanLine(v as PlanLine)} />
+                </Row>
+                <Row label="Saving column, small orgs"><SegmentedControl size="small" options={[{ id: 'hide', label: 'Hidden' }, { id: 'show', label: 'Shown' }]} value={savingForAll ? 'show' : 'hide'} onChange={(v) => onSavingForAll(v === 'show')} /></Row>
+                <Row label="Proposed designs">
+                  <Select
+                    size="small"
+                    options={PROPOSED.map((o) => ({ id: o.id, label: o.label.replace('Banner · ', '') }))}
+                    value={PROPOSED.some((o) => o.id === version) ? version : undefined}
+                    placeholder="Pick a banner"
+                    onChange={(v) => onVersion(v as PageVersion)}
+                    aria-label="Proposed designs"
+                  />
+                </Row>
+              </>
+            )}
           </Vertical>
         </Card>
       )}

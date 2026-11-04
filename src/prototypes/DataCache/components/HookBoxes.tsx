@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, Slider, TextInput, Typography, Horizontal, Vertical } from '@/components';
 import { spacing } from '../styles';
 import styles from './HookBoxes.module.css';
-import { computeEstimate, formatRowsFull, usdRange } from '../utils';
+import { computeEstimate, estimateBasis, formatRowsFull, usdRange, usdRangeYr } from '../utils';
 import type { EstimateInputs, Plan } from '../types';
 
 /** Which box the Caching tab hook shows under the title. Switched from the gear. */
@@ -155,8 +155,8 @@ export const CalculatorBox: React.FC<{ inputs: EstimateInputs; plan: Plan; onCha
       <Vertical gap={spacing.C} className={styles.cardBody}>
         <Typography variant="section-label" color="base" as="h3" noMargin>{BOX_TITLE}</Typography>
         <Vertical gap={spacing.A} className={styles.result}>
-          <Typography variant="page-title" color="success" as="span" noMargin>{usdRange(r.savingPerYear)}</Typography>
-          <Typography variant="footnote" color="gray-light" noMargin>a year in warehouse cost</Typography>
+          <Typography variant="page-title" color="success" as="span" noMargin>{usdRangeYr(r.savingPerYear)}</Typography>
+          <Typography variant="footnote" color="gray-light" noMargin>{estimateBasis(inputs)}</Typography>
         </Vertical>
         <CalculatorInputs inputs={inputs} onChange={onChange} queriesLabel="Queries on this model" />
         {/* Harviish, 4 Nov: ties cache query hours to the warehouse queries. Static for now. */}

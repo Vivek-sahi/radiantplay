@@ -3,7 +3,7 @@ import { Modal, ModalFooter, Button, Typography, Vertical } from '@/components';
 import { CalculatorInputs } from './HookBoxes';
 import { spacing } from '../styles';
 import styles from './EstimateModal.module.css';
-import { computeEstimate, formatRowsFull, usdRange } from '../utils';
+import { computeEstimate, estimateBasis, formatRowsFull, usdRangeYr } from '../utils';
 import type { EstimateInputs, Plan } from '../types';
 
 /** The fit line: does caching the estimated queries fit in the plan's query hours? Org level. */
@@ -50,8 +50,8 @@ export const EstimateModal: React.FC<{
     >
       <Vertical gap={spacing.D}>
         <Vertical gap={spacing.A} className={styles.result}>
-          <Typography variant="page-title" color="success" as="span" noMargin>{usdRange(r.savingPerYear)}</Typography>
-          <Typography variant="footnote" color="gray-light" noMargin>a year in warehouse cost</Typography>
+          <Typography variant="page-title" color="success" as="span" noMargin>{usdRangeYr(r.savingPerYear)}</Typography>
+          <Typography variant="footnote" color="gray-light" noMargin>{estimateBasis(draft)}</Typography>
           {fit && (
             <Typography variant="footnote" color={f.ok ? 'gray-light' : 'warning'} noMargin>{f.text}</Typography>
           )}

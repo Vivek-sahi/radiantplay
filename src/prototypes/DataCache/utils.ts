@@ -189,3 +189,10 @@ export function planCoverage(org: Org, plan: Plan): { pct: number; fit: number; 
   const fit = pct === 100 ? org.cacheableModels : Math.round((org.cacheableModels * pct) / 100);
   return { pct, fit, total: org.cacheableModels };
 }
+
+/** The saving as one figure for every calculator (Vivek, 4 Nov): "$84k–$111k/yr". */
+export const usdRangeYr = (atCeiling: number): string => `${usdRange(atCeiling).replace(' to ', '–')}/yr`;
+
+/** The line under the figure, live from the inputs, the same on the Caching tab and the Data Cache page. */
+export const estimateBasis = (e: EstimateInputs): string =>
+  `At $${e.ratePerQuery.toFixed(2)} per warehouse query, with ${e.hitPct}% queries served from DataCache`;

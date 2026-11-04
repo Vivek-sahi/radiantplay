@@ -14,18 +14,20 @@ export interface Scenario {
   label: string;
   /** Below the org-wide threshold the model list is optional (the reference has both frames). */
   list: boolean;
+  /** Only under Design explorations: not a state that ships. */
+  exploration?: boolean;
 }
 
 export const SCENARIOS: Scenario[] = [
-  { id: 'retail', org: 'retail', label: 'Nothing cached · heavy usage', list: true },
-  { id: 'global', org: 'global', label: 'Nothing cached · free hours cover part', list: true },
-  { id: 'claims', org: 'claims', label: 'Nothing cached · below threshold', list: false },
-  { id: 'claims-list', org: 'claims', label: 'Below threshold · with model list', list: true },
-  { id: 'cached', org: 'cached', label: 'Models cached · the Pulse data', list: true },
+  { id: 'retail', org: 'retail', label: 'Nothing cached · plan covers all', list: true },
+  { id: 'global', org: 'global', label: 'Nothing cached · plan covers part', list: true },
+  { id: 'claims', org: 'claims', label: 'Nothing cached · small org', list: false },
+  { id: 'claims-list', org: 'claims', label: 'Below threshold · with model list', list: true, exploration: true },
+  { id: 'cached', org: 'cached', label: 'Models cached', list: true },
 ];
 
 /** Direct jumps to the two Caching-tab hooks (the reference's model frames). */
 export const JUMPS: { id: 'heavy' | 'low'; label: string; scenario: ScenarioId; modelId: string }[] = [
   { id: 'heavy', label: 'Heavy model · Caching tab', scenario: 'retail', modelId: 'retail-omnichannel-sales' },
-  { id: 'low', label: 'Low-usage model · Caching tab', scenario: 'claims-list', modelId: 'claims-intake-volume' },
+  { id: 'low', label: 'Low-usage model · Caching tab', scenario: 'claims', modelId: 'claims-intake-volume' },
 ];

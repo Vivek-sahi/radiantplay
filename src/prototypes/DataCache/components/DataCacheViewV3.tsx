@@ -21,6 +21,8 @@ import {
   savingPerYear,
   usd,
   usdRange,
+  usdRangeYr,
+  estimateBasis,
   warehouseHours,
   RATE_PER_QUERY,
 } from '../utils';
@@ -173,8 +175,8 @@ export const DataCacheViewV3: React.FC<{
   // ── the banner ──
   const hero = (
     <Vertical gap={spacing.A} className={styles.hero}>
-      <Typography variant="headline-large" color="success" as="span" noMargin>{usdRange(est.savingPerYear).replace(' to ', '–')}/yr</Typography>
-      <Typography variant="footnote" color="gray-light" noMargin className={styles.basis}>At ${estimate.ratePerQuery.toFixed(2)} per warehouse query, with {estimate.hitPct}% queries served from DataCache</Typography>
+      <Typography variant="headline-large" color="success" as="span" noMargin>{usdRangeYr(est.savingPerYear)}</Typography>
+      <Typography variant="footnote" color="gray-light" noMargin className={styles.basis}>{estimateBasis(estimate)}</Typography>
       {banner === 'expand' && (
         <div className={styles.adjust}>
           <Button variant="tertiary" size="small" onClick={() => setExpanded((v) => !v)}>{expanded ? 'Done' : 'Adjust'}</Button>
