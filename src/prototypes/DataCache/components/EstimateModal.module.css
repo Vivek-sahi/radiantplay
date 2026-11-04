@@ -1,0 +1,15 @@
+/* The answer sits on its own surface, as in the calculator box. */
+.result {
+  padding: var(--spacing-4) var(--spacing-4) var(--spacing-3);
+  border-radius: var(--radius-md);
+  background-color: var(--rd-sys-color-background-subtle);
+}
+.line {
+  width: 100%;
+  padding: var(--spacing-2) 0;
+  border-top: 1px solid var(--rd-sys-color-border-subtle);
+}
+.field {
+  width: 200px;
+  flex-shrink: 0;
+}

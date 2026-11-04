@@ -1,0 +1,42 @@
+/* The Data Cache page, v2. */
+.page {
+  max-width: 1200px;
+  padding: var(--spacing-8);
+}
+
+/* Metrics: four tiles, one row at the page width. */
+.tileRow {
+  width: 100%;
+}
+.tile {
+  flex: 1;
+  min-width: 200px;
+}
+.tileBody {
+  padding: var(--spacing-5);
+}
+.tileLabel {
+  min-height: var(--spacing-6);
+}
+
+/* The hook. */
+.hook {
+  border-radius: var(--radius-lg);
+  transition: box-shadow 0.4s ease;
+}
+.highlight {
+  box-shadow: 0 0 0 3px var(--rd-sys-color-border-brand);
+}
+.hookTop {
+  width: 100%;
+}
+.hookCopy {
+  flex: 1;
+  max-width: 800px;
+}
+.stat {
+  min-width: 150px;
+}
+.illustration {
+  flex-shrink: 0;
+}

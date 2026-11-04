@@ -1,0 +1,62 @@
+/* The receipt and the calculator boxes on the Caching tab. */
+.card {
+  width: 100%;
+  max-width: 800px;
+}
+.cardBody {
+  padding: var(--spacing-5);
+}
+.line {
+  width: 100%;
+  padding: var(--spacing-2) 0;
+  border-top: 1px solid var(--rd-sys-color-border-subtle);
+}
+.line:first-child {
+  border-top: 0;
+}
+.total {
+  border-top: 2px solid var(--rd-sys-color-border-bold);
+  margin-top: var(--spacing-1);
+}
+.value {
+  white-space: nowrap;
+  text-align: right;
+}
+/* The answer sits on its own surface, like the idea it came from. */
+.result {
+  padding: var(--spacing-4) var(--spacing-4) var(--spacing-3);
+  border-radius: var(--radius-md);
+  background-color: var(--rd-sys-color-background-subtle);
+}
+/* The three inputs share one width and one right edge. */
+.field {
+  width: 200px;
+  flex-shrink: 0;
+  justify-content: flex-end;
+}
+.slider {
+  flex: 1;
+}
+.pct {
+  min-width: var(--spacing-10);
+  text-align: right;
+}
+
+/* The banner's row layout: three knobs side by side, label above field. */
+.knobRow {
+  width: 100%;
+}
+.knob {
+  width: 200px;
+}
+.knobWide {
+  width: 240px;
+}
+/* Labels stay on one line so the three fields share a baseline. */
+.knob > :first-child,
+.knobWide > :first-child {
+  white-space: nowrap;
+}
+.knobSlider {
+  min-height: var(--spacing-8);
+}

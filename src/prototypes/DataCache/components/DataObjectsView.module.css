@@ -1,0 +1,56 @@
+/* Faithful 1:1 port of the inline styles previously in DataObjectsView.tsx.
+   Same token values, expressed as CSS vars with px fallbacks. */
+
+/* ── Recently-opened carousel ───────────────────────────────────────────── */
+.carouselBand {
+  background-color: var(--rd-sys-color-background-subtle);
+  padding: var(--spacing-5, 20px) var(--spacing-8, 32px);
+}
+.carouselInner {
+  max-width: 1200px;
+}
+.scroller {
+  display: flex;
+  gap: var(--spacing-3, 12px);
+  overflow-x: auto;
+  flex: 1;
+  padding-bottom: var(--spacing-1, 4px);
+}
+
+.recentCard {
+  min-width: 220px;
+  max-width: 220px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.recentCardHeader {
+  background-color: var(--rd-sys-color-content-brand);
+  padding: var(--spacing-2, 8px) var(--spacing-3, 12px);
+}
+.recentCardBody {
+  padding: var(--spacing-3, 12px);
+}
+
+/* ── Filter pill tabs ───────────────────────────────────────────────────── */
+.filterTab {
+  padding: var(--spacing-1, 4px) var(--spacing-3, 12px);
+  border-radius: var(--radius-full, 9999px);
+  cursor: pointer;
+}
+.filterTabActive {
+  background-color: var(--rd-sys-color-background-subtle);
+}
+
+/* ── Content + misc ─────────────────────────────────────────────────────── */
+.content {
+  padding: var(--spacing-8, 32px);
+  max-width: 1200px;
+}
+.searchBox {
+  width: 240px;
+}
+.zapWrap {
+  display: flex;
+  align-items: center;
+  color: var(--rd-sys-color-content-brand);
+}

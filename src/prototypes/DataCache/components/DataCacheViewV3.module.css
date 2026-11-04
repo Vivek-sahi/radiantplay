@@ -1,0 +1,61 @@
+/* The Data Cache page, proposed designs. */
+.page {
+  max-width: 1200px;
+  padding: var(--spacing-8);
+}
+
+/* Banner 1: the saving as a hero figure on a tinted panel, the copy beside it. */
+/* The gradient from the HTML banner Vivek picked: brand tint on the left fading into the
+   card by the middle. Tokens only, through color-mix. */
+.banner {
+  width: 100%;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--rd-sys-color-content-brand) 22%, var(--rd-sys-color-background-base)) 0%,
+    var(--rd-sys-color-background-base) 55%
+  );
+}
+.bannerRow {
+  width: 100%;
+  position: relative;
+}
+.hero {
+  min-width: 300px;
+  padding: var(--spacing-6) var(--spacing-7);
+  justify-content: center;
+}
+.fit {
+  max-width: 260px;
+  padding-top: var(--spacing-2);
+}
+.adjust {
+  padding-top: var(--spacing-1);
+}
+.bannerBody {
+  flex: 1;
+  padding: var(--spacing-5) var(--spacing-10) var(--spacing-5) 0;
+}
+.inputs {
+  max-width: 640px;
+}
+.dismiss {
+  position: absolute;
+  top: var(--spacing-2);
+  right: var(--spacing-2);
+}
+
+/* Metrics: four tiles, one row at the page width. */
+.tileRow {
+  width: 100%;
+}
+.tile {
+  flex: 1;
+  min-width: 200px;
+}
+.tileBody {
+  padding: var(--spacing-5);
+}
+.tileLabel {
+  min-height: var(--spacing-6);
+}

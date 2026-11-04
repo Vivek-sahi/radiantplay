@@ -39,6 +39,7 @@ const DataNotebook = React.lazy(() => import('./DataNotebook'));
 const SpotterPrep = React.lazy(() => import('./SpotterPrep'));
 const SpotterPrep2 = React.lazy(() => import('./SpotterPrep2'));
 const NearStore = React.lazy(() => import('./NearStore'));
+const DataCache = React.lazy(() => import('./DataCache'));
 const WorkbookInThoughtSpot = React.lazy(() => import('./WorkbookInThoughtSpot'));
 const AgentDBMVP = React.lazy(() => import('./AgentDBMVP'));
 const AgentDBMVPHome = React.lazy(() => import('./AgentDBMVP/Home'));
@@ -95,6 +96,17 @@ export const myRegistry: ProjectMeta[] = [
     thumbnail: DataModelEditorThumbnail,
     component: SearchDataOnDataModelexplorations,
     section: 'mine',
+  },
+  {
+    id: 'DataCache',
+    name: 'Data Cache',
+    description: 'ThoughtSpot Data Cache for the product-led motion: the Pulse caching workflow, with the empty states turned into hooks. Query hours in the plan, estimated savings per model and for the org, Cache Model from the list. Layouts, heroes, boxes and scenarios in the settings panel (gear, bottom-left).',
+    author: 'Vivek Sahi',
+    lastModified: '2026-11-04',
+    component: DataCache,
+    section: 'mine',
+    theme: 'global',
+    look: 'radiant-3',
   },
   {
     id: 'NearStore',

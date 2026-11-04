@@ -1,0 +1,187 @@
+/* The Caching tab hook: illustration, title, CTAs, then the PM's box below, centred. */
+.layout {
+  width: 100%;
+  /* Flush with the tab's own top (Vivek, 4 Nov): the 100px push came out once the animation was in. */
+  padding: var(--spacing-6) 0 var(--spacing-10);
+}
+.intro {
+  text-align: center;
+}
+.cta {
+  padding-top: var(--spacing-2);
+}
+/* Vivek, 4 Nov: the brand blue with light text on the primary CTA in dark mode too. The
+   DS primary in dark is dark text on a lightened blue; this is a local override for this one
+   button. In dark, content-brand-inverse is the brand blue (#2770EF). */
+.ctaButton {
+  color: var(--rd-sys-color-content-inverse);
+  /* The DS sets button labels at regular; at this size on a saturated fill that reads thin, so medium here. */
+  font-weight: var(--font-weight-medium);
+}
+:root[data-theme='dark'] .ctaButton {
+  background-color: var(--rd-sys-color-content-brand-inverse);
+  color: var(--rd-sys-color-content-primary);
+}
+:root[data-theme='dark'] .ctaButton:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--rd-sys-color-content-brand-inverse) 85%, var(--rd-sys-color-background-base));
+}
+.introText {
+  max-width: 600px;
+}
+.card {
+  width: 100%;
+  max-width: 600px;
+}
+.cardBody {
+  padding: var(--spacing-5);
+}
+.stat {
+  flex: 1;
+}
+.costRow {
+  width: 100%;
+  padding: var(--spacing-3) 0 0;
+  border-top: 1px solid var(--rd-sys-color-border-subtle);
+}
+
+/* Warehouse-load bars: the first is full; the second is solid for what still reaches
+   the warehouse and shaded for what could use cached data. */
+.bar {
+  position: relative;
+  height: var(--spacing-2);
+  border-radius: var(--radius-full);
+  background-color: var(--rd-sys-color-content-tertiary);
+  overflow: hidden;
+}
+.barShaded {
+  background-color: color-mix(in srgb, var(--rd-sys-color-content-brand) 22%, transparent);
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0,
+    transparent 4px,
+    color-mix(in srgb, var(--rd-sys-color-content-brand) 35%, transparent) 4px,
+    color-mix(in srgb, var(--rd-sys-color-content-brand) 35%, transparent) 6px
+  );
+}
+.barSolid {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: block;
+  background-color: var(--rd-sys-color-content-brand);
+}
+
+/* Illustrative chart: tokens only, so it follows light and dark. */
+.chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.grid line {
+  stroke: var(--rd-sys-color-border-subtle);
+  stroke-width: 1;
+}
+.area {
+  fill: color-mix(in srgb, var(--rd-sys-color-content-brand) 12%, transparent);
+}
+.lineTotal {
+  fill: none;
+  stroke: var(--rd-sys-color-content-tertiary);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+.lineWarehouse {
+  fill: none;
+  stroke: var(--rd-sys-color-content-brand);
+  stroke-width: 2.5;
+}
+
+/* The PM's layout: copy left, card right. */
+.pmLayout {
+  width: 100%;
+  padding-top: var(--spacing-3);
+}
+.pmCopy {
+  flex: 1;
+  max-width: 560px;
+}
+.benefits {
+  padding: var(--spacing-2) 0;
+}
+.benefit {
+  width: 100%;
+}
+.figure {
+  min-width: 112px;
+  white-space: nowrap;
+}
+
+/* Two columns: the pitch left, the box right. */
+.columns {
+  width: 100%;
+  padding: var(--spacing-8) 0 var(--spacing-10);
+}
+/* The text column is capped so the title and the plan line each wrap to two lines, which gives
+   the left side the height of the box without adding a word. */
+/* Both columns anchor to the left with a fixed gap (Abhinav, 4 Nov): the text column takes its
+   natural width, the box follows it, and nothing floats to the far edge. */
+.columns {
+  justify-content: flex-start;
+}
+.colLeft {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding-top: var(--spacing-2);
+}
+/* The title stays on one line; the description is capped so it wraps to a few lines. */
+.colTitle {
+  white-space: nowrap;
+}
+.colText {
+  max-width: 420px;
+}
+.colRight {
+  flex: 0 0 640px;
+  margin-left: var(--spacing-10);
+}
+.colHero {
+  padding: var(--spacing-5) 0 0;
+}
+
+/* A faint texture behind the hook, fading out towards the edges. Tokens only; the grid colour is
+   the page's own text colour at low opacity, so it follows light and dark. */
+.bgDots,
+.bgLines {
+  position: relative;
+  isolation: isolate;
+}
+.bgDots::before,
+.bgLines::before {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--spacing-6)) calc(-1 * var(--spacing-8));
+  z-index: -1;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(ellipse 70% 75% at 50% 45%, black 30%, transparent 100%);
+  mask-image: radial-gradient(ellipse 70% 75% at 50% 45%, black 30%, transparent 100%);
+}
+.bgDots::before {
+  background-image: radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--rd-sys-color-content-primary) 10%, transparent) 1px, transparent 1.5px);
+  background-size: var(--spacing-5) var(--spacing-5);
+}
+.bgLines::before {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--rd-sys-color-content-primary) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--rd-sys-color-content-primary) 6%, transparent) 1px, transparent 1px);
+  background-size: var(--spacing-10) var(--spacing-10);
+}
+/* More air between the CTA and the box (Vivek, 4 Nov). */
+.boxSlot {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-top: var(--spacing-6);
+}
+/* With no hero the text is centred on the box; nudge it a little above centre (Vivek, 4 Nov). */
+.colLeftLifted {
+  transform: translateY(calc(-1 * var(--spacing-6)));
+}

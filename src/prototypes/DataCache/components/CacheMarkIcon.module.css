@@ -1,0 +1,25 @@
+.mark {
+  display: block;
+  overflow: visible;
+}
+.glow {
+  fill: var(--rd-sys-color-content-brand);
+  opacity: 0.18;
+  transform-origin: 70px 66px;
+  animation: breathe 3s ease-in-out infinite;
+  filter: blur(14px);
+}
+.top { fill: var(--rd-sys-color-content-brand); }
+.mid { fill: color-mix(in srgb, var(--rd-sys-color-content-brand) 55%, var(--rd-sys-color-background-base-inverse)); }
+.low { fill: color-mix(in srgb, var(--rd-sys-color-content-brand) 35%, var(--rd-sys-color-background-base-inverse)); }
+.bolt { fill: var(--rd-sys-color-content-primary-inverse); }
+:root[data-theme='dark'] .mid { fill: color-mix(in srgb, var(--rd-sys-color-content-brand) 55%, var(--rd-sys-color-background-base)); }
+:root[data-theme='dark'] .low { fill: color-mix(in srgb, var(--rd-sys-color-content-brand) 35%, var(--rd-sys-color-background-base)); }
+:root[data-theme='dark'] .bolt { fill: var(--rd-sys-color-content-primary); }
+@keyframes breathe {
+  0%, 100% { opacity: 0.14; transform: scale(1); }
+  50% { opacity: 0.32; transform: scale(1.08); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glow { animation: none; }
+}
