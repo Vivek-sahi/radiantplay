@@ -266,7 +266,7 @@ export const DataCacheViewV3: React.FC<{
         <Tile icon="clock" label="Compute hours" value={formatRowsFull(limit === 'hours' ? plan.freeHours : used)} of={`of ${formatRowsFull(plan.freeHours)}`} meter={limit === 'hours' ? 100 : allowancePct(used, plan.freeHours)} sub={limit === 'hours' ? 'Used up on 22 Nov. Resets 1 Dec' : n ? `Used by your ${n} cached ${n === 1 ? 'model' : 'models'} this month` : ''} />
         <Tile icon="database" label="Storage" value={limit === 'storage' ? `${plan.freeGB} GB` : gb >= 1 ? `${gb.toFixed(gb < 10 ? 1 : 0)} GB` : gb > 0 ? `${Math.round(gb * 1024)} MB` : '0 GB'} of={`of ${plan.freeGB} GB`} meter={limit === 'storage' ? 100 : allowancePct(gb, plan.freeGB)} sub={limit === 'storage' ? 'Full' : n ? `${formatCompact(rows)} rows across ${n} ${n === 1 ? 'model' : 'models'}` : ''} />
         <Tile icon="chart" label="Queries served from cache" value={formatRowsFull(fromCache)} sub={fromCache ? `${hitPct}% of queries on cached models` : ''} />
-        <Tile icon="chart" label="Warehouse cost avoided" value={fromCache ? `~${usd(saved)}` : '$0'} sub={fromCache ? `About ${usd(saved * 12)} a year at this rate` : 'Estimate at $0.05 per warehouse query'} />
+        <Tile icon="chart" label="Warehouse cost avoided" value={fromCache ? `~${usd(saved)}` : '$0'} sub={fromCache ? `About ${usd(saved * 12)} a year at this rate` : `Estimate at $${RATE_PER_HOUR} per warehouse compute hour`} />
       </Horizontal>
 
       <Vertical gap={spacing.D}>
